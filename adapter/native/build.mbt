@@ -19,13 +19,50 @@ pub async fn build_from_file(spec_path : String) -> @build.ImageBuildResult {
     layers,
     platform: spec.platform,
     runtime: spec.runtime,
-    created: spec.created,
+    created: resolve_created(spec.created),
     author: spec.author,
     reference: spec.reference,
     annotations: spec.annotations,
   })
   write_layout(spec.output.layout, result.layout)
   result
+}
+
+///|
+fn resolve_created(explicit : String?) -> String? raise @model.MoonOciError {
+  match explicit {
+    Some(value) => Some(value)
+    None =>
+      match @env.get_env_var("SOURCE_DATE_EPOCH") {
+        Some(value) => Some(source_date_epoch_to_created(value))
+        None => None
+      }
+  }
+}
+
+///|
+fn source_date_epoch_to_created(
+  value : String,
+) -> String raise @model.MoonOciError {
+  let seconds = @string.parse_int64(value) catch {
+    _ =>
+      raise @model.InvalidBuildSpec(
+        "SOURCE_DATE_EPOCH must be a non-negative integer",
+      )
+  }
+  if seconds < 0L {
+    raise @model.InvalidBuildSpec(
+      "SOURCE_DATE_EPOCH must be a non-negative integer",
+    )
+  }
+  @time.unix(seconds).to_string() catch {
+    _ => raise @model.InvalidBuildSpec("SOURCE_DATE_EPOCH is out of range")
+  }
+}
+
+///|
+test "SOURCE_DATE_EPOCH converts to canonical UTC creation time" {
+  assert_eq(source_date_epoch_to_created("0"), "1970-01-01T00:00:00Z")
 }
 
 ///|
@@ -48,18 +85,18 @@ pub async fn write_layout(
     @fs.mkdir(join_path(staging, "blobs/sha256"), recursive=true)
     @fs.write_file(
       join_path(staging, "oci-layout"),
-      layout.marker,
+      layout.marker(),
       create_mode=CreateOrTruncate,
     )
     @fs.write_file(
       join_path(staging, "index.json"),
-      layout.index,
+      layout.index(),
       create_mode=CreateOrTruncate,
     )
-    for blob in layout.blobs {
+    for blob in layout.blob_records() {
       @fs.write_file(
-        join_path(staging, blob.descriptor.digest.blob_path()),
-        blob.data,
+        join_path(staging, blob.descriptor().digest.blob_path()),
+        blob.data(),
         create_mode=CreateOrTruncate,
       )
     }

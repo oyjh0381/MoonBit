@@ -109,6 +109,7 @@ pub fn read_tar(
             "symlink target exceeds configured limit",
           )
         }
+        @pathing.validate_symlink_target(raw_link)
         Some(raw_link)
       } else {
         None

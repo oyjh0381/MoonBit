@@ -4,7 +4,7 @@ test "memory layout deduplicates identical blobs" {
   let first = layout.put_blob(@model.media_type_config, b"same")
   let second = layout.put_blob(@model.media_type_config, b"same")
   assert_eq(first, second)
-  assert_eq(layout.blobs.length(), 1)
+  assert_eq(layout.blob_count(), 1)
   assert_eq(layout.require_blob(first), b"same")
 }
 

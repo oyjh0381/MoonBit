@@ -23,7 +23,7 @@ async fn main {
       "inspect" => {
         require_arity(args, 3, "usage: moonoci inspect <layout>")
         let layout = @native.load_layout(args[2])
-        let index = @codec.decode_index(layout.index)
+        let index = @codec.decode_index(layout.index())
         @stdio.stdout.write(
           "schemaVersion: \{index.schema_version}\nmanifests: \{index.manifests.length()}\n",
         )
@@ -51,14 +51,20 @@ async fn main {
       "verify" => {
         require_arity(args, 3, "usage: moonoci verify <layout>")
         let report = @build.verify_memory(@native.load_layout(args[2]))
+        for finding in report.findings {
+          let path = match finding.object_path {
+            Some(value) => " [" + value + "]"
+            None => ""
+          }
+          @stdio.stderr.write(
+            finding.code + path + ": " + finding.message + "\n",
+          )
+        }
         if report.is_valid() {
           @stdio.stdout.write(
             "valid: manifests=\{report.manifests_checked} blobs=\{report.blobs_checked} layers=\{report.layers_checked}\n",
           )
         } else {
-          for finding in report.findings {
-            @stdio.stderr.write(finding.code + ": " + finding.message + "\n")
-          }
           process_exit(5)
         }
       }

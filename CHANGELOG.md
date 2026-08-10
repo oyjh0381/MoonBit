@@ -13,6 +13,8 @@ All notable changes to MoonOCI are documented here. The format follows Keep a Ch
 - Multi-layer Whiteout/Opaque Directory Root Filesystem semantics.
 - `build`, `inspect`, `list`, `verify`, `archive`, and `version` CLI commands.
 - Portable, property-based, corruption, reproducibility, and Native integration tests.
+- Semantic OCI Layout marker parsing, immutable in-memory Blob storage, strict
+  symlink/Whiteout validation, and `SOURCE_DATE_EPOCH` support.
 
 ## [0.1.0] - 2026-08-10
 

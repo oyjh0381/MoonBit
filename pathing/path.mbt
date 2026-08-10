@@ -121,3 +121,33 @@ pub fn symlink_target_is_risky(target : String) -> Bool {
   }
   false
 }
+
+///|
+/// Reject link targets that can escape a root filesystem or vary by host OS.
+pub fn validate_symlink_target(
+  target : String,
+) -> Unit raise @model.MoonOciError {
+  if target == "" {
+    raise @model.InvalidPath("symlink target must not be empty")
+  }
+  if @utf8.encode(target).length() > max_path_bytes {
+    raise @model.ResourceLimitExceeded(
+      "symlink target exceeds 4096 UTF-8 bytes",
+    )
+  }
+  if target.contains_char('\u{0000}') {
+    raise @model.InvalidPath("symlink target must not contain NUL")
+  }
+  if symlink_target_is_risky(target) {
+    raise @model.InvalidPath(
+      "symlink target must be a safe forward-slash relative path",
+    )
+  }
+}
+
+///|
+/// Whether a path uses the OCI Whiteout namespace reserved by MoonOCI.
+pub fn is_whiteout_path(path : String) -> Bool {
+  let segments = path.split("/").map(part => part.to_owned()).collect()
+  segments[segments.length() - 1].has_prefix(".wh.")
+}

@@ -50,7 +50,12 @@ jobs:
       - name: Build sample layout
         run: moon run cmd/moonoci --target native -- build examples/native-build/moonoci.json
       - name: MoonOCI verification
-        run: moon run cmd/moonoci --target native -- verify _build/ci-layout
+        run: |
+          moon run cmd/moonoci --target native -- verify _build/ci-layout
+          if moon run cmd/moonoci --target native -- verify _build/missing-layout; then
+            echo "expected verification failure for missing layout"
+            exit 1
+          fi
       - name: Skopeo independent inspection
         run: skopeo inspect oci:_build/ci-layout:ci
 
@@ -72,3 +77,4 @@ jobs:
         run: |
           call "%ProgramFiles%\Microsoft Visual Studio\2022\Enterprise\Common7\Tools\VsDevCmd.bat" -arch=amd64 -host_arch=amd64
           moon run cmd/moonoci --target native -- version
+          moon run cmd/moonoci --target native -- verify _build\missing-layout && exit /b 1 || exit /b 0

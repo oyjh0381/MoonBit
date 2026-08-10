@@ -24,7 +24,7 @@ MoonOCI 是一个使用 MoonBit 实现的确定性 OCI Image Layout 构建、检
 
 项目面向 MoonBit 库作者、构建工具开发者、CI/CD 平台、供应链工具和需要生成 OCI 工件的应用。相同声明式输入会产生字节一致的 Layer、OCI JSON、Descriptor 与 Digest，便于缓存、审计、复现实验和跨机器验证。
 
-项目采用两级深模块架构：可移植核心可在 Wasm、Wasm-GC、JavaScript 和 Native 目标上检查或复用；Native 适配器负责真实文件系统与 CLI。当前仓库包含 13 个 MoonBit package、41 个 `.mbt` 文件和约 4258 行 MoonBit 源码。
+项目采用两级深模块架构：可移植核心可在 Wasm、Wasm-GC、JavaScript 和 Native 目标上检查或复用；Native 适配器负责真实文件系统与 CLI。当前仓库包含 13 个 MoonBit package、41 个 `.mbt` 文件和约 4600 行 MoonBit 源码。
 
 **核心功能范围**
 
@@ -54,7 +54,7 @@ MoonOCI 是一个使用 MoonBit 实现的确定性 OCI Image Layout 构建、检
 
 - 提供 single-layer、multi-layer、reproducible-build 三个可执行 MoonBit 示例，以及一个 Native Build Specification 示例；
 
-- 提供 53 个命名测试；其中两项 QuickCheck 属性测试各运行 100 个生成场景，并包含 60 个安全路径矩阵场景、损坏归档、摘要篡改、gzip 高膨胀率、Native 文件系统和可复现构建测试；
+- Native 目标提供 61 个测试，WASM-GC 可移植目标提供 58 个测试；其中两项 QuickCheck 属性测试各运行 100 个生成场景，并包含 60 个安全路径矩阵场景、损坏归档、摘要篡改、gzip 高膨胀率、Native 文件系统和可复现构建测试；
 
 - 配置 Ubuntu 与 Windows GitHub Actions，执行 formatter、全目标类型检查、WASM-GC 测试、Native 测试、示例、CLI 构建，并在 Linux 使用 Skopeo 独立读取生成的 OCI Image Layout；
 
@@ -92,9 +92,9 @@ MoonOCI 是一个使用 MoonBit 实现的确定性 OCI Image Layout 构建、检
 
 - `moon check --target all --deny-warn`：通过；
 
-- `moon test --target wasm-gc --deny-warn`：51/51 通过，QuickCheck 额外完成 200 个生成场景；
+- `moon test --target wasm-gc --deny-warn`：58/58 通过，QuickCheck 额外完成 200 个生成场景；
 
-- `moon test --target native --deny-warn`：53/53 通过；
+- `moon test --target native --deny-warn`：61/61 通过；
 
 - `moon build --target native --deny-warn`：通过，已生成并运行 `moonoci.exe`；
 

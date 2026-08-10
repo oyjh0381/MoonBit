@@ -13,7 +13,7 @@ pub async fn load_layout(source : String) -> @layout.MemoryLayout {
   }
   let marker = @fs.read_file(marker_path).binary()
   let index = @fs.read_file(index_path).binary()
-  let blobs : Array[@layout.BlobRecord] = []
+  let blobs : Array[(@model.Descriptor, Bytes)] = []
   for
     name in @fs.readdir(
       blob_dir,
@@ -27,18 +27,20 @@ pub async fn load_layout(source : String) -> @layout.MemoryLayout {
       raise @model.InvalidOci("Blob path must be a regular file: " + name)
     }
     let data = @fs.read_file(path).binary()
-    blobs.push({
-      descriptor: {
-        media_type: "",
-        digest,
-        size: data.length().to_int64(),
-        annotations: [],
-        platform: None,
-      },
-      data,
-    })
+    blobs.push(
+      (
+        {
+          media_type: "",
+          digest,
+          size: data.length().to_int64(),
+          annotations: [],
+          platform: None,
+        },
+        data,
+      ),
+    )
   }
-  { marker, index, blobs }
+  @layout.MemoryLayout::from_untrusted_parts(marker, index, blobs)
 }
 
 ///|
@@ -47,12 +49,12 @@ pub fn archive_layout_bytes(
   layout : @layout.MemoryLayout,
 ) -> Bytes raise @model.MoonOciError {
   let entries = [
-    @archive.TarEntry::file("oci-layout", layout.marker),
-    @archive.TarEntry::file("index.json", layout.index),
+    @archive.TarEntry::file("oci-layout", layout.marker()),
+    @archive.TarEntry::file("index.json", layout.index()),
   ]
-  for blob in layout.blobs {
+  for blob in layout.blob_records() {
     entries.push(
-      @archive.TarEntry::file(blob.descriptor.digest.blob_path(), blob.data),
+      @archive.TarEntry::file(blob.descriptor().digest.blob_path(), blob.data()),
     )
   }
   @archive.write_tar(entries)

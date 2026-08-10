@@ -10,11 +10,6 @@ pub async fn collect_layer_source(
   if @fs.kind(source, follow_symlink=false) != @fs.FileKind::Directory {
     raise @model.InvalidBuildSpec("layer source must be a directory: " + source)
   }
-  if layer.metadata.preserve_mode || layer.metadata.preserve_ownership {
-    raise @model.Unsupported(
-      "Native metadata mode/ownership preservation is not available in v0.1",
-    )
-  }
   let patterns = layer.exclude.copy()
   match layer.ignore_file {
     Some(name) => {

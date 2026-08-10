@@ -11,7 +11,7 @@ pub fn verify_memory(
             level: @model.FindingLevel::Error,
             code: error.code(),
             message: error.message(),
-            object_path: None,
+            object_path: Some("layout"),
           },
         ],
         manifests_checked: 0,
@@ -25,19 +25,18 @@ pub fn verify_memory(
 fn verify_memory_strict(
   layout : @layout.MemoryLayout,
 ) -> @model.VerificationReport raise @model.MoonOciError {
-  if layout.marker != b"{\"imageLayoutVersion\":\"1.0.0\"}" {
-    raise @model.InvalidOci("invalid oci-layout marker")
-  }
-  if layout.index.length() == 0 {
+  @codec.validate_layout_marker(layout.marker())
+  if layout.index().length() == 0 {
     raise @model.InvalidOci("index.json is empty")
   }
-  let index = @codec.decode_index(layout.index)
+  let index = @codec.decode_index(layout.index())
   if index.schema_version != 2 {
     raise @model.InvalidOci("image index schemaVersion must be 2")
   }
   let mut manifests_checked = 0
   let mut blobs_checked = 0
   let mut layers_checked = 0
+  let findings : Array[@model.ValidationFinding] = []
   for manifest_descriptor in index.manifests {
     let manifest_data = layout.require_blob(manifest_descriptor)
     blobs_checked += 1
@@ -55,17 +54,27 @@ fn verify_memory_strict(
     for i, layer in manifest.layers {
       let layer_data = layout.require_blob(layer)
       blobs_checked += 1
-      let uncompressed = decode_layer_blob(layer.media_type, layer_data)
-      ignore(@archive.read_tar(uncompressed))
-      if @digest.sha256(uncompressed) != config.diff_ids[i] {
-        raise @model.DigestMismatch(
-          "layer DiffID mismatch at index " + i.to_string(),
-        )
+      if layer.media_type == @model.media_type_layer_tar ||
+        layer.media_type == @model.media_type_layer_gzip {
+        let uncompressed = decode_layer_blob(layer.media_type, layer_data)
+        ignore(@archive.read_tar(uncompressed))
+        if @digest.sha256(uncompressed) != config.diff_ids[i] {
+          raise @model.DigestMismatch(
+            "layer DiffID mismatch at index " + i.to_string(),
+          )
+        }
+      } else {
+        findings.push({
+          level: @model.FindingLevel::Warning,
+          code: "MOONOCI_UNSUPPORTED_LAYER_MEDIA_TYPE",
+          message: "semantic layer verification skipped for " + layer.media_type,
+          object_path: Some(layer.digest.blob_path()),
+        })
       }
       layers_checked += 1
     }
   }
-  { findings: [], manifests_checked, blobs_checked, layers_checked }
+  { findings, manifests_checked, blobs_checked, layers_checked }
 }
 
 ///|
@@ -98,7 +107,7 @@ pub fn decode_layer_blob(
 pub fn rootfs_from_layout(
   layout : @layout.MemoryLayout,
 ) -> Array[@model.RootfsEntry] raise @model.MoonOciError {
-  let index = @codec.decode_index(layout.index)
+  let index = @codec.decode_index(layout.index())
   if index.manifests.length() == 0 {
     raise @model.InvalidOci("image index contains no manifests")
   }
@@ -139,7 +148,10 @@ pub fn rootfs_from_layout(
           rootfs = filter_children(rootfs, target, false)
         } else {
           validate_parent_chain(rootfs, entry.path)
-          rootfs = filter_children(rootfs, entry.path, false)
+          rootfs = match entry.kind {
+            Directory => filter_exact(rootfs, entry.path)
+            Regular | Symlink => filter_children(rootfs, entry.path, false)
+          }
           let kind = match entry.kind {
             Regular => "file"
             Directory => "directory"

@@ -28,6 +28,25 @@ test "tar encodes whiteouts" {
 }
 
 ///|
+test "tar writer revalidates raw public entry values" {
+  let invalid_entry : TarEntry = {
+    path: "../escape",
+    kind: Regular,
+    mode: 0o644,
+    uid: 0,
+    gid: 0,
+    mtime: 0L,
+    data: b"payload",
+    link_target: None,
+  }
+  let mut raised = false
+  ignore(write_tar([invalid_entry])) catch {
+    _ => raised = true
+  }
+  assert_true(raised)
+}
+
+///|
 fn bytes_contains(haystack : Bytes, needle : Bytes) -> Bool {
   if needle.length() == 0 {
     return true

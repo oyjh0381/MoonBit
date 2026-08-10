@@ -79,6 +79,16 @@ test "Build Specification rejects duplicate object keys including escaped forms"
 }
 
 ///|
+test "Build Specification rejects unsupported host metadata preservation" {
+  assert_spec_fails(
+    b"{\"schemaVersion\":1,\"layers\":[{\"source\":\"rootfs\",\"metadata\":{\"preserveMode\":true}}]}",
+  )
+  assert_spec_fails(
+    b"{\"schemaVersion\":1,\"layers\":[{\"source\":\"rootfs\",\"metadata\":{\"preserveOwnership\":true}}]}",
+  )
+}
+
+///|
 fn assert_spec_fails(data : Bytes) -> Unit raise {
   let mut raised = false
   ignore(parse_build_spec(data)) catch {

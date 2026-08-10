@@ -16,7 +16,7 @@ The Build Specification is strict configuration owned by the caller. Unlike OCI 
 | `annotations` | string map | no | empty |
 | `output` | object | no | `{ "layout": "oci-layout" }` |
 
-MoonOCI never reads the current clock. A caller that requires creation metadata must supply `created` explicitly. `SOURCE_DATE_EPOCH` conversion is left to the invoking build system in v0.1.
+MoonOCI never reads the current clock. An explicit `created` value takes precedence; otherwise the Native builder converts `SOURCE_DATE_EPOCH` seconds to canonical UTC RFC 3339. If neither is present, creation metadata is omitted.
 
 ## Platform
 
@@ -38,7 +38,7 @@ Every layer object requires `source`, the Native directory containing additions 
 
 `remove` and `opaque` paths accept one leading `/` for convenience. Absolute host paths, drive-letter paths, UNC paths, backslashes, empty segments, `.` and `..` segments are rejected.
 
-Metadata fields are `mode`, `uid`, `gid`, `mtime`, `preserveMode`, `preserveOwnership`, and `preserveMtime`. Defaults normalize ownership to `0:0`, mtime to `0`, regular files to mode `0644`, directories to `0755`, and symlinks to `0777`. Explicit `mode`, `uid`, `gid`, and `mtime` override those values. Native mode and ownership preservation are not available in v0.1 and fail explicitly; mtime preservation is supported.
+Metadata fields are `mode`, `uid`, `gid`, `mtime`, and `preserveMtime`. Defaults normalize ownership to `0:0`, mtime to `0`, regular files to mode `0644`, directories to `0755`, and symlinks to `0777`. Explicit `mode`, `uid`, `gid`, and `mtime` override those values. Native mode and ownership preservation are outside the v1 schema; mtime preservation is supported.
 
 ## Runtime configuration
 

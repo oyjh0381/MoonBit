@@ -103,7 +103,7 @@ pub fn build_image(
       manifest: manifest_descriptor,
       config: config_descriptor,
       layers: layer_descriptors,
-      blobs_written: layout.blobs.length(),
+      blobs_written: layout.blob_count(),
       bytes_written: layout.blob_bytes(),
     },
     rootfs,
@@ -130,6 +130,13 @@ fn compress_layer(
 fn validate_changeset(
   layer : LayerBuildRequest,
 ) -> Unit raise @model.MoonOciError {
+  for entry in layer.entries {
+    if @pathing.is_whiteout_path(entry.path) {
+      raise @model.InvalidArgument(
+        "layer additions must not use reserved Whiteout paths: " + entry.path,
+      )
+    }
+  }
   for removed in layer.remove {
     let normalized = @pathing.normalize_spec_path(removed)
     for entry in layer.entries {
@@ -160,9 +167,14 @@ fn apply_changeset(
     let normalized = @pathing.normalize_spec_path(path)
     result = filter_children(result, normalized, false)
   }
-  for entry in layer.entries {
+  let sorted_entries = layer.entries.copy()
+  sorted_entries.sort_by((a, b) => @pathing.compare_utf8(a.path, b.path))
+  for entry in sorted_entries {
     validate_parent_chain(result, entry.path)
-    result = filter_children(result, entry.path, false)
+    result = match entry.kind {
+      Directory => filter_exact(result, entry.path)
+      Regular | Symlink => filter_children(result, entry.path, false)
+    }
     let kind = match entry.kind {
       Regular => "file"
       Directory => "directory"
@@ -179,6 +191,14 @@ fn apply_changeset(
   }
   result.sort_by((a, b) => @pathing.compare_utf8(a.path, b.path))
   result
+}
+
+///|
+fn filter_exact(
+  entries : Array[@model.RootfsEntry],
+  path : String,
+) -> Array[@model.RootfsEntry] {
+  entries.filter(entry => entry.path != path)
 }
 
 ///|

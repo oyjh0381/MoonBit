@@ -2,6 +2,17 @@
 let max_json_bytes : Int = 16 * 1024 * 1024
 
 ///|
+/// Validate an OCI Image Layout marker while tolerating extension fields and
+/// insignificant JSON formatting differences.
+pub fn validate_layout_marker(data : Bytes) -> Unit raise @model.MoonOciError {
+  let root = parse_json_document(data)
+  let object = expect_object(root, "OCI Image Layout marker")
+  if required_string(object, "imageLayoutVersion") != "1.0.0" {
+    raise @model.InvalidOci("imageLayoutVersion must be 1.0.0")
+  }
+}
+
+///|
 /// Decode an OCI Image Index. Unknown OCI fields are intentionally tolerated.
 pub fn decode_index(
   data : Bytes,

@@ -43,12 +43,22 @@ test "verification rejects corrupted gzip content" {
     compression: @model.Compression::Gzip,
   }
   let result = build_single_layer(request)
-  for blob in result.layout.blobs {
-    if blob.descriptor.media_type == @model.media_type_layer_gzip {
-      let changed = blob.data.to_array()
+  let parts : Array[(@model.Descriptor, Bytes)] = []
+  for blob in result.layout.blob_records() {
+    let descriptor = blob.descriptor()
+    let data = if descriptor.media_type == @model.media_type_layer_gzip {
+      let changed = blob.data().to_array()
       changed[changed.length() - 1] = changed[changed.length() - 1] ^ b'\x01'
-      blob.data = Bytes::from_array(changed)
+      Bytes::from_array(changed)
+    } else {
+      blob.data()
     }
+    parts.push((descriptor, data))
   }
-  assert_false(verify_memory(result.layout).is_valid())
+  let corrupted = @layout.MemoryLayout::from_untrusted_parts(
+    result.layout.marker(),
+    result.layout.index(),
+    parts,
+  )
+  assert_false(verify_memory(corrupted).is_valid())
 }

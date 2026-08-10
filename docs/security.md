@@ -4,7 +4,7 @@ MoonOCI processes untrusted Build Specifications, tar Layers, OCI JSON, and cont
 
 ## Path policy
 
-Archive paths must be relative UTF-8 paths using `/`. Empty paths, absolute paths, drive letters, UNC forms, NUL, backslashes, empty segments, and `.`/`..` segments are rejected. Paths and symbolic-link targets are limited to 4096 UTF-8 bytes. Native traversal does not follow symbolic links and v0.1 rejects them because a portable read-link API is unavailable.
+Archive paths must be relative UTF-8 paths using `/`. Empty paths, absolute paths, drive letters, UNC forms, NUL, backslashes, empty segments, and `.`/`..` segments are rejected. Paths and symbolic-link targets are limited to 4096 UTF-8 bytes. Symbolic-link targets must be forward-slash relative paths without `..` segments. Native traversal does not follow symbolic links and v0.1 rejects them because a portable read-link API is unavailable.
 
 ## Archive policy
 
@@ -16,7 +16,7 @@ The default maximum is 1,000,000 entries. gzip build input is limited to 256 MiB
 
 JSON is limited to 16 MiB and 128 nesting levels. Duplicate object keys are rejected before parsing. Build Specifications reject unknown fields; OCI documents tolerate unknown extension fields but require the fields MoonOCI consumes. SHA-256 Digests must contain exactly 64 lowercase hexadecimal characters.
 
-Verification follows the Image Index → Image Manifest → Image Configuration/Layer graph and checks every referenced Blob's existence, byte size, and Digest. Layer tar bytes are parsed and their uncompressed Digest is compared with the corresponding DiffID.
+Verification follows the Image Index → Image Manifest → Image Configuration/Layer graph and checks every referenced Blob's existence, byte size, and Digest. Supported Layer tar bytes are parsed and their uncompressed Digest is compared with the corresponding DiffID. Unknown Layer media types retain structural Digest/size validation and produce a warning because their semantic contents cannot be decoded by v0.1.
 
 ## Output policy
 

@@ -122,3 +122,68 @@ test "cannot add a child below a surviving regular file" {
   }
   assert_true(raised)
 }
+
+///|
+test "redeclared directory preserves inherited children" {
+  let request : ImageBuildRequest = {
+    layers: [
+      {
+        entries: [
+          @archive.TarEntry::directory("parent"),
+          @archive.TarEntry::file("parent/inherited", b"old"),
+        ],
+        remove: [],
+        opaque_dirs: [],
+        compression: @model.Compression::Uncompressed,
+      },
+      {
+        // Deliberately reversed to prove parent-before-child application.
+        entries: [
+          @archive.TarEntry::file("parent/new", b"new"),
+          @archive.TarEntry::directory("parent"),
+        ],
+        remove: [],
+        opaque_dirs: [],
+        compression: @model.Compression::Uncompressed,
+      },
+    ],
+    platform: @model.default_platform(),
+    runtime: @model.default_runtime_config(),
+    created: None,
+    author: None,
+    reference: "directory-merge",
+    annotations: [],
+  }
+  let result = build_image(request)
+  let expected = ["parent", "parent/inherited", "parent/new"]
+  assert_eq(result.rootfs.map(entry => entry.path), expected)
+  assert_eq(
+    rootfs_from_layout(result.layout).map(entry => entry.path),
+    expected,
+  )
+}
+
+///|
+test "reserved whiteout path cannot be supplied as an addition" {
+  let request : ImageBuildRequest = {
+    layers: [
+      {
+        entries: [@archive.TarEntry::file("etc/.wh.hidden", b"payload")],
+        remove: [],
+        opaque_dirs: [],
+        compression: @model.Compression::Uncompressed,
+      },
+    ],
+    platform: @model.default_platform(),
+    runtime: @model.default_runtime_config(),
+    created: None,
+    author: None,
+    reference: "reserved-whiteout",
+    annotations: [],
+  }
+  let mut raised = false
+  ignore(build_image(request)) catch {
+    _ => raised = true
+  }
+  assert_true(raised)
+}

@@ -5,8 +5,6 @@ pub(all) struct MetadataSpec {
   uid : Int?
   gid : Int?
   mtime : Int64?
-  preserve_mode : Bool
-  preserve_ownership : Bool
   preserve_mtime : Bool
 } derive(Debug, Eq)
 
@@ -44,13 +42,5 @@ pub(all) struct BuildSpec {
 
 ///|
 pub fn default_metadata_spec() -> MetadataSpec {
-  {
-    mode: None,
-    uid: None,
-    gid: None,
-    mtime: None,
-    preserve_mode: false,
-    preserve_ownership: false,
-    preserve_mtime: false,
-  }
+  { mode: None, uid: None, gid: None, mtime: None, preserve_mtime: false }
 }

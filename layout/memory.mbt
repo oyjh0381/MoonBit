@@ -1,13 +1,13 @@
 ///|
 /// One immutable content-addressed object stored in an in-memory layout.
-pub(all) struct BlobRecord {
+pub struct BlobRecord {
   descriptor : @model.Descriptor
-  mut data : Bytes
+  data : Bytes
 } derive(Debug, Eq)
 
 ///|
 /// Portable in-memory representation of the files in an OCI Image Layout.
-pub(all) struct MemoryLayout {
+pub struct MemoryLayout {
   marker : Bytes
   mut index : Bytes
   blobs : Array[BlobRecord]
@@ -17,6 +17,52 @@ pub(all) struct MemoryLayout {
 /// Construct an empty OCI Image Layout with the v1 marker.
 pub fn MemoryLayout::new() -> MemoryLayout {
   { marker: b"{\"imageLayoutVersion\":\"1.0.0\"}", index: b"", blobs: [] }
+}
+
+///|
+/// Construct an immutable layout from untrusted filesystem parts. Descriptor
+/// validation remains the verifier's responsibility.
+pub fn MemoryLayout::from_untrusted_parts(
+  marker : Bytes,
+  index : Bytes,
+  blobs : Array[(@model.Descriptor, Bytes)],
+) -> MemoryLayout {
+  let records : Array[BlobRecord] = []
+  for pair in blobs {
+    let (descriptor, data) = pair
+    records.push({ descriptor, data })
+  }
+  { marker, index, blobs: records }
+}
+
+///|
+pub fn MemoryLayout::marker(self : MemoryLayout) -> Bytes {
+  self.marker
+}
+
+///|
+pub fn MemoryLayout::index(self : MemoryLayout) -> Bytes {
+  self.index
+}
+
+///|
+pub fn MemoryLayout::blob_records(self : MemoryLayout) -> Array[BlobRecord] {
+  self.blobs.copy()
+}
+
+///|
+pub fn MemoryLayout::blob_count(self : MemoryLayout) -> Int {
+  self.blobs.length()
+}
+
+///|
+pub fn BlobRecord::descriptor(self : BlobRecord) -> @model.Descriptor {
+  self.descriptor
+}
+
+///|
+pub fn BlobRecord::data(self : BlobRecord) -> Bytes {
+  self.data
 }
 
 ///|

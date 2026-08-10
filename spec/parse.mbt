@@ -129,9 +129,7 @@ fn parse_metadata(value : Json) -> MetadataSpec raise @model.MoonOciError {
   let object = expect_object(value, "layer metadata")
   reject_unknown(
     object,
-    [
-      "mode", "uid", "gid", "mtime", "preserveMode", "preserveOwnership", "preserveMtime",
-    ],
+    ["mode", "uid", "gid", "mtime", "preserveMtime"],
     "layer metadata",
   )
   let mode = optional_int(object, "mode")
@@ -150,10 +148,6 @@ fn parse_metadata(value : Json) -> MetadataSpec raise @model.MoonOciError {
     uid,
     gid,
     mtime: optional_int64(object, "mtime"),
-    preserve_mode: optional_bool(object, "preserveMode").unwrap_or(false),
-    preserve_ownership: optional_bool(object, "preserveOwnership").unwrap_or(
-      false,
-    ),
     preserve_mtime: optional_bool(object, "preserveMtime").unwrap_or(false),
   }
 }

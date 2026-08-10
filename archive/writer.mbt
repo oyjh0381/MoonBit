@@ -9,6 +9,7 @@ pub fn write_tar(entries : Array[TarEntry]) -> Bytes raise @model.MoonOciError {
   validate_unique_paths(sorted)
   let output : Array[Byte] = []
   for entry in sorted {
+    validate_entry(entry)
     write_entry(output, entry)
   }
   append_zeros(output, tar_block_size * 2)
@@ -19,9 +20,39 @@ pub fn write_tar(entries : Array[TarEntry]) -> Bytes raise @model.MoonOciError {
 fn validate_unique_paths(
   entries : Array[TarEntry],
 ) -> Unit raise @model.MoonOciError {
-  for i in 1..<entries.length() {
-    if entries[i - 1].path == entries[i].path {
-      raise @model.InvalidTar("duplicate tar path: " + entries[i].path)
+  let paths = entries.map(entry => entry.path)
+  paths.sort_by((a, b) => @pathing.compare_utf8(a, b))
+  for i in 1..<paths.length() {
+    if paths[i - 1] == paths[i] {
+      raise @model.InvalidTar("duplicate tar path: " + paths[i])
+    }
+  }
+}
+
+///|
+fn validate_entry(entry : TarEntry) -> Unit raise @model.MoonOciError {
+  if @pathing.normalize_archive_path(entry.path) != entry.path {
+    raise @model.InvalidTar("tar entry path must already be normalized")
+  }
+  match entry.kind {
+    Regular =>
+      if entry.link_target is Some(_) {
+        raise @model.InvalidTar("regular tar entry must not have a link target")
+      }
+    Directory =>
+      if entry.data.length() != 0 || entry.link_target is Some(_) {
+        raise @model.InvalidTar(
+          "directory tar entry must not contain data or a link target",
+        )
+      }
+    Symlink => {
+      if entry.data.length() != 0 {
+        raise @model.InvalidTar("symlink tar entry must not contain data")
+      }
+      match entry.link_target {
+        Some(target) => @pathing.validate_symlink_target(target)
+        None => raise @model.InvalidTar("symlink tar entry requires a target")
+      }
     }
   }
 }

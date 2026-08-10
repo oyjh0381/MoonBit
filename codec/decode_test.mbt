@@ -105,3 +105,10 @@ test "JSON decoder enforces nesting depth without counting strings" {
   }
   assert_true(raised)
 }
+
+///|
+test "layout marker tolerates formatting and extension fields" {
+  validate_layout_marker(
+    b"{ \"extension\": true, \"imageLayoutVersion\" : \"1.0.0\" }",
+  )
+}

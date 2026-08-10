@@ -62,14 +62,7 @@ pub fn TarEntry::symlink(
   path : String,
   target : String,
 ) -> TarEntry raise @model.MoonOciError {
-  if @utf8.encode(target).length() > @pathing.max_path_bytes {
-    raise @model.ResourceLimitExceeded(
-      "symlink target exceeds 4096 UTF-8 bytes",
-    )
-  }
-  if target.contains_char('\u{0000}') {
-    raise @model.InvalidPath("symlink target must not contain NUL")
-  }
+  @pathing.validate_symlink_target(target)
   {
     path: @pathing.normalize_archive_path(path),
     kind: Symlink,

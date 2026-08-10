@@ -6,7 +6,10 @@ import {
   "oyjh0381/moonoci/spec",
   "moonbitlang/async/fs",
   "moonbitlang/async/io",
+  "moonbitlang/core/env",
   "moonbitlang/core/encoding/utf8",
+  "moonbitlang/core/string",
+  "moonbitlang/x/time",
 }
 
 import {
