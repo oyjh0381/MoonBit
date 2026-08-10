@@ -1,0 +1,16 @@
+import {
+  "oyjh0381/moonoci/model",
+  "oyjh0381/moonoci/archive",
+  "oyjh0381/moonoci/build",
+  "oyjh0381/moonoci/layout",
+  "oyjh0381/moonoci/spec",
+  "moonbitlang/async/fs",
+  "moonbitlang/async/io",
+  "moonbitlang/core/encoding/utf8",
+}
+
+import {
+  "moonbitlang/async",
+} for "test"
+
+supported_targets = "+native"
