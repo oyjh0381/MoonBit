@@ -1,0 +1,316 @@
+///|
+let default_max_entries : Int = 1_000_000
+
+///|
+/// Parse a tar layer into normalized entries while enforcing safety limits.
+/// Supports USTAR, POSIX PAX path/linkpath records, and GNU long name/link
+/// records. Sparse files and special device-like entries are rejected.
+pub fn read_tar(
+  data : Bytes,
+  max_entries? : Int = default_max_entries,
+  max_path_bytes? : Int = @pathing.max_path_bytes,
+) -> Array[TarEntry] raise @model.MoonOciError {
+  if max_entries <= 0 || max_path_bytes <= 0 {
+    raise @model.InvalidArgument("tar limits must be positive")
+  }
+  if data.length() < tar_block_size * 2 || data.length() % tar_block_size != 0 {
+    raise @model.InvalidTar(
+      "tar size must be a multiple of 512 with an end marker",
+    )
+  }
+  let entries : Array[TarEntry] = []
+  let mut offset = 0
+  let mut zero_blocks = 0
+  let mut pending_path : String? = None
+  let mut pending_link : String? = None
+  while offset + tar_block_size <= data.length() && zero_blocks < 2 {
+    if block_is_zero(data, offset) {
+      zero_blocks += 1
+      offset += tar_block_size
+      continue
+    }
+    zero_blocks = 0
+    validate_checksum(data, offset)
+    let header_name = read_text(data, offset, 100, "name")
+    let prefix = read_text(data, offset + 345, 155, "prefix")
+    let header_path = if prefix == "" {
+      header_name
+    } else {
+      prefix + "/" + header_name
+    }
+    let mode = read_octal(data, offset + 100, 8, "mode").to_int()
+    let uid = read_octal(data, offset + 108, 8, "uid").to_int()
+    let gid = read_octal(data, offset + 116, 8, "gid").to_int()
+    let size64 = read_octal(data, offset + 124, 12, "size")
+    let mtime = read_octal(data, offset + 136, 12, "mtime")
+    if size64 > data.length().to_int64() {
+      raise @model.InvalidTar("tar entry size exceeds archive length")
+    }
+    let size = size64.to_int()
+    let content_start = offset + tar_block_size
+    if content_start > data.length() || size > data.length() - content_start {
+      raise @model.InvalidTar("truncated tar entry payload")
+    }
+    let next = content_start + padded_size(size)
+    if next > data.length() {
+      raise @model.InvalidTar("truncated tar entry padding")
+    }
+    let typeflag = data[offset + 156]
+    if typeflag == b'x' {
+      let records = parse_pax(data, content_start, size)
+      for record in records {
+        if record.key == "path" {
+          pending_path = Some(record.value)
+        } else if record.key == "linkpath" {
+          pending_link = Some(record.value)
+        }
+      }
+    } else if typeflag == b'L' {
+      pending_path = Some(
+        read_long_text(data, content_start, size, "GNU long name"),
+      )
+    } else if typeflag == b'K' {
+      pending_link = Some(
+        read_long_text(data, content_start, size, "GNU long link"),
+      )
+    } else {
+      let raw_path = pending_path.unwrap_or(header_path)
+      let path = @pathing.normalize_archive_path(raw_path)
+      if @utf8.encode(path).length() > max_path_bytes {
+        raise @model.ResourceLimitExceeded("tar path exceeds configured limit")
+      }
+      let header_link = read_text(data, offset + 157, 100, "linkname")
+      let raw_link = pending_link.unwrap_or(header_link)
+      let kind = match typeflag {
+        b'\x00' | b'0' => Regular
+        b'5' => Directory
+        b'2' => Symlink
+        b'S' =>
+          raise @model.Unsupported("GNU sparse tar entries are not supported")
+        other =>
+          raise @model.Unsupported(
+            "unsupported tar typeflag: " + other.to_int().to_string(),
+          )
+      }
+      if kind != Regular && size != 0 {
+        raise @model.InvalidTar("non-regular tar entry must have zero size")
+      }
+      let payload = if kind == Regular {
+        copy_bytes(data, content_start, size)
+      } else {
+        b""
+      }
+      let link_target = if kind == Symlink {
+        if raw_link == "" {
+          raise @model.InvalidTar("symlink entry has an empty target")
+        }
+        if @utf8.encode(raw_link).length() > max_path_bytes {
+          raise @model.ResourceLimitExceeded(
+            "symlink target exceeds configured limit",
+          )
+        }
+        @pathing.validate_symlink_target(raw_link)
+        Some(raw_link)
+      } else {
+        None
+      }
+      entries.push({
+        path,
+        kind,
+        mode,
+        uid,
+        gid,
+        mtime,
+        data: payload,
+        link_target,
+      })
+      if entries.length() > max_entries {
+        raise @model.ResourceLimitExceeded(
+          "tar entry count exceeds configured limit",
+        )
+      }
+      pending_path = None
+      pending_link = None
+    }
+    offset = next
+  }
+  if zero_blocks < 2 {
+    raise @model.InvalidTar("tar is missing two zero end blocks")
+  }
+  if pending_path is Some(_) || pending_link is Some(_) {
+    raise @model.InvalidTar("dangling tar extension record")
+  }
+  validate_unique_paths(entries)
+  entries
+}
+
+///|
+fn padded_size(size : Int) -> Int {
+  if size % tar_block_size == 0 {
+    size
+  } else {
+    size + tar_block_size - size % tar_block_size
+  }
+}
+
+///|
+fn block_is_zero(data : Bytes, offset : Int) -> Bool {
+  for i in 0..<tar_block_size {
+    if data[offset + i] != b'\x00' {
+      return false
+    }
+  }
+  true
+}
+
+///|
+fn validate_checksum(
+  data : Bytes,
+  offset : Int,
+) -> Unit raise @model.MoonOciError {
+  let expected = read_octal(data, offset + 148, 8, "checksum")
+  let mut actual = 0L
+  for i in 0..<tar_block_size {
+    actual += if i >= 148 && i < 156 {
+      32L
+    } else {
+      data[offset + i].to_int64()
+    }
+  }
+  if actual != expected {
+    raise @model.InvalidTar("tar header checksum mismatch")
+  }
+}
+
+///|
+fn read_octal(
+  data : Bytes,
+  offset : Int,
+  width : Int,
+  field : String,
+) -> Int64 raise @model.MoonOciError {
+  let mut value = 0L
+  let mut seen = false
+  for i in 0..<width {
+    let byte = data[offset + i]
+    if byte == b'\x00' || byte == b' ' {
+      continue
+    }
+    if byte < b'0' || byte > b'7' {
+      raise @model.InvalidTar("invalid octal tar " + field)
+    }
+    let digit = (byte - b'0').to_int64()
+    if value > (0x7fffffffffffffffL - digit) / 8L {
+      raise @model.ResourceLimitExceeded("tar numeric field overflow: " + field)
+    }
+    value = value * 8L + digit
+    seen = true
+  }
+  if seen {
+    value
+  } else {
+    0L
+  }
+}
+
+///|
+fn read_text(
+  data : Bytes,
+  offset : Int,
+  width : Int,
+  field : String,
+) -> String raise @model.MoonOciError {
+  let mut length = 0
+  while length < width && data[offset + length] != b'\x00' {
+    length += 1
+  }
+  decode_utf8(data, offset, length, field)
+}
+
+///|
+fn read_long_text(
+  data : Bytes,
+  offset : Int,
+  length : Int,
+  field : String,
+) -> String raise @model.MoonOciError {
+  let mut actual = length
+  while actual > 0 && data[offset + actual - 1] == b'\x00' {
+    actual -= 1
+  }
+  decode_utf8(data, offset, actual, field)
+}
+
+///|
+fn decode_utf8(
+  data : Bytes,
+  offset : Int,
+  length : Int,
+  field : String,
+) -> String raise @model.MoonOciError {
+  @utf8.decode(data[offset:offset + length]) catch {
+    _ => raise @model.InvalidTar("invalid UTF-8 in tar " + field)
+  }
+}
+
+///|
+fn copy_bytes(data : Bytes, offset : Int, length : Int) -> Bytes {
+  let output = Array::make(length, b'\x00')
+  for i in 0..<length {
+    output[i] = data[offset + i]
+  }
+  Bytes::from_array(output)
+}
+
+///|
+fn parse_pax(
+  data : Bytes,
+  offset : Int,
+  size : Int,
+) -> Array[@model.KeyValue] raise @model.MoonOciError {
+  let records : Array[@model.KeyValue] = []
+  let mut cursor = 0
+  while cursor < size {
+    let start = cursor
+    let mut record_length = 0
+    while cursor < size && data[offset + cursor] != b' ' {
+      let byte = data[offset + cursor]
+      if byte < b'0' || byte > b'9' {
+        raise @model.InvalidTar("invalid PAX record length")
+      }
+      record_length = record_length * 10 + (byte - b'0').to_int()
+      cursor += 1
+    }
+    if cursor >= size || record_length <= 0 || start + record_length > size {
+      raise @model.InvalidTar("truncated PAX record")
+    }
+    cursor += 1
+    let body_start = cursor
+    let body_end = start + record_length
+    if body_end <= body_start || data[offset + body_end - 1] != b'\n' {
+      raise @model.InvalidTar("PAX record is missing newline")
+    }
+    let mut equals = body_start
+    while equals < body_end - 1 && data[offset + equals] != b'=' {
+      equals += 1
+    }
+    if equals == body_start || equals >= body_end - 1 {
+      raise @model.InvalidTar("invalid PAX key/value record")
+    }
+    let key = decode_utf8(
+      data,
+      offset + body_start,
+      equals - body_start,
+      "PAX key",
+    )
+    let value = decode_utf8(
+      data,
+      offset + equals + 1,
+      body_end - equals - 2,
+      "PAX value",
+    )
+    records.push({ key, value })
+    cursor = body_end
+  }
+  records
+}

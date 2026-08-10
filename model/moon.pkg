@@ -1,0 +1,1 @@
+// Domain types are backend-portable and intentionally have no package imports.

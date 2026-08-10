@@ -1,0 +1,34 @@
+*.o
+*.so
+*.sa
+*.x
+*.X
+*.a
+.cache/*
+build/*
+.vscode/*
+patch-nas-refine*/
+.clang-format*
+.agent/*
+.gitignore*
+.gitmessage*
+other*/
+env.sh*
+tests*/
+out*/
+tmp*/
+CONTRIBUTING.md
+AGENTS.md
+
+# MoonOCI local build and agent state
+_build/
+.mooncakes/
+.scratch/
+docs/agents/
+
+# `build` is a MoonOCI source package, not generated output.
+!build/
+!build/**
+
+# Keep the repository ignore policy itself versioned.
+!.gitignore

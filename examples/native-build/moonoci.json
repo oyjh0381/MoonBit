@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "ref": "ci",
+  "platform": {
+    "os": "linux",
+    "architecture": "amd64"
+  },
+  "layers": [
+    {
+      "source": "examples/native-build/rootfs",
+      "compression": "gzip"
+    }
+  ],
+  "config": {
+    "workingDir": "/",
+    "cmd": ["/message.txt"]
+  },
+  "output": {
+    "layout": "_build/ci-layout"
+  }
+}

@@ -1,0 +1,14 @@
+import {
+  "oyjh0381/moonoci/model",
+  "oyjh0381/moonoci/archive",
+  "oyjh0381/moonoci/codec",
+  "oyjh0381/moonoci/digest",
+  "oyjh0381/moonoci/layout",
+  "oyjh0381/moonoci/pathing",
+  "mizchi/zlib",
+  "moonbitlang/core/encoding/utf8",
+}
+
+import {
+  "moonbitlang/x/codec/base64",
+} for "test"

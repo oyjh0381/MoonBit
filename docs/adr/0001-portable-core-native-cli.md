@@ -1,0 +1,3 @@
+# Separate the portable OCI core from the Native CLI
+
+MoonOCI will use a two-tier facade: ordinary callers use a high-level Native module for path-based builds and layout access, while advanced callers and tests use the portable build and layout modules through Native or in-memory adapters. OCI models, deterministic archive construction, digest handling, layout assembly, and validation remain backend-portable; filesystem traversal and command-line interaction stay in the Native adapter. This preserves reuse from Wasm and JavaScript consumers without forcing host I/O concerns into the common interface, at the cost of explicit adapter seams and a slightly larger package structure.

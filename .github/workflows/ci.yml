@@ -1,0 +1,80 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  portable:
+    name: Portable (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@v6
+      - uses: hustcer/setup-moonbit@v1.22
+      - name: Resolve dependencies
+        run: moon update
+      - name: Formatting
+        run: moon fmt --check
+      - name: All-target typecheck
+        run: moon check --target all --deny-warn
+      - name: Portable tests
+        run: moon test --target wasm-gc --deny-warn
+      - name: Examples
+        run: |
+          moon run examples/single-layer --target wasm-gc
+          moon run examples/multi-layer --target wasm-gc
+          moon run examples/reproducible --target wasm-gc
+
+  native-linux:
+    name: Native and OCI conformance (Ubuntu)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: hustcer/setup-moonbit@v1.22
+      - name: Install Native and OCI tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes build-essential skopeo
+      - run: moon update
+      - name: Native tests and build
+        run: |
+          moon test --target native --deny-warn
+          moon build --target native --deny-warn
+      - name: Build sample layout
+        run: moon run cmd/moonoci --target native -- build examples/native-build/moonoci.json
+      - name: MoonOCI verification
+        run: |
+          moon run cmd/moonoci --target native -- verify _build/ci-layout
+          if moon run cmd/moonoci --target native -- verify _build/missing-layout; then
+            echo "expected verification failure for missing layout"
+            exit 1
+          fi
+      - name: Skopeo independent inspection
+        run: skopeo inspect oci:_build/ci-layout:ci
+
+  native-windows:
+    name: Native (Windows)
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: hustcer/setup-moonbit@v1.22
+      - run: moon update
+      - name: Native tests and build
+        shell: cmd
+        run: |
+          call "%ProgramFiles%\Microsoft Visual Studio\2022\Enterprise\Common7\Tools\VsDevCmd.bat" -arch=amd64 -host_arch=amd64
+          moon test --target native --deny-warn
+          moon build --target native --deny-warn
+      - name: Native CLI smoke test
+        shell: cmd
+        run: |
+          call "%ProgramFiles%\Microsoft Visual Studio\2022\Enterprise\Common7\Tools\VsDevCmd.bat" -arch=amd64 -host_arch=amd64
+          moon run cmd/moonoci --target native -- version
+          moon run cmd/moonoci --target native -- verify _build\missing-layout && exit /b 1 || exit /b 0
