@@ -4,6 +4,14 @@ All notable changes to MoonOCI are documented here. The format follows Keep a Ch
 
 ## [Unreleased]
 
+## [0.1.2] - 2026-08-11
+
+### Fixed
+
+- Replace the legacy gzip dependency with `hustcer/fzip`, avoiding its stale
+  transitive `moonbitlang/x@0.4.40` dependency while preserving deterministic
+  gzip headers, checksum validation, and decompression resource limits.
+
 ## [0.1.1] - 2026-08-11
 
 ### Fixed

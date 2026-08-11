@@ -121,7 +121,11 @@ fn compress_layer(
       if layer_tar.length() > 256 * 1024 * 1024 {
         raise @model.ResourceLimitExceeded("gzip build input exceeds 256 MiB")
       }
-      (@model.media_type_layer_gzip, @zlib.gzip_compress_stored(layer_tar))
+      let compressed = @fzip.gzip_sync(
+        FixedArray::makei(layer_tar.length(), i => layer_tar[i]),
+        opts={ level: 0, mem: 0, dictionary: None, mtime: 0, filename: "" },
+      )
+      (@model.media_type_layer_gzip, Bytes::from_array(compressed))
     }
   }
 }

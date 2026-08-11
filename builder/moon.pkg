@@ -5,7 +5,7 @@ import {
   "oyjh0381/moonoci/digest",
   "oyjh0381/moonoci/layout",
   "oyjh0381/moonoci/pathing",
-  "mizchi/zlib",
+  "hustcer/fzip",
   "moonbitlang/core/encoding/utf8",
 }
 

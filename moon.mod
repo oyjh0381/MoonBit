@@ -1,6 +1,6 @@
 name = "oyjh0381/moonoci"
 
-version = "0.1.1"
+version = "0.1.2"
 
 readme = "README.mbt.md"
 
@@ -16,7 +16,7 @@ description = "Deterministic OCI image layout builder and validator for MoonBit"
 
 import {
   "moonbitlang/x@0.4.49",
-  "mizchi/zlib@0.4.8",
+  "hustcer/fzip@0.8.6",
   "moonbitlang/async@0.20.4",
   "moonbitlang/quickcheck@0.14.0",
 }

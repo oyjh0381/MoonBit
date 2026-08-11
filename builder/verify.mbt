@@ -90,9 +90,19 @@ pub fn decode_layer_blob(
     raise @model.Unsupported("unsupported layer media type: " + media_type)
   }
   let max_size = 512 * 1024 * 1024
-  let uncompressed = @zlib.gzip_decompress(data, max_size~) catch {
+  let uncompressed = @fzip.gunzip_sync(
+    FixedArray::makei(data.length(), i => data[i]),
+    opts={
+      out: None,
+      dictionary: None,
+      max_output_size: max_size,
+      max_input_size: data.length(),
+      verify_checksum: true,
+    },
+  ) catch {
     _ => raise @model.InvalidTar("cannot decompress gzip layer")
   }
+  let uncompressed = Bytes::from_array(uncompressed)
   if data.length() > 0 &&
     uncompressed.length().to_int64() > data.length().to_int64() * 200L {
     raise @model.ResourceLimitExceeded(
