@@ -1,7 +1,7 @@
 import {
   "oyjh0381/moonoci/model",
   "oyjh0381/moonoci/archive",
-  "oyjh0381/moonoci/build",
+  "oyjh0381/moonoci/builder",
   "oyjh0381/moonoci/layout",
   "oyjh0381/moonoci/spec",
   "moonbitlang/async/fs",

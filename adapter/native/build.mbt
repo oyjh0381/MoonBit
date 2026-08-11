@@ -1,11 +1,11 @@
 ///|
 /// Build a Native OCI Image Layout from a Build Specification file.
-pub async fn build_from_file(spec_path : String) -> @build.ImageBuildResult {
+pub async fn build_from_file(spec_path : String) -> @builder.ImageBuildResult {
   if !@fs.exists(spec_path) {
     raise @model.IoFailure("Build Specification does not exist: " + spec_path)
   }
   let spec = @spec.parse_build_spec(@fs.read_file(spec_path).binary())
-  let layers : Array[@build.LayerBuildRequest] = []
+  let layers : Array[@builder.LayerBuildRequest] = []
   for layer in spec.layers {
     let entries = collect_layer_source(layer.source, layer)
     layers.push({
@@ -15,7 +15,7 @@ pub async fn build_from_file(spec_path : String) -> @build.ImageBuildResult {
       compression: layer.compression,
     })
   }
-  let result = @build.build_image({
+  let result = @builder.build_image({
     layers,
     platform: spec.platform,
     runtime: spec.runtime,

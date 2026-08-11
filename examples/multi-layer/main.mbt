@@ -7,7 +7,7 @@ fn main {
 
 ///|
 fn run() -> Unit raise {
-  let request : @build.ImageBuildRequest = {
+  let request : @builder.ImageBuildRequest = {
     layers: [
       {
         entries: [
@@ -37,7 +37,7 @@ fn run() -> Unit raise {
     reference: "multi-layer",
     annotations: [],
   }
-  let image = @build.build_image(request)
+  let image = @builder.build_image(request)
   for entry in image.rootfs {
     println("\{entry.kind}\t\{entry.path}\tlayer=\{entry.layer_index}")
   }

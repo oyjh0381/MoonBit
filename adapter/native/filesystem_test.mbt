@@ -52,10 +52,10 @@ async test "Native build writes a complete OCI Image Layout" {
   assert_true(
     @fs.exists(output + "/" + result.report.manifest.digest.blob_path()),
   )
-  assert_true(@build.verify_memory(result.layout).is_valid())
+  assert_true(@builder.verify_memory(result.layout).is_valid())
   let loaded = load_layout(output)
-  assert_true(@build.verify_memory(loaded).is_valid())
-  assert_eq(@build.rootfs_from_layout(loaded).map(entry => entry.path), [
+  assert_true(@builder.verify_memory(loaded).is_valid())
+  assert_eq(@builder.rootfs_from_layout(loaded).map(entry => entry.path), [
     "hello.txt",
   ])
   let archive_path = "_build/moonoci_native_layout.tar"

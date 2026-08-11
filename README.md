@@ -49,12 +49,12 @@ moon build --target native
 ## Library example
 
 ```moonbit
-let request = @build.default_single_layer_request([
+let request = @builder.default_single_layer_request([
   @archive.TarEntry::directory("app"),
   @archive.TarEntry::file("app/message.txt", b"hello\n"),
 ])
-let image = @build.build_single_layer(request)
-assert_true(@build.verify_memory(image.layout).is_valid())
+let image = @builder.build_single_layer(request)
+assert_true(@builder.verify_memory(image.layout).is_valid())
 ```
 
 Run the examples:

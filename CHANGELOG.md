@@ -4,6 +4,16 @@ All notable changes to MoonOCI are documented here. The format follows Keep a Ch
 
 ## [Unreleased]
 
+## [0.1.1] - 2026-08-11
+
+### Fixed
+
+- Rename the public `build` source package to `builder` so documentation
+  services do not mistake it for generated build output.
+- Keep the CLI version output aligned with the published module version.
+
+## [0.1.0] - 2026-08-10
+
 ### Added
 
 - Deterministic OCI Image Layout build and verification core.
@@ -15,7 +25,5 @@ All notable changes to MoonOCI are documented here. The format follows Keep a Ch
 - Portable, property-based, corruption, reproducibility, and Native integration tests.
 - Semantic OCI Layout marker parsing, immutable in-memory Blob storage, strict
   symlink/Whiteout validation, and `SOURCE_DATE_EPOCH` support.
-
-## [0.1.0] - 2026-08-10
 
 Initial competition release candidate.

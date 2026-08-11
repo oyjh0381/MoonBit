@@ -42,7 +42,7 @@ async fn main {
       "list" => {
         require_arity(args, 3, "usage: moonoci list <layout>")
         let layout = @native.load_layout(args[2])
-        for entry in @build.rootfs_from_layout(layout) {
+        for entry in @builder.rootfs_from_layout(layout) {
           @stdio.stdout.write(
             "\{entry.kind}\t\{entry.mode.to_string(radix=8)}\t\{entry.size}\t\{entry.path}\tlayer=\{entry.layer_index}\n",
           )
@@ -50,7 +50,7 @@ async fn main {
       }
       "verify" => {
         require_arity(args, 3, "usage: moonoci verify <layout>")
-        let report = @build.verify_memory(@native.load_layout(args[2]))
+        let report = @builder.verify_memory(@native.load_layout(args[2]))
         for finding in report.findings {
           let path = match finding.object_path {
             Some(value) => " [" + value + "]"
@@ -73,7 +73,7 @@ async fn main {
         @native.archive_layout_file(args[2], args[3])
         @stdio.stdout.write("wrote " + args[3] + "\n")
       }
-      "version" | "--version" | "-V" => @stdio.stdout.write("moonoci 0.1.0\n")
+      "version" | "--version" | "-V" => @stdio.stdout.write("moonoci 0.1.1\n")
       "help" | "--help" | "-h" => print_usage()
       command => raise @model.InvalidArgument("unknown command: " + command)
     }

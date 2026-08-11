@@ -1,6 +1,6 @@
 import {
   "oyjh0381/moonoci/archive",
-  "oyjh0381/moonoci/build",
+  "oyjh0381/moonoci/builder",
 }
 
 pkgtype(kind: "executable")

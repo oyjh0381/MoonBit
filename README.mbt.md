@@ -4,11 +4,11 @@ This module README documents the minimal portable build path. The same request i
 
 ```mbt check
 test "README single-layer build" {
-  let request = @build.default_single_layer_request([
+  let request = @builder.default_single_layer_request([
     @archive.TarEntry::file("hello.txt", b"hello MoonOCI\n"),
   ])
-  let image = @build.build_single_layer(request)
-  assert_true(@build.verify_memory(image.layout).is_valid())
+  let image = @builder.build_single_layer(request)
+  assert_true(@builder.verify_memory(image.layout).is_valid())
   assert_eq(image.report.layers.length(), 1)
 }
 ```

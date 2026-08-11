@@ -1,7 +1,7 @@
 import {
   "oyjh0381/moonoci/model",
   "oyjh0381/moonoci/adapter/native",
-  "oyjh0381/moonoci/build",
+  "oyjh0381/moonoci/builder",
   "oyjh0381/moonoci/codec",
   "moonbitlang/async",
   "moonbitlang/async/io",

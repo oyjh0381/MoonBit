@@ -7,12 +7,12 @@ fn main {
 
 ///|
 fn run() -> Unit raise {
-  let request = @build.default_single_layer_request([
+  let request = @builder.default_single_layer_request([
     @archive.TarEntry::file("b.txt", b"second"),
     @archive.TarEntry::file("a.txt", b"first"),
   ])
-  let first = @build.build_single_layer(request)
-  let second = @build.build_single_layer(request)
+  let first = @builder.build_single_layer(request)
+  let second = @builder.build_single_layer(request)
   if first.layout != second.layout {
     abort("identical declared inputs produced different layouts")
   }
