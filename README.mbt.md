@@ -5,7 +5,7 @@ This module README documents the minimal portable build path. The same request i
 Install the published module with:
 
 ```text
-moon add oyjh0381/moonoci@0.1.3
+moon add oyjh0381/moonoci@0.1.4
 ```
 
 ```mbt check

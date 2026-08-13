@@ -4,6 +4,21 @@ All notable changes to MoonOCI are documented here. The format follows Keep a Ch
 
 ## [Unreleased]
 
+## [0.1.4] - 2026-08-13
+
+### Added
+
+- Accumulate independent Descriptor graph findings with precise object paths
+  and successful-object counts.
+- Record the strict unsupported Layer media-type decision in ADR-0006.
+
+### Changed
+
+- Unify declared changesets and archived Whiteouts behind one Root Filesystem
+  Transition implementation.
+- Centralize media type, bounded decompression, safe tar parsing, and DiffID
+  calculation in a Layer Interpretation module.
+
 ## [0.1.3] - 2026-08-13
 
 ### Fixed

@@ -20,6 +20,8 @@ JSON is limited to 16 MiB and 128 nesting levels. Duplicate object keys are reje
 
 Verification follows the Image Index → Image Manifest → Image Configuration/Layer graph and checks each document and Descriptor media type plus every referenced Blob's existence, byte size, and Digest. Supported Layer tar bytes are parsed and their uncompressed Digest is compared with the corresponding DiffID. Unknown Layer media types are rejected because MoonOCI cannot establish their tar or DiffID semantics.
 
+Independent Image Manifest branches continue after a local failure when their referenced bytes can still be checked safely. Every error carries the nearest Descriptor graph object path, and report counters include only objects that completed their required checks.
+
 ## Output policy
 
 Native builds refuse existing destinations. Files are written to a scoped staging directory and renamed only after the complete layout is present. On failure, MoonOCI attempts to remove only that exact staging directory. Archive export refuses to overwrite an existing file.
