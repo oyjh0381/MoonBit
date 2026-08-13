@@ -44,9 +44,21 @@ _Avoid_: Layer digest
 The digest of the exact layer blob referenced by the image manifest, which may be compressed or uncompressed.
 _Avoid_: DiffID
 
+**Layer Interpretation**:
+The validated understanding of a layer blob as an uncompressed tar representation, its safe filesystem entries, and its DiffID under the declared media type and resource limits.
+_Avoid_: Layer decompression, tar extraction
+
 **Root Filesystem**:
 The filesystem state obtained after applying all image layers in manifest order to an empty filesystem.
 _Avoid_: Source directory, layer directory
+
+**Root Filesystem Transition**:
+The ordered effect of one layer on a prior root filesystem, including additions, replacements, Whiteouts, and Opaque Directories.
+_Avoid_: File copy, directory merge
+
+**Descriptor Graph**:
+The transitive relationships from an Image Index through Image Manifest Descriptors to Image Configurations and Layers.
+_Avoid_: Blob list, manifest tree
 
 **Reproducible Image**:
 An image whose content, descriptors, and digests are identical when built repeatedly from identical declared inputs.

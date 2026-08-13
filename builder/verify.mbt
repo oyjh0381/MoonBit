@@ -147,56 +147,8 @@ pub fn rootfs_from_layout(
       descriptor.media_type,
       layout.require_blob(descriptor),
     )
-    for entry in @archive.read_tar(data) {
-      if entry.path.has_suffix("/.wh..wh..opq") || entry.path == ".wh..wh..opq" {
-        let directory = if entry.path == ".wh..wh..opq" {
-          ""
-        } else {
-          entry.path[0:entry.path.length() - "/.wh..wh..opq".length()].to_owned()
-        }
-        rootfs = if directory == "" {
-          []
-        } else {
-          filter_children(rootfs, directory, true)
-        }
-      } else {
-        let segments = entry.path
-          .split("/")
-          .map(part => part.to_owned())
-          .collect()
-        let basename = segments[segments.length() - 1]
-        if basename.has_prefix(".wh.") {
-          let target_name = basename[4:].to_owned()
-          let target = if segments.length() == 1 {
-            target_name
-          } else {
-            segments[0:segments.length() - 1].to_owned().join("/") +
-            "/" +
-            target_name
-          }
-          rootfs = filter_children(rootfs, target, false)
-        } else {
-          validate_parent_chain(rootfs, entry.path)
-          rootfs = match entry.kind {
-            Directory => filter_exact(rootfs, entry.path)
-            Regular | Symlink => filter_children(rootfs, entry.path, false)
-          }
-          let kind = match entry.kind {
-            Regular => "file"
-            Directory => "directory"
-            Symlink => "symlink"
-          }
-          rootfs.push({
-            path: entry.path,
-            kind,
-            mode: entry.mode,
-            size: entry.size(),
-            link_target: entry.link_target,
-            layer_index,
-          })
-        }
-      }
-    }
+    let transitions = archived_rootfs_transitions(@archive.read_tar(data))
+    rootfs = apply_rootfs_transitions(rootfs, transitions, layer_index)
   }
   rootfs.sort_by((a, b) => @pathing.compare_utf8(a.path, b.path))
   rootfs

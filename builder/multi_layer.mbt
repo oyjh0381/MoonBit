@@ -44,7 +44,7 @@ pub fn build_image(
   let history : Array[@model.History] = []
   let mut rootfs : Array[@model.RootfsEntry] = []
   for layer_index, layer in request.layers {
-    validate_changeset(layer)
+    let transitions = declared_rootfs_transitions(layer)
     let tar_entries = layer.entries.copy()
     for path in layer.remove {
       tar_entries.push(@archive.TarEntry::whiteout(path))
@@ -63,7 +63,7 @@ pub fn build_image(
       comment: None,
       empty_layer: false,
     })
-    rootfs = apply_changeset(rootfs, layer, layer_index)
+    rootfs = apply_rootfs_transitions(rootfs, transitions, layer_index)
   }
   let config : @model.ImageConfig = {
     created: request.created,
@@ -126,117 +126,6 @@ fn compress_layer(
         opts={ level: 0, mem: 0, dictionary: None, mtime: 0, filename: "" },
       )
       (@model.media_type_layer_gzip, Bytes::from_array(compressed))
-    }
-  }
-}
-
-///|
-fn validate_changeset(
-  layer : LayerBuildRequest,
-) -> Unit raise @model.MoonOciError {
-  for entry in layer.entries {
-    if @pathing.is_whiteout_path(entry.path) {
-      raise @model.InvalidArgument(
-        "layer additions must not use reserved Whiteout paths: " + entry.path,
-      )
-    }
-  }
-  for removed in layer.remove {
-    let normalized = @pathing.normalize_spec_path(removed)
-    for entry in layer.entries {
-      if entry.path == normalized {
-        raise @model.InvalidArgument(
-          "layer cannot add and remove the same path: " + normalized,
-        )
-      }
-    }
-  }
-  for directory in layer.opaque_dirs {
-    ignore(@pathing.normalize_spec_path(directory))
-  }
-}
-
-///|
-fn apply_changeset(
-  current : Array[@model.RootfsEntry],
-  layer : LayerBuildRequest,
-  layer_index : Int,
-) -> Array[@model.RootfsEntry] raise @model.MoonOciError {
-  let mut result = current
-  for directory in layer.opaque_dirs {
-    let normalized = @pathing.normalize_spec_path(directory)
-    result = filter_children(result, normalized, true)
-  }
-  for path in layer.remove {
-    let normalized = @pathing.normalize_spec_path(path)
-    result = filter_children(result, normalized, false)
-  }
-  let sorted_entries = layer.entries.copy()
-  sorted_entries.sort_by((a, b) => @pathing.compare_utf8(a.path, b.path))
-  for entry in sorted_entries {
-    validate_parent_chain(result, entry.path)
-    result = match entry.kind {
-      Directory => filter_exact(result, entry.path)
-      Regular | Symlink => filter_children(result, entry.path, false)
-    }
-    let kind = match entry.kind {
-      Regular => "file"
-      Directory => "directory"
-      Symlink => "symlink"
-    }
-    result.push({
-      path: entry.path,
-      kind,
-      mode: entry.mode,
-      size: entry.size(),
-      link_target: entry.link_target,
-      layer_index,
-    })
-  }
-  result.sort_by((a, b) => @pathing.compare_utf8(a.path, b.path))
-  result
-}
-
-///|
-fn filter_exact(
-  entries : Array[@model.RootfsEntry],
-  path : String,
-) -> Array[@model.RootfsEntry] {
-  entries.filter(entry => entry.path != path)
-}
-
-///|
-fn filter_children(
-  entries : Array[@model.RootfsEntry],
-  path : String,
-  keep_parent : Bool,
-) -> Array[@model.RootfsEntry] {
-  let result : Array[@model.RootfsEntry] = []
-  let prefix = path + "/"
-  for entry in entries {
-    let remove = entry.path.has_prefix(prefix) ||
-      (!keep_parent && entry.path == path)
-    if !remove {
-      result.push(entry)
-    }
-  }
-  result
-}
-
-///|
-fn validate_parent_chain(
-  entries : Array[@model.RootfsEntry],
-  path : String,
-) -> Unit raise @model.MoonOciError {
-  let segments = path.split("/").map(part => part.to_owned()).collect()
-  for end in 1..<segments.length() {
-    let parent = segments[0:end].to_owned().join("/")
-    for existing in entries {
-      if existing.path == parent && existing.kind != "directory" {
-        raise @model.InvalidOci(
-          "cannot add child beneath non-directory path: " + parent,
-        )
-      }
     }
   }
 }

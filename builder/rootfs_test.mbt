@@ -29,3 +29,69 @@ test "Root Filesystem can be reconstructed from layout Blobs" {
   let result = build_image(request)
   assert_eq(rootfs_from_layout(result.layout), result.rootfs)
 }
+
+///|
+fn layout_from_layer_entries(
+  entries : Array[@archive.TarEntry],
+) -> @layout.MemoryLayout raise @model.MoonOciError {
+  let layout = @layout.MemoryLayout::new()
+  let layer_tar = @archive.write_tar(entries)
+  let layer = layout.put_blob(@model.media_type_layer_tar, layer_tar)
+  let config : @model.ImageConfig = {
+    created: None,
+    author: None,
+    platform: @model.default_platform(),
+    runtime: @model.default_runtime_config(),
+    diff_ids: [@digest.sha256(layer_tar)],
+    history: [],
+  }
+  let config_descriptor = layout.put_blob(
+    @model.media_type_config,
+    @codec.encode_config(config),
+  )
+  let manifest : @model.ImageManifest = {
+    schema_version: 2,
+    media_type: @model.media_type_manifest,
+    config: config_descriptor,
+    layers: [layer],
+    annotations: [],
+  }
+  let manifest_descriptor = layout.put_blob(
+    @model.media_type_manifest,
+    @codec.encode_manifest(manifest),
+  )
+  layout.set_index(
+    @codec.encode_index({
+      schema_version: 2,
+      media_type: @model.media_type_index,
+      manifests: [manifest_descriptor],
+      annotations: [],
+    }),
+  )
+  layout
+}
+
+///|
+test "Root Filesystem rejects conflicting archived transitions" {
+  let layout = layout_from_layer_entries([
+    @archive.TarEntry::whiteout("same"),
+    @archive.TarEntry::file("same", b"value"),
+  ])
+  let mut raised = false
+  ignore(rootfs_from_layout(layout)) catch {
+    _ => raised = true
+  }
+  assert_true(raised)
+}
+
+///|
+test "Root Filesystem rejects non-empty Whiteout markers" {
+  let layout = layout_from_layer_entries([
+    @archive.TarEntry::file(".wh.removed", b"not-empty"),
+  ])
+  let mut raised = false
+  ignore(rootfs_from_layout(layout)) catch {
+    _ => raised = true
+  }
+  assert_true(raised)
+}
