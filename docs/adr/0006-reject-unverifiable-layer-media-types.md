@@ -1,0 +1,3 @@
+# Reject Layer media types whose semantics cannot be verified
+
+MoonOCI will continue to tolerate unknown extension fields in OCI JSON documents, but verification will reject a Layer Descriptor whose media type is not one of the supported tar or gzip Layer media types. This decision supersedes only the media-type tolerance phrase in ADR-0005; its unknown-field policy remains unchanged. Treating an unknown Layer media type as a warning would let verification report success without checking tar safety, decompression limits, or DiffID semantics, contradicting the meaning of a valid VerificationReport. Supporting another Layer media type therefore requires adding a complete Layer Interpretation implementation before it can be accepted.

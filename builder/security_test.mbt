@@ -132,3 +132,26 @@ test "layout verification rejects manifest and config media types" {
   )
   assert_false(verify_memory(wrong_config.layout).is_valid())
 }
+
+///|
+test "verification accumulates independent manifest findings with paths" {
+  let image = build_single_layer(
+    default_single_layer_request([@archive.TarEntry::file("file", b"data")]),
+  )
+  let index = @codec.decode_index(image.layout.index())
+  let first = { ..index.manifests[0], media_type: @model.media_type_config }
+  let second = { ..index.manifests[0], size: index.manifests[0].size + 1L }
+  image.layout.set_index(
+    @codec.encode_index({ ..index, manifests: [first, second] }),
+  )
+  let report = verify_memory(image.layout)
+  assert_false(report.is_valid())
+  assert_eq(report.findings.length(), 2)
+  assert_eq(report.findings.map(finding => finding.object_path), [
+    Some("index.manifests[0].mediaType"),
+    Some("index.manifests[1]"),
+  ])
+  assert_eq(report.manifests_checked, 0)
+  assert_eq(report.blobs_checked, 3)
+  assert_eq(report.layers_checked, 1)
+}
