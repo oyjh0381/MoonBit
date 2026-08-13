@@ -61,4 +61,31 @@ test "verification rejects corrupted gzip content" {
     parts,
   )
   assert_false(verify_memory(corrupted).is_valid())
+  let mut rootfs_raised = false
+  ignore(rootfs_from_layout(corrupted)) catch {
+    _ => rootfs_raised = true
+  }
+  assert_true(rootfs_raised)
+}
+
+///|
+test "Layer Interpretation is equivalent across supported media types" {
+  let entries = [
+    @archive.TarEntry::directory("app"),
+    @archive.TarEntry::file("app/data", b"same"),
+  ]
+  let uncompressed = build_single_layer({
+    ..default_single_layer_request(entries),
+    compression: Uncompressed,
+  })
+  let compressed = build_single_layer({
+    ..default_single_layer_request(entries),
+    compression: Gzip,
+  })
+  assert_eq(
+    rootfs_from_layout(uncompressed.layout),
+    rootfs_from_layout(compressed.layout),
+  )
+  assert_true(verify_memory(uncompressed.layout).is_valid())
+  assert_true(verify_memory(compressed.layout).is_valid())
 }

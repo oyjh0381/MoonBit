@@ -70,9 +70,8 @@ fn verify_memory_strict(
     for i, layer in manifest.layers {
       let layer_data = layout.require_blob(layer)
       blobs_checked += 1
-      let uncompressed = decode_layer_blob(layer.media_type, layer_data)
-      ignore(@archive.read_tar(uncompressed))
-      if @digest.sha256(uncompressed) != config.diff_ids[i] {
+      let interpretation = interpret_layer_blob(layer.media_type, layer_data)
+      if interpretation.diff_id() != config.diff_ids[i] {
         raise @model.DigestMismatch(
           "layer DiffID mismatch at index " + i.to_string(),
         )
@@ -97,41 +96,6 @@ fn require_media_type(
 }
 
 ///|
-/// Decode a supported Layer Blob under verification resource limits.
-pub fn decode_layer_blob(
-  media_type : String,
-  data : Bytes,
-) -> Bytes raise @model.MoonOciError {
-  if media_type == @model.media_type_layer_tar {
-    return data
-  }
-  if media_type != @model.media_type_layer_gzip {
-    raise @model.Unsupported("unsupported layer media type: " + media_type)
-  }
-  let max_size = 512 * 1024 * 1024
-  let uncompressed = @fzip.gunzip_sync(
-    FixedArray::makei(data.length(), i => data[i]),
-    opts={
-      out: None,
-      dictionary: None,
-      max_output_size: max_size,
-      max_input_size: data.length(),
-      verify_checksum: true,
-    },
-  ) catch {
-    _ => raise @model.InvalidTar("cannot decompress gzip layer")
-  }
-  let uncompressed = Bytes::from_array(uncompressed)
-  if data.length() > 0 &&
-    uncompressed.length().to_int64() > data.length().to_int64() * 200L {
-    raise @model.ResourceLimitExceeded(
-      "gzip layer exceeds 200:1 expansion ratio",
-    )
-  }
-  uncompressed
-}
-
-///|
 /// Reconstruct the effective Root Filesystem from the first manifest.
 pub fn rootfs_from_layout(
   layout : @layout.MemoryLayout,
@@ -143,11 +107,11 @@ pub fn rootfs_from_layout(
   let manifest = @codec.decode_manifest(layout.require_blob(index.manifests[0]))
   let mut rootfs : Array[@model.RootfsEntry] = []
   for layer_index, descriptor in manifest.layers {
-    let data = decode_layer_blob(
+    let interpretation = interpret_layer_blob(
       descriptor.media_type,
       layout.require_blob(descriptor),
     )
-    let transitions = archived_rootfs_transitions(@archive.read_tar(data))
+    let transitions = archived_rootfs_transitions(interpretation.entries)
     rootfs = apply_rootfs_transitions(rootfs, transitions, layer_index)
   }
   rootfs.sort_by((a, b) => @pathing.compare_utf8(a.path, b.path))
