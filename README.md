@@ -20,13 +20,23 @@ It provides a portable core for Wasm, Wasm-GC, JavaScript, and Native targets, p
 
 MoonOCI v0.1 builds one platform image per invocation and writes OCI Image Spec 1.1.1 layouts. It does not parse Dockerfiles, run containers, contact registries, sign images, or encode zstd Layers. The portable archive API represents symbolic links, but the v0.1 Native Layer Source adapter rejects host symlinks because its filesystem dependency does not expose a portable read-link operation.
 
-## Requirements
+## Installation
+
+Add the published library to a MoonBit project:
+
+```text
+moon add oyjh0381/moonoci@0.1.3
+```
+
+The reusable packages include `oyjh0381/moonoci/archive`, `builder`, `codec`, `digest`, `layout`, `model`, `pathing`, and `spec`. The Native CLI is built and run from this source repository.
+
+## Requirements and development
 
 - MoonBit toolchain 0.1.20260803 or newer;
 - for Native builds on Windows: Visual Studio 2022 Build Tools with the C++ workload and Windows SDK;
 - for Native builds on Linux: a C compiler and archiver.
 
-Install dependencies:
+After cloning the repository, install development dependencies:
 
 ```text
 moon update
@@ -85,15 +95,15 @@ Create `moonoci.json`:
 }
 ```
 
-Then use the Native executable:
+Run the Native CLI from the repository:
 
 ```text
-moonoci build moonoci.json
-moonoci inspect dist/demo
-moonoci list dist/demo
-moonoci verify dist/demo
-moonoci archive dist/demo dist/demo.tar
-moonoci version
+moon run cmd/moonoci --target native -- build moonoci.json
+moon run cmd/moonoci --target native -- inspect dist/demo
+moon run cmd/moonoci --target native -- list dist/demo
+moon run cmd/moonoci --target native -- verify dist/demo
+moon run cmd/moonoci --target native -- archive dist/demo dist/demo.tar
+moon run cmd/moonoci --target native -- version
 ```
 
 The builder refuses to overwrite an existing destination. Errors include stable `MOONOCI_*` codes and documented exit classes: arguments/specification `2`, I/O `3`, unsupported or malformed content `4`, verification/security failures `5`, and unexpected internal failure `70`.

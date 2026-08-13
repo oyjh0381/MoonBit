@@ -114,6 +114,15 @@ pub fn symlink_target_is_risky(target : String) -> Bool {
   if target.has_prefix("/") || target.has_prefix("\\") || target.contains("\\") {
     return true
   }
+  let encoded = @utf8.encode(target)
+  if encoded.length() >= 2 &&
+    encoded[1] == b':' &&
+    (
+      (encoded[0] >= b'A' && encoded[0] <= b'Z') ||
+      (encoded[0] >= b'a' && encoded[0] <= b'z')
+    ) {
+    return true
+  }
   for segment in target.split("/") {
     if segment == ".." {
       return true

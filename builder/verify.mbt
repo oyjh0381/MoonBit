@@ -33,18 +33,34 @@ fn verify_memory_strict(
   if index.schema_version != 2 {
     raise @model.InvalidOci("image index schemaVersion must be 2")
   }
+  require_media_type("image index", index.media_type, @model.media_type_index)
   let mut manifests_checked = 0
   let mut blobs_checked = 0
   let mut layers_checked = 0
   let findings : Array[@model.ValidationFinding] = []
   for manifest_descriptor in index.manifests {
+    require_media_type(
+      "manifest descriptor",
+      manifest_descriptor.media_type,
+      @model.media_type_manifest,
+    )
     let manifest_data = layout.require_blob(manifest_descriptor)
     blobs_checked += 1
     let manifest = @codec.decode_manifest(manifest_data)
     if manifest.schema_version != 2 {
       raise @model.InvalidOci("image manifest schemaVersion must be 2")
     }
+    require_media_type(
+      "image manifest",
+      manifest.media_type,
+      @model.media_type_manifest,
+    )
     manifests_checked += 1
+    require_media_type(
+      "configuration descriptor",
+      manifest.config.media_type,
+      @model.media_type_config,
+    )
     let config_data = layout.require_blob(manifest.config)
     blobs_checked += 1
     let config = @codec.decode_config(config_data)
@@ -54,27 +70,30 @@ fn verify_memory_strict(
     for i, layer in manifest.layers {
       let layer_data = layout.require_blob(layer)
       blobs_checked += 1
-      if layer.media_type == @model.media_type_layer_tar ||
-        layer.media_type == @model.media_type_layer_gzip {
-        let uncompressed = decode_layer_blob(layer.media_type, layer_data)
-        ignore(@archive.read_tar(uncompressed))
-        if @digest.sha256(uncompressed) != config.diff_ids[i] {
-          raise @model.DigestMismatch(
-            "layer DiffID mismatch at index " + i.to_string(),
-          )
-        }
-      } else {
-        findings.push({
-          level: @model.FindingLevel::Warning,
-          code: "MOONOCI_UNSUPPORTED_LAYER_MEDIA_TYPE",
-          message: "semantic layer verification skipped for " + layer.media_type,
-          object_path: Some(layer.digest.blob_path()),
-        })
+      let uncompressed = decode_layer_blob(layer.media_type, layer_data)
+      ignore(@archive.read_tar(uncompressed))
+      if @digest.sha256(uncompressed) != config.diff_ids[i] {
+        raise @model.DigestMismatch(
+          "layer DiffID mismatch at index " + i.to_string(),
+        )
       }
       layers_checked += 1
     }
   }
   { findings, manifests_checked, blobs_checked, layers_checked }
+}
+
+///|
+fn require_media_type(
+  object : String,
+  actual : String,
+  expected : String,
+) -> Unit raise @model.MoonOciError {
+  if actual != expected {
+    raise @model.InvalidOci(
+      object + " media type must be " + expected + ", got " + actual,
+    )
+  }
 }
 
 ///|

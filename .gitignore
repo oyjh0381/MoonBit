@@ -27,5 +27,9 @@ _build/
 .scratch/
 docs/agents/
 
+# Unrelated local projects must not enter MoonOCI commits or release archives.
+/Moon/
+/MoonIPFIX/
+
 # Keep the repository ignore policy itself versioned.
 !.gitignore

@@ -13,7 +13,7 @@ MoonOCI targets OCI Image Format Specification 1.1.1.
 - Whiteout and Opaque Directory markers;
 - Linux platform metadata including architecture, variant, and OS version;
 - runtime user, environment, entrypoint, command, working directory, labels, exposed ports, volumes, and stop signal;
-- Descriptor graph, Digest, size, tar, gzip, and DiffID verification.
+- Descriptor graph, exact media type, Digest, size, tar, gzip, and DiffID verification.
 
 ## Intentionally unsupported in v0.1
 

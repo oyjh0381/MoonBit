@@ -61,3 +61,35 @@ test "duplicate deterministic map keys are rejected" {
   }
   assert_true(raised)
 }
+
+///|
+test "duplicate runtime object-set members are rejected" {
+  let base : @model.ImageConfig = {
+    created: None,
+    author: None,
+    platform: @model.default_platform(),
+    runtime: @model.default_runtime_config(),
+    diff_ids: [],
+    history: [],
+  }
+  let mut exposed_ports_raised = false
+  ignore(
+    encode_config({
+      ..base,
+      runtime: { ..base.runtime, exposed_ports: ["8080/tcp", "8080/tcp"] },
+    }),
+  ) catch {
+    _ => exposed_ports_raised = true
+  }
+  assert_true(exposed_ports_raised)
+  let mut volumes_raised = false
+  ignore(
+    encode_config({
+      ..base,
+      runtime: { ..base.runtime, volumes: ["/data", "/data"] },
+    }),
+  ) catch {
+    _ => volumes_raised = true
+  }
+  assert_true(volumes_raised)
+}

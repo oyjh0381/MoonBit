@@ -15,6 +15,8 @@ test "generates whiteout paths" {
 test "flags risky symlink targets" {
   assert_true(symlink_target_is_risky("../../etc/passwd"))
   assert_true(symlink_target_is_risky("/etc/passwd"))
+  assert_true(symlink_target_is_risky("C:/Windows"))
+  assert_true(symlink_target_is_risky("c:relative-on-drive"))
   assert_false(symlink_target_is_risky("safe"))
 }
 

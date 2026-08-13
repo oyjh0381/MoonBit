@@ -2,6 +2,12 @@
 
 This module README documents the minimal portable build path. The same request is used in `examples/single-layer`.
 
+Install the published module with:
+
+```text
+moon add oyjh0381/moonoci@0.1.3
+```
+
 ```mbt check
 test "README single-layer build" {
   let request = @builder.default_single_layer_request([

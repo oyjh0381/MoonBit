@@ -72,3 +72,49 @@ test "tar reader enforces entry limit" {
   }
   assert_true(raised)
 }
+
+///|
+test "PAX record length cannot overflow or exceed its payload" {
+  let path = "deep/" + "z".repeat(130)
+  let malformed = write_tar([TarEntry::file(path, b"")]).to_array()
+  let mut cursor = 512
+  while malformed[cursor] != b' ' {
+    malformed[cursor] = b'9'
+    cursor += 1
+  }
+  let mut raised = false
+  ignore(read_tar(Bytes::from_array(malformed))) catch {
+    _ => raised = true
+  }
+  assert_true(raised)
+}
+
+///|
+test "tar reader rejects GNU sparse PAX metadata" {
+  let path = "deep/" + "z".repeat(130)
+  let output = write_tar([TarEntry::file(path, b"")]).to_array()
+  let original = @utf8.encode("path=")
+  let replacement = @utf8.encode("GNU.sparse.map=")
+  let mut key_offset = -1
+  for i in 512..<(1024 - replacement.length()) {
+    let mut matches = true
+    for j in 0..<original.length() {
+      if output[i + j] != original[j] {
+        matches = false
+      }
+    }
+    if matches {
+      key_offset = i
+      break
+    }
+  }
+  assert_true(key_offset >= 0)
+  for i in 0..<replacement.length() {
+    output[key_offset + i] = replacement[i]
+  }
+  let mut raised = false
+  ignore(read_tar(Bytes::from_array(output))) catch {
+    _ => raised = true
+  }
+  assert_true(raised)
+}

@@ -1,0 +1,35 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "oyjh0381/moonoci/codec"
+
+import {
+  "oyjh0381/moonoci/model",
+}
+
+// Values
+pub fn decode_config(Bytes) -> @model.ImageConfig raise @model.MoonOciError
+
+pub fn decode_descriptor(Json) -> @model.Descriptor raise @model.MoonOciError
+
+pub fn decode_index(Bytes) -> @model.ImageIndex raise @model.MoonOciError
+
+pub fn decode_manifest(Bytes) -> @model.ImageManifest raise @model.MoonOciError
+
+pub fn encode_config(@model.ImageConfig) -> Bytes raise @model.MoonOciError
+
+pub fn encode_descriptor(@model.Descriptor) -> String raise @model.MoonOciError
+
+pub fn encode_index(@model.ImageIndex) -> Bytes raise @model.MoonOciError
+
+pub fn encode_manifest(@model.ImageManifest) -> Bytes raise @model.MoonOciError
+
+pub fn parse_json_document(Bytes) -> Json raise @model.MoonOciError
+
+pub fn validate_layout_marker(Bytes) -> Unit raise @model.MoonOciError
+
+// Errors
+
+// Types and methods
+
+// Type aliases
+
+// Traits

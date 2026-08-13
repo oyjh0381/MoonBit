@@ -21,6 +21,16 @@ MoonOCI 是一个原创的 MoonBit 库与命令行工具，用于在不依赖容
 
 v0.1 每次构建一个平台镜像，目标格式为 OCI Image Spec 1.1.1。项目不解析 Dockerfile，不运行容器，不访问 Registry，不执行签名，也不支持 zstd。可移植归档 API 支持符号链接；由于当前 Native 文件系统依赖没有跨平台 `readlink` 接口，Native Layer Source 在 v0.1 中会明确拒绝主机符号链接。
 
+## 安装
+
+在 MoonBit 项目中添加已发布的库：
+
+```text
+moon add oyjh0381/moonoci@0.1.3
+```
+
+可复用包包括 `oyjh0381/moonoci/archive`、`builder`、`codec`、`digest`、`layout`、`model`、`pathing` 和 `spec`。Native CLI 需要从本源码仓库构建并运行。
+
 ## 构建与测试
 
 ```text
@@ -46,13 +56,15 @@ moon run examples/reproducible --target wasm-gc
 
 ## CLI
 
+在源码仓库中运行 Native CLI：
+
 ```text
-moonoci build moonoci.json
-moonoci inspect dist/image
-moonoci list dist/image
-moonoci verify dist/image
-moonoci archive dist/image dist/image.tar
-moonoci version
+moon run cmd/moonoci --target native -- build moonoci.json
+moon run cmd/moonoci --target native -- inspect dist/image
+moon run cmd/moonoci --target native -- list dist/image
+moon run cmd/moonoci --target native -- verify dist/image
+moon run cmd/moonoci --target native -- archive dist/image dist/image.tar
+moon run cmd/moonoci --target native -- version
 ```
 
 Build Specification 的完整字段、默认值和限制见 [`docs/build-spec.md`](docs/build-spec.md)。安全边界见 [`docs/security.md`](docs/security.md)，兼容与验收状态见 [`docs/conformance.md`](docs/conformance.md)。

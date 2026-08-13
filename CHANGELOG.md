@@ -4,6 +4,20 @@ All notable changes to MoonOCI are documented here. The format follows Keep a Ch
 
 ## [Unreleased]
 
+## [0.1.3] - 2026-08-13
+
+### Fixed
+
+- Reject duplicate runtime object-set members before encoding OCI JSON.
+- Bound PAX record-length parsing and reject GNU sparse PAX metadata.
+- Enforce Index, Manifest, Configuration, and Layer media types during verification.
+- Reject Windows drive-qualified symbolic-link targets on every platform.
+
+### Changed
+
+- Document direct mooncakes.io installation and source-based CLI invocation.
+- Add CI checks for generated documentation and committed package interfaces.
+
 ## [0.1.2] - 2026-08-11
 
 ### Fixed

@@ -59,7 +59,9 @@ pub fn read_tar(
     if typeflag == b'x' {
       let records = parse_pax(data, content_start, size)
       for record in records {
-        if record.key == "path" {
+        if record.key.has_prefix("GNU.sparse.") {
+          raise @model.Unsupported("GNU sparse PAX entries are not supported")
+        } else if record.key == "path" {
           pending_path = Some(record.value)
         } else if record.key == "linkpath" {
           pending_link = Some(record.value)
@@ -273,15 +275,20 @@ fn parse_pax(
   while cursor < size {
     let start = cursor
     let mut record_length = 0
+    let maximum_record_length = size - start
     while cursor < size && data[offset + cursor] != b' ' {
       let byte = data[offset + cursor]
       if byte < b'0' || byte > b'9' {
         raise @model.InvalidTar("invalid PAX record length")
       }
-      record_length = record_length * 10 + (byte - b'0').to_int()
+      let digit = (byte - b'0').to_int()
+      if record_length > (maximum_record_length - digit) / 10 {
+        raise @model.InvalidTar("PAX record length exceeds payload")
+      }
+      record_length = record_length * 10 + digit
       cursor += 1
     }
-    if cursor >= size || record_length <= 0 || start + record_length > size {
+    if cursor >= size || record_length <= 0 || record_length > size - start {
       raise @model.InvalidTar("truncated PAX record")
     }
     cursor += 1

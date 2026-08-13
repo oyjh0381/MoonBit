@@ -1,0 +1,31 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "oyjh0381/moonoci/adapter/native"
+
+import {
+  "oyjh0381/moonoci/archive",
+  "oyjh0381/moonoci/builder",
+  "oyjh0381/moonoci/layout",
+  "oyjh0381/moonoci/model",
+  "oyjh0381/moonoci/spec",
+}
+
+// Values
+pub fn archive_layout_bytes(@layout.MemoryLayout) -> Bytes raise @model.MoonOciError
+
+pub async fn archive_layout_file(String, String) -> Unit
+
+pub async fn build_from_file(String) -> @builder.ImageBuildResult
+
+pub async fn collect_layer_source(String, @spec.LayerSpec) -> Array[@archive.TarEntry]
+
+pub async fn load_layout(String) -> @layout.MemoryLayout
+
+pub async fn write_layout(String, @layout.MemoryLayout) -> Unit
+
+// Errors
+
+// Types and methods
+
+// Type aliases
+
+// Traits

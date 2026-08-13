@@ -8,6 +8,21 @@ permissions:
   contents: read
 
 jobs:
+  documentation:
+    name: Documentation and public API
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: hustcer/setup-moonbit@v1.22
+      - name: Resolve dependencies
+        run: moon update
+      - name: Generate documentation
+        run: moon doc
+      - name: Verify committed package interfaces
+        run: |
+          moon info
+          git diff --exit-code
+
   portable:
     name: Portable (${{ matrix.os }})
     runs-on: ${{ matrix.os }}

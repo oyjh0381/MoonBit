@@ -176,10 +176,19 @@ fn encode_string_map(
 }
 
 ///|
-fn encode_empty_object_set(values : Array[String]) -> String {
+fn encode_empty_object_set(
+  values : Array[String],
+) -> String raise @model.MoonOciError {
   let sorted = values.copy()
   sorted.sort_by((a, b) => @pathing.compare_utf8(a, b))
-  object(sorted.map(value => field(value, "{}")))
+  let fields : Array[String] = []
+  for i, value in sorted {
+    if i > 0 && sorted[i - 1] == value {
+      raise @model.InvalidArgument("duplicate set member: " + value)
+    }
+    fields.push(field(value, "{}"))
+  }
+  object(fields)
 }
 
 ///|

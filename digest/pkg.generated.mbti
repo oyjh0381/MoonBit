@@ -1,0 +1,26 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "oyjh0381/moonoci/digest"
+
+import {
+  "moonbitlang/x/crypto",
+  "oyjh0381/moonoci/model",
+}
+
+// Values
+pub fn sha256(Bytes) -> @model.Digest
+
+// Errors
+
+// Types and methods
+pub struct Sha256 {
+  state : @crypto.SHA256
+  mut bytes_seen : Int64
+}
+pub fn Sha256::finish(Self) -> @model.Digest
+pub fn Sha256::length(Self) -> Int64
+pub fn Sha256::new() -> Self
+pub fn Sha256::update(Self, Bytes) -> Unit
+
+// Type aliases
+
+// Traits

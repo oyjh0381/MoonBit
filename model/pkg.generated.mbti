@@ -1,0 +1,167 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "oyjh0381/moonoci/model"
+
+import {
+  "moonbitlang/core/debug",
+}
+
+// Values
+pub let annotation_ref_name : String
+
+pub fn default_platform() -> Platform
+
+pub fn default_runtime_config() -> RuntimeConfig
+
+pub let media_type_config : String
+
+pub let media_type_descriptor : String
+
+pub let media_type_index : String
+
+pub let media_type_layer_gzip : String
+
+pub let media_type_layer_tar : String
+
+pub let media_type_layout : String
+
+pub let media_type_manifest : String
+
+// Errors
+pub(all) suberror MoonOciError {
+  InvalidArgument(String)
+  InvalidBuildSpec(String)
+  InvalidDigest(String)
+  InvalidPath(String)
+  InvalidJson(String)
+  InvalidTar(String)
+  InvalidOci(String)
+  DigestMismatch(String)
+  SizeMismatch(String)
+  ResourceLimitExceeded(String)
+  IoFailure(String)
+  Unsupported(String)
+} derive(Eq, @debug.Debug)
+pub fn MoonOciError::code(Self) -> String
+pub fn MoonOciError::exit_code(Self) -> Int
+pub fn MoonOciError::message(Self) -> String
+
+// Types and methods
+pub(all) struct BuildReport {
+  manifest : Descriptor
+  config : Descriptor
+  layers : Array[Descriptor]
+  blobs_written : Int
+  bytes_written : Int64
+} derive(Eq, @debug.Debug)
+
+pub(all) enum Compression {
+  Uncompressed
+  Gzip
+} derive(Eq, @debug.Debug)
+
+pub(all) struct Descriptor {
+  media_type : String
+  digest : Digest
+  size : Int64
+  annotations : Array[KeyValue]
+  platform : Platform?
+} derive(Eq, @debug.Debug)
+
+pub(all) struct Digest {
+  algorithm : String
+  encoded : String
+} derive(Eq, @debug.Debug)
+pub fn Digest::blob_path(Self) -> String
+pub fn Digest::parse(String) -> Self raise MoonOciError
+pub fn Digest::sha256(String) -> Self raise MoonOciError
+pub fn Digest::to_string(Self) -> String
+
+pub(all) enum FindingLevel {
+  Error
+  Warning
+  Info
+} derive(Eq, @debug.Debug)
+
+pub(all) struct History {
+  created : String?
+  created_by : String?
+  author : String?
+  comment : String?
+  empty_layer : Bool
+} derive(Eq, @debug.Debug)
+
+pub(all) struct ImageConfig {
+  created : String?
+  author : String?
+  platform : Platform
+  runtime : RuntimeConfig
+  diff_ids : Array[Digest]
+  history : Array[History]
+} derive(Eq, @debug.Debug)
+
+pub(all) struct ImageIndex {
+  schema_version : Int
+  media_type : String
+  manifests : Array[Descriptor]
+  annotations : Array[KeyValue]
+} derive(Eq, @debug.Debug)
+
+pub(all) struct ImageManifest {
+  schema_version : Int
+  media_type : String
+  config : Descriptor
+  layers : Array[Descriptor]
+  annotations : Array[KeyValue]
+} derive(Eq, @debug.Debug)
+
+pub(all) struct KeyValue {
+  key : String
+  value : String
+} derive(Eq, @debug.Debug)
+
+pub(all) struct Platform {
+  os : String
+  architecture : String
+  variant : String?
+  os_version : String?
+} derive(Eq, @debug.Debug)
+
+pub(all) struct RootfsEntry {
+  path : String
+  kind : String
+  mode : Int
+  size : Int64
+  link_target : String?
+  layer_index : Int
+} derive(Eq, @debug.Debug)
+
+pub(all) struct RuntimeConfig {
+  user : String?
+  env : Array[KeyValue]
+  entrypoint : Array[String]
+  cmd : Array[String]
+  working_dir : String
+  labels : Array[KeyValue]
+  exposed_ports : Array[String]
+  volumes : Array[String]
+  stop_signal : String?
+} derive(Eq, @debug.Debug)
+
+pub(all) struct ValidationFinding {
+  level : FindingLevel
+  code : String
+  message : String
+  object_path : String?
+} derive(Eq, @debug.Debug)
+
+pub(all) struct VerificationReport {
+  findings : Array[ValidationFinding]
+  manifests_checked : Int
+  blobs_checked : Int
+  layers_checked : Int
+} derive(Eq, @debug.Debug)
+pub fn VerificationReport::is_valid(Self) -> Bool
+
+// Type aliases
+
+// Traits

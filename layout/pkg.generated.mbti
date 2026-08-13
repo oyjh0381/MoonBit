@@ -1,0 +1,40 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "oyjh0381/moonoci/layout"
+
+import {
+  "moonbitlang/core/debug",
+  "oyjh0381/moonoci/model",
+}
+
+// Values
+
+// Errors
+
+// Types and methods
+pub struct BlobRecord {
+  descriptor : @model.Descriptor
+  data : Bytes
+} derive(Eq, @debug.Debug)
+pub fn BlobRecord::data(Self) -> Bytes
+pub fn BlobRecord::descriptor(Self) -> @model.Descriptor
+
+pub struct MemoryLayout {
+  marker : Bytes
+  mut index : Bytes
+  blobs : Array[BlobRecord]
+} derive(Eq, @debug.Debug)
+pub fn MemoryLayout::blob_bytes(Self) -> Int64
+pub fn MemoryLayout::blob_count(Self) -> Int
+pub fn MemoryLayout::blob_records(Self) -> Array[BlobRecord]
+pub fn MemoryLayout::from_untrusted_parts(Bytes, Bytes, Array[(@model.Descriptor, Bytes)]) -> Self
+pub fn MemoryLayout::get_blob(Self, @model.Digest) -> Bytes?
+pub fn MemoryLayout::index(Self) -> Bytes
+pub fn MemoryLayout::marker(Self) -> Bytes
+pub fn MemoryLayout::new() -> Self
+pub fn MemoryLayout::put_blob(Self, String, Bytes, annotations? : Array[@model.KeyValue], platform? : @model.Platform) -> @model.Descriptor raise @model.MoonOciError
+pub fn MemoryLayout::require_blob(Self, @model.Descriptor) -> Bytes raise @model.MoonOciError
+pub fn MemoryLayout::set_index(Self, Bytes) -> Unit
+
+// Type aliases
+
+// Traits

@@ -1,0 +1,42 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "oyjh0381/moonoci/archive"
+
+import {
+  "moonbitlang/core/debug",
+  "oyjh0381/moonoci/model",
+}
+
+// Values
+pub fn read_tar(Bytes, max_entries? : Int, max_path_bytes? : Int) -> Array[TarEntry] raise @model.MoonOciError
+
+pub fn write_tar(Array[TarEntry]) -> Bytes raise @model.MoonOciError
+
+// Errors
+
+// Types and methods
+pub(all) struct TarEntry {
+  path : String
+  kind : TarEntryKind
+  mode : Int
+  uid : Int
+  gid : Int
+  mtime : Int64
+  data : Bytes
+  link_target : String?
+} derive(Eq, @debug.Debug)
+pub fn TarEntry::directory(String, mode? : Int) -> Self raise @model.MoonOciError
+pub fn TarEntry::file(String, Bytes, mode? : Int) -> Self raise @model.MoonOciError
+pub fn TarEntry::opaque_marker(String) -> Self raise @model.MoonOciError
+pub fn TarEntry::size(Self) -> Int64
+pub fn TarEntry::symlink(String, String) -> Self raise @model.MoonOciError
+pub fn TarEntry::whiteout(String) -> Self raise @model.MoonOciError
+
+pub(all) enum TarEntryKind {
+  Regular
+  Directory
+  Symlink
+} derive(Eq, @debug.Debug)
+
+// Type aliases
+
+// Traits

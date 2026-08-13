@@ -1,0 +1,68 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "oyjh0381/moonoci/builder"
+
+import {
+  "moonbitlang/core/debug",
+  "oyjh0381/moonoci/archive",
+  "oyjh0381/moonoci/layout",
+  "oyjh0381/moonoci/model",
+}
+
+// Values
+pub fn build_image(ImageBuildRequest) -> ImageBuildResult raise @model.MoonOciError
+
+pub fn build_single_layer(SingleLayerRequest) -> BuildResult raise @model.MoonOciError
+
+pub fn decode_layer_blob(String, Bytes) -> Bytes raise @model.MoonOciError
+
+pub fn default_single_layer_request(Array[@archive.TarEntry]) -> SingleLayerRequest
+
+pub fn rootfs_from_layout(@layout.MemoryLayout) -> Array[@model.RootfsEntry] raise @model.MoonOciError
+
+pub fn verify_memory(@layout.MemoryLayout) -> @model.VerificationReport
+
+// Errors
+
+// Types and methods
+pub(all) struct BuildResult {
+  layout : @layout.MemoryLayout
+  report : @model.BuildReport
+} derive(Eq, @debug.Debug)
+
+pub(all) struct ImageBuildRequest {
+  layers : Array[LayerBuildRequest]
+  platform : @model.Platform
+  runtime : @model.RuntimeConfig
+  created : String?
+  author : String?
+  reference : String
+  annotations : Array[@model.KeyValue]
+} derive(Eq, @debug.Debug)
+
+pub(all) struct ImageBuildResult {
+  layout : @layout.MemoryLayout
+  report : @model.BuildReport
+  rootfs : Array[@model.RootfsEntry]
+} derive(Eq, @debug.Debug)
+
+pub(all) struct LayerBuildRequest {
+  entries : Array[@archive.TarEntry]
+  remove : Array[String]
+  opaque_dirs : Array[String]
+  compression : @model.Compression
+} derive(Eq, @debug.Debug)
+
+pub(all) struct SingleLayerRequest {
+  entries : Array[@archive.TarEntry]
+  platform : @model.Platform
+  runtime : @model.RuntimeConfig
+  created : String?
+  author : String?
+  reference : String
+  annotations : Array[@model.KeyValue]
+  compression : @model.Compression
+} derive(Eq, @debug.Debug)
+
+// Type aliases
+
+// Traits

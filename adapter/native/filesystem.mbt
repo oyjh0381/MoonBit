@@ -1,5 +1,7 @@
 ///|
-/// Read a Layer Source directory without following symbolic links.
+/// Read a Layer Source directory while rejecting symlinks observed by traversal.
+/// The filesystem API cannot make kind-check and file-read one atomic operation;
+/// callers must provide a trusted, quiescent source tree while a build runs.
 pub async fn collect_layer_source(
   source : String,
   layer : @spec.LayerSpec,
@@ -65,6 +67,11 @@ async fn collect_directory(
       }
       Regular => {
         let data = @fs.read_file(full_path).binary()
+        if @fs.kind(full_path, follow_symlink=false) != @fs.FileKind::Regular {
+          raise @model.IoFailure(
+            "Layer Source entry changed while being read: " + archive_path,
+          )
+        }
         let entry = @archive.TarEntry::file(archive_path, data)
         entries.push(apply_metadata(entry, full_path, metadata))
       }

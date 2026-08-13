@@ -1,0 +1,53 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "oyjh0381/moonoci/spec"
+
+import {
+  "moonbitlang/core/debug",
+  "oyjh0381/moonoci/model",
+}
+
+// Values
+pub fn default_metadata_spec() -> MetadataSpec
+
+pub fn parse_build_spec(Bytes) -> BuildSpec raise @model.MoonOciError
+
+// Errors
+
+// Types and methods
+pub(all) struct BuildSpec {
+  schema_version : Int
+  reference : String
+  platform : @model.Platform
+  layers : Array[LayerSpec]
+  runtime : @model.RuntimeConfig
+  created : String?
+  author : String?
+  annotations : Array[@model.KeyValue]
+  output : OutputSpec
+} derive(Eq, @debug.Debug)
+
+pub(all) struct LayerSpec {
+  source : String
+  compression : @model.Compression
+  remove : Array[String]
+  opaque_dirs : Array[String]
+  exclude : Array[String]
+  ignore_file : String?
+  metadata : MetadataSpec
+} derive(Eq, @debug.Debug)
+
+pub(all) struct MetadataSpec {
+  mode : Int?
+  uid : Int?
+  gid : Int?
+  mtime : Int64?
+  preserve_mtime : Bool
+} derive(Eq, @debug.Debug)
+
+pub(all) struct OutputSpec {
+  layout : String
+} derive(Eq, @debug.Debug)
+
+// Type aliases
+
+// Traits

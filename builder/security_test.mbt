@@ -20,7 +20,7 @@ test "verification rejects unsupported layer media type" {
 }
 
 ///|
-test "layout verification warns for unknown layer media type" {
+test "layout verification rejects unknown layer media type" {
   let source = build_single_layer(
     default_single_layer_request([@archive.TarEntry::file("file", b"data")]),
   )
@@ -54,8 +54,81 @@ test "layout verification warns for unknown layer media type" {
     }),
   )
   let report = verify_memory(target)
-  assert_true(report.is_valid())
+  assert_false(report.is_valid())
   assert_eq(report.findings.length(), 1)
-  assert_eq(report.findings[0].level, @model.FindingLevel::Warning)
+  assert_eq(report.findings[0].level, @model.FindingLevel::Error)
   assert_true(report.findings[0].object_path is Some(_))
+}
+
+///|
+test "layout verification rejects index document media type" {
+  let image = build_single_layer(
+    default_single_layer_request([@archive.TarEntry::file("file", b"data")]),
+  )
+  let index = @codec.decode_index(image.layout.index())
+  image.layout.set_index(
+    @codec.encode_index({ ..index, media_type: "application/example" }),
+  )
+  assert_false(verify_memory(image.layout).is_valid())
+}
+
+///|
+test "layout verification rejects manifest descriptor media type" {
+  let image = build_single_layer(
+    default_single_layer_request([@archive.TarEntry::file("file", b"data")]),
+  )
+  let index = @codec.decode_index(image.layout.index())
+  let descriptor = {
+    ..index.manifests[0],
+    media_type: @model.media_type_config,
+  }
+  image.layout.set_index(
+    @codec.encode_index({ ..index, manifests: [descriptor] }),
+  )
+  assert_false(verify_memory(image.layout).is_valid())
+}
+
+///|
+test "layout verification rejects manifest and config media types" {
+  let wrong_manifest = build_single_layer(
+    default_single_layer_request([@archive.TarEntry::file("file", b"data")]),
+  )
+  let wrong_manifest_index = @codec.decode_index(wrong_manifest.layout.index())
+  let manifest = @codec.decode_manifest(
+    wrong_manifest.layout.require_blob(wrong_manifest_index.manifests[0]),
+  )
+  let manifest_descriptor = wrong_manifest.layout.put_blob(
+    @model.media_type_manifest,
+    @codec.encode_manifest({ ..manifest, media_type: "application/example" }),
+  )
+  wrong_manifest.layout.set_index(
+    @codec.encode_index({
+      ..wrong_manifest_index,
+      manifests: [manifest_descriptor],
+    }),
+  )
+  assert_false(verify_memory(wrong_manifest.layout).is_valid())
+
+  let wrong_config = build_single_layer(
+    default_single_layer_request([@archive.TarEntry::file("file", b"data")]),
+  )
+  let wrong_config_index = @codec.decode_index(wrong_config.layout.index())
+  let config_manifest = @codec.decode_manifest(
+    wrong_config.layout.require_blob(wrong_config_index.manifests[0]),
+  )
+  let config_descriptor = {
+    ..config_manifest.config,
+    media_type: "application/example",
+  }
+  let config_manifest_descriptor = wrong_config.layout.put_blob(
+    @model.media_type_manifest,
+    @codec.encode_manifest({ ..config_manifest, config: config_descriptor }),
+  )
+  wrong_config.layout.set_index(
+    @codec.encode_index({
+      ..wrong_config_index,
+      manifests: [config_manifest_descriptor],
+    }),
+  )
+  assert_false(verify_memory(wrong_config.layout).is_valid())
 }
