@@ -40,9 +40,11 @@ pub fn ContentCatalog::stored_bytes(Self) -> Int64
 pub struct RetentionPlan {
   // private fields
 }
+pub fn RetentionPlan::apply(Self, @layout.MemoryLayout, @model.Digest, limits? : CatalogLimits) -> @layout.MemoryLayout raise @model.MoonOciError
 pub fn RetentionPlan::discarded_blobs(Self) -> Int32
 pub fn RetentionPlan::kept_blobs(Self) -> Int32
 pub fn RetentionPlan::materialize(Self) -> @layout.MemoryLayout
+pub fn RetentionPlan::pin(Self) -> @model.Digest
 pub fn RetentionPlan::reclaimable_bytes(Self) -> Int64
 
 pub(all) struct RetentionPolicy {

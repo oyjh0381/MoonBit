@@ -308,7 +308,9 @@ pub fn ContentCatalog::snapshot(self : ContentCatalog) -> @layout.MemoryLayout {
   @layout.MemoryLayout::from_untrusted_parts(
     self.marker,
     self.index,
-    self.physical.map(d => (d, self.records[d.digest.to_string()])),
+    self.physical.map(d => {
+      ({ ..d, annotations: [], }, self.records[d.digest.to_string()])
+    }),
   )
 }
 

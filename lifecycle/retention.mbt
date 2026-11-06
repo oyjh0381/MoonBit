@@ -227,6 +227,7 @@ pub fn retention_json(plan : RetentionPlan) -> String {
     "schema": Json::string("moonoci.retention.v1"),
     "source_index": Json::string(plan.catalog.index_pin.to_string()),
     "source_store": Json::string(plan.catalog.store_pin.to_string()),
+    "plan_pin": Json::string(plan.pin().to_string()),
     "output_index": Json::string(@digest.sha256(plan.output_index).to_string()),
     "selected": Json::array(plan.selected.map(d => Json::string(d.to_string()))),
     "include_referrers": Json::boolean(plan.policy.include_referrers),
