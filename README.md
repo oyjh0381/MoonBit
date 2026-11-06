@@ -25,6 +25,11 @@ without echoing environment values, and approvals bound to both image versions.
 The Native `files`, `diff`, `config-diff` and `upgrade-check` commands expose these
 public library capabilities. Multi-image filesystem queries require selection.
 
+[Nested index consumption](docs/nested-indexes.md) adds bounded metadata walking,
+explicit image-only flattening, platform selection, trusted root pins and source/
+output derivation records. An independent Python consumer constructs the nested
+documents and checks projection results against the original image content.
+
 - deterministic USTAR/PAX writer and safety-focused USTAR/PAX/GNU reader;
 - SHA-256 Digest and content-addressed in-memory OCI Image Layout;
 - uncompressed and deterministic gzip Layers with correct compressed Layer Digest and uncompressed DiffID handling;

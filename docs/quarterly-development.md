@@ -16,7 +16,7 @@ integration examples, measured resource costs and maintenance documentation:
 | Stream | Current increment | Further work requiring implementation |
 | --- | --- | --- |
 | Executable consumption | Native self-hosted verifier packaging and Linux runner | Execute CI, negative runtime cases, reproducibility across clean runners |
-| Multi-platform distribution | Merge, selection, standalone slicing | Nested-index graph limits, variant fixtures, independent Skopeo selection |
+| Multi-platform distribution | Merge/select/slice plus bounded nested-index walking, image projection, trusted root pins and derivation receipts | Additional feature/variant contracts, reference selection and independent Skopeo selection |
 | Offline delivery | Versioned delta archives, trusted pins, bounded hydration, independent Windows/Linux consumer | Interrupted-transfer recovery and external transport integration |
 | Content lifecycle | Indexed lookup, reachable/stored accounting, nonmutating compaction | Host retention/garbage-collection transactions and workload measurements |
 | Release governance | All-platform runtime metadata rules, quotas, structured decisions and gate CLI | Host policy integration and additional contract cases |

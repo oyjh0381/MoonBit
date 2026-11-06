@@ -4,6 +4,10 @@ All notable changes to MoonOCI are documented here. The format follows Keep a Ch
 
 ## [Unreleased]
 
+- Traverse nested image indexes with metadata/depth/visit limits and explicit unknown-media observations.
+- Project/select complete image layouts and bind root pins to unsigned derivation receipts.
+- Add a Python-authored nested-index interoperability consumer with pin/corruption/depth rejection cases.
+
 - Trace final file payloads, ownership, timestamps and links to contributing layers.
 - Compare file content and execution configuration; bind explicit upgrade review to both exact versions.
 - Expose read-only inventory/diff/config-diff/upgrade-check commands and an independently observed consumer.
