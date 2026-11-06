@@ -12,6 +12,13 @@ index pins. See [runtime validation without a local VM](docs/runtime-validation.
 and the [development programme](docs/quarterly-development.md). These additions
 are not yet published; Linux container execution awaits its CI run.
 
+Source version **0.2.0 is unreleased**; the published installation command below
+still installs 0.1.4. The current source also provides deterministic delta
+archives, pinned offline hydration, reachability/storage accounting, compaction,
+indexed blob lookups and a caller-owned release-policy gate. See
+[offline delivery](docs/offline-delivery.md) for the reproducible Windows/Linux
+consumer and the exact transfer/security boundaries.
+
 - deterministic USTAR/PAX writer and safety-focused USTAR/PAX/GNU reader;
 - SHA-256 Digest and content-addressed in-memory OCI Image Layout;
 - uncompressed and deterministic gzip Layers with correct compressed Layer Digest and uncompressed DiffID handling;

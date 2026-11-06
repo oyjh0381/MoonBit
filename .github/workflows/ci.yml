@@ -121,6 +121,7 @@ jobs:
       - run: sudo apt-get update && sudo apt-get install -y build-essential skopeo podman
       - run: moon update
       - run: python3 scripts/runtime_chain.py
+      - run: python3 scripts/offline_chain.py --binary _build/native/release/build/cmd/moonoci/moonoci.exe
       - uses: actions/upload-artifact@v4
         if: always()
         with:

@@ -83,3 +83,15 @@ _Avoid_: Deleted directory, empty directory
 **Validation Finding**:
 A structured error, warning, or informational observation produced while checking an OCI image layout.
 _Avoid_: Log line, exception message
+
+**Transfer Envelope**:
+A bounded MoonOCI-specific set of missing content and pinned source/target metadata used to reconstruct a complete OCI layout at a receiver.
+_Avoid_: Partial OCI image, signed update
+
+**Hydration**:
+Verification and assembly of an envelope with existing base content into a fresh complete layout before host materialization.
+_Avoid_: In-place patch, extraction
+
+**Release Policy**:
+Caller-owned constraints on verified image configuration and content, producing an allow/block decision separately from OCI structural validity.
+_Avoid_: Runtime security proof, vulnerability scan

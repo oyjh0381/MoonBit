@@ -4,6 +4,14 @@ All notable changes to MoonOCI are documented here. The format follows Keep a Ch
 
 ## [Unreleased]
 
+- Develop 0.2.0 against MoonBit 0.10.16 with supported dependencies and explicit exports.
+- Compose/select flat multi-platform image distributions with platform/config checks.
+- Plan and serialize missing-content updates, verify externally pinned envelopes and hydrate complete standalone layouts.
+- Account reachable/stored/reclaimable bytes and compact copies without mutating source layouts.
+- Index content-addressed lookups while preserving physical record order and duplicate-input diagnostics.
+- Evaluate caller-owned release policies for every image branch, with structured decisions and CLI gating.
+- Add a cross-platform independently observed offline consumer and a Linux self-hosted runtime CI chain; remote runtime results are pending.
+
 ## [0.1.4] - 2026-08-13
 
 ### Added

@@ -2,6 +2,12 @@
 
 This module README documents the minimal portable build path. The same request is used in `examples/single-layer`.
 
+The local 0.2.0 source additionally provides `distribution` for multi-platform
+composition, compact storage and pinned offline transfer/hydration, and `policy`
+for caller-owned release decisions. It is unreleased; the following command
+installs the earlier published version. Reproducible consumers are documented
+in `docs/offline-delivery.md` and `docs/runtime-validation.md`.
+
 Install the published module with:
 
 ```text

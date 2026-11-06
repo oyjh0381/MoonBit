@@ -4,6 +4,8 @@ MoonOCI 是一个原创的 MoonBit 库与命令行工具，用于在不依赖容
 
 项目由可移植核心、内存适配器、Native 文件系统适配器和轻量 CLI 组成。相同的声明式输入会产生字节完全一致的 tar Layer、OCI JSON、Descriptor 和内容寻址 Blob。
 
+当前源码为 **0.2.0 本地未发布版**，注册表安装仍为 0.1.4。新增多平台合并与选择、缺失内容增量归档、可信摘要锁定与离线重建、可达性统计／布局整理、Blob 索引，以及覆盖全部平台的发布策略。Windows 可运行独立观察与离线交付消费者；Linux 容器执行脚本已接入 CI，远程运行尚待验证。使用与边界见 [离线交付](docs/offline-delivery.md) 和 [无需本地虚拟机的验证方式](docs/runtime-validation.md)。
+
 ## 已实现功能
 
 - 确定性 USTAR/PAX 写入器，以及支持 USTAR、PAX、GNU longname/longlink 的安全读取器；
