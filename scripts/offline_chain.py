@@ -19,7 +19,7 @@ def main():
     directory = Path(tempfile.mkdtemp(prefix='offline-', dir=ROOT / '_build'))
 
     def run(*arguments, status=0):
-        result = subprocess.run([str(binary), *map(str, arguments)], cwd=ROOT, capture_output=True, text=True, timeout=120)
+        result = subprocess.run([str(binary), *map(str, arguments)], cwd=ROOT, capture_output=True, text=True, encoding='utf-8', timeout=120)
         if result.returncode != status:
             raise AssertionError((arguments, result.returncode, result.stdout, result.stderr))
         return result.stdout
