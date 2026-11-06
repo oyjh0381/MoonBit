@@ -91,8 +91,20 @@ def main():
     assert not (session / 'chunks' / str(missing[0])).exists()
 
     # Independent processes recover actual files; send only the missing set.
-    for index in missing[::-1]:
-        run('transfer-put', session, pin, index, paths[index])
+    batches = 0
+    while True:
+        batch = json.loads(run('transfer-batch', session, pin, 3, 2 * chunk_bytes))
+        if not batch['chunks']:
+            break
+        assert len(batch['chunks']) <= 3 and int(batch['bytes']) <= 2 * chunk_bytes
+        assert [c['index'] for c in batch['chunks']] == sorted(c['index'] for c in batch['chunks'])
+        for item in batch['chunks'][::-1]:
+            index = item['index']
+            assert index in missing
+            assert int(item['offset']) == index * chunk_bytes
+            assert item['size'] == len(chunks[index]) and item['digest'] == digest(chunks[index])
+            run('transfer-put', session, pin, index, paths[index])
+        batches += 1
     assert json.loads(run('transfer-status', session, pin))['all_chunks_present']
     restored_archive = directory / 'received.tar'
     run('transfer-finish', session, pin, restored_archive)
@@ -165,7 +177,7 @@ def main():
                   corrupt_cache_refused=True, forged_chunk_metadata_refused=True,
                   no_overwrite=True, empty_file_verified=True, pending_recovery_verified=True,
                   complete_partial_recovery_verified=True, bad_partial_preserved=True,
-                  power_loss_tested=False)
+                  bounded_batches=batches, power_loss_tested=False)
     (directory / 'report.json').write_text(json.dumps(report, indent=2), encoding='utf-8')
     print(json.dumps(report, indent=2))
 

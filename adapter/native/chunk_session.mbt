@@ -63,6 +63,18 @@ pub fn TransferSession::plan(
 }
 
 ///|
+pub async fn TransferSession::batch(
+  self : TransferSession,
+  max_chunks : Int32,
+  max_bytes : Int64,
+) -> @transfer.TransferBatch {
+  // Validate host budgets before rehashing potentially large received content.
+  ignore(self.plan.batch([], max_chunks~, max_bytes~))
+  let progress = self.progress()
+  self.plan.batch(progress.missing, max_chunks~, max_bytes~)
+}
+
+///|
 fn chunk_path(session : String, index : Int32) -> String {
   join_path(session, "chunks/" + index.to_string())
 }

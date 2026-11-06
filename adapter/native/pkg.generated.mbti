@@ -65,6 +65,7 @@ pub struct TransferSession {
   path : String
   plan : @transfer.PreparedTransfer
 }
+pub async fn TransferSession::batch(Self, Int32, Int64) -> @transfer.TransferBatch
 pub async fn TransferSession::finish(Self, String) -> Unit
 pub async fn TransferSession::open(String, @model.Digest) -> Self
 pub fn TransferSession::plan(Self) -> @transfer.PreparedTransfer

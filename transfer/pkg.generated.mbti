@@ -7,6 +7,8 @@ import {
 }
 
 // Values
+pub fn batch_json(PreparedTransfer, TransferBatch) -> String
+
 pub fn decode_plan(Bytes, @model.Digest, limits? : ChunkLimits) -> PreparedTransfer raise @model.MoonOciError
 
 pub fn encode_plan(PreparedTransfer) -> Bytes
@@ -48,12 +50,19 @@ pub struct PreparedTransfer {
   chunk_bytes : Int32
   chunks : Array[@model.Digest]
 }
+pub fn PreparedTransfer::batch(Self, Array[Int32], max_chunks? : Int32, max_bytes? : Int64) -> TransferBatch raise @model.MoonOciError
 pub fn PreparedTransfer::chunk(Self, Int32) -> ChunkSpec raise @model.MoonOciError
 pub fn PreparedTransfer::chunk_bytes(Self) -> Int32
 pub fn PreparedTransfer::chunk_count(Self) -> Int32
 pub fn PreparedTransfer::digest(Self) -> @model.Digest
 pub fn PreparedTransfer::size(Self) -> Int64
 pub fn PreparedTransfer::verify_chunk(Self, Int32, Bytes) -> Unit raise @model.MoonOciError
+
+pub(all) struct TransferBatch {
+  chunks : Array[ChunkSpec]
+  bytes : Int64
+  pending_chunks : Int32
+}
 
 pub struct TransferVerifier {
   plan : PreparedTransfer

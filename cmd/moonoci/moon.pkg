@@ -4,6 +4,7 @@ import {
   "oyjh0381/moonoci/review",
   "oyjh0381/moonoci/policy",
   "oyjh0381/moonoci/distribution",
+  "oyjh0381/moonoci/transfer",
   "oyjh0381/moonoci/model",
   "oyjh0381/moonoci/adapter/native",
   "oyjh0381/moonoci/builder",

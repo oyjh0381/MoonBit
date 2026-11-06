@@ -11,6 +11,21 @@ async fn main {
       return
     }
     match args[1] {
+      "transfer-batch" => {
+        require_arity(
+          args, 6, "usage: moonoci transfer-batch SESSION EXPECTED_PIN MAX_CHUNKS MAX_BYTES",
+        )
+        let session = @native.TransferSession::open(
+          args[2],
+          @model.Digest::parse(args[3]),
+        )
+        let max_bytes = @string.parse_int64(args[5]) catch {
+          _ =>
+            raise @model.InvalidArgument("batch byte budget must be an integer")
+        }
+        let batch = session.batch(integer_argument(args[4]), max_bytes)
+        @stdio.stdout.write(@transfer.batch_json(session.plan(), batch) + "\n")
+      }
       "transfer-recover-chunk" => {
         require_arity(
           args, 5, "usage: moonoci transfer-recover-chunk SESSION EXPECTED_PIN INDEX",
@@ -488,6 +503,7 @@ async fn print_usage() -> Unit {
       #|MoonOCI — deterministic OCI Image Layout builder and validator
       #|
       #|Usage:
+      #|  moonoci transfer-batch SESSION EXPECTED_PIN MAX_CHUNKS MAX_BYTES
       #|  moonoci transfer-recover-chunk SESSION EXPECTED_PIN INDEX
       #|  moonoci transfer-recover-output SESSION EXPECTED_PIN OUTPUT_FILE
       #|  moonoci chunk-plan SOURCE CHUNK_BYTES OUTPUT_PLAN
