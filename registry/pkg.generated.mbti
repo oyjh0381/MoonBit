@@ -2,6 +2,7 @@
 package "oyjh0381/moonoci/registry"
 
 import {
+  "oyjh0381/moonoci/layout",
   "oyjh0381/moonoci/model",
 }
 
@@ -48,6 +49,39 @@ pub struct BearerChallenge {
 }
 pub fn BearerChallenge::realm(Self) -> String
 pub fn BearerChallenge::token_request(Self, RegistryOrigin, String, allowed_realms? : Array[RegistryOrigin], allow_http? : Bool) -> RegistryUrl raise @model.MoonOciError
+
+pub(all) struct FetchRequest {
+  path : String
+  kind : String
+  digest : @model.Digest
+  size : Int64?
+  media_type : String?
+  depth : Int32
+}
+
+pub(all) struct PullLimits {
+  max_objects : Int32
+  max_visits : Int32
+  max_depth : Int32
+  max_metadata_bytes : Int32
+  max_blob_bytes : Int32
+  max_total_bytes : Int64
+}
+pub fn PullLimits::default() -> Self
+pub fn PullLimits::validate(Self) -> Unit raise @model.MoonOciError
+
+pub struct PullSession {
+  // private fields
+}
+pub fn PullSession::accept(Self, Int32, Array[@model.KeyValue], Bytes) -> Unit raise @model.MoonOciError
+pub fn PullSession::accepted_bytes(Self) -> Int64
+pub fn PullSession::accepted_requests(Self) -> Int32
+pub fn PullSession::body_limit(Self) -> Int32 raise @model.MoonOciError
+pub fn PullSession::finish(Self) -> @layout.MemoryLayout raise @model.MoonOciError
+pub fn PullSession::new(String, String, @model.Digest, limits? : PullLimits, include_subjects? : Bool) -> Self raise @model.MoonOciError
+pub fn PullSession::next(Self) -> FetchRequest?
+pub fn PullSession::planned_requests(Self) -> Int32
+pub fn PullSession::reserved_bytes(Self) -> Int64
 
 pub struct RegistryOrigin {
   // private fields

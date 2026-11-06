@@ -3,10 +3,14 @@ import {
   "oyjh0381/moonoci/artifacts",
   "oyjh0381/moonoci/codec",
   "oyjh0381/moonoci/digest",
+  "oyjh0381/moonoci/layout",
   "moonbitlang/core/string",
   "moonbitlang/core/encoding/utf8",
 }
 
 import {
   "oyjh0381/moonoci/registry",
+  "oyjh0381/moonoci/builder",
+  "oyjh0381/moonoci/archive",
+  "oyjh0381/moonoci/distribution",
 } for "test"
