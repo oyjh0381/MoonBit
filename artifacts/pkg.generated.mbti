@@ -2,26 +2,60 @@
 package "oyjh0381/moonoci/artifacts"
 
 import {
+  "oyjh0381/moonoci/layout",
   "oyjh0381/moonoci/model",
 }
 
 // Values
+pub fn attach(@layout.MemoryLayout, @model.Descriptor, String, Array[ArtifactPayload], annotations? : Array[@model.KeyValue], reference? : String, limits? : ArtifactLimits) -> ArtifactBundle raise @model.MoonOciError
+
+pub fn build(String, Array[ArtifactPayload], subject? : @model.Descriptor, annotations? : Array[@model.KeyValue], reference? : String, limits? : ArtifactLimits) -> ArtifactBundle raise @model.MoonOciError
+
 pub fn decode_manifest(Bytes) -> ArtifactManifest raise @model.MoonOciError
 
 pub let empty_media_type : String
 
 pub fn encode_manifest(ArtifactManifest) -> Bytes raise @model.MoonOciError
 
+pub fn inspect(@layout.MemoryLayout, @model.Descriptor, limits? : ArtifactLimits, require_subject? : Bool) -> ArtifactObservation raise @model.MoonOciError
+
 pub fn validate_media_type(String) -> Unit raise @model.MoonOciError
 
 // Errors
 
 // Types and methods
+pub(all) struct ArtifactBundle {
+  layout : @layout.MemoryLayout
+  descriptor : @model.Descriptor
+}
+
+pub(all) struct ArtifactLimits {
+  max_payloads : Int32
+  max_payload_bytes : Int64
+  max_total_bytes : Int64
+  max_manifest_bytes : Int32
+  max_config_bytes : Int32
+}
+pub fn ArtifactLimits::default() -> Self
+
 pub(all) struct ArtifactManifest {
   artifact_type : String
   config : @model.Descriptor
   payloads : Array[@model.Descriptor]
   subject : @model.Descriptor?
+  annotations : Array[@model.KeyValue]
+}
+
+pub(all) struct ArtifactObservation {
+  descriptor : @model.Descriptor
+  manifest : ArtifactManifest
+  payload_bytes : Int64
+  subject_present : Bool
+}
+
+pub(all) struct ArtifactPayload {
+  media_type : String
+  data : Bytes
   annotations : Array[@model.KeyValue]
 }
 

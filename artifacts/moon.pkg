@@ -1,10 +1,12 @@
 import {
   "oyjh0381/moonoci/model",
+  "oyjh0381/moonoci/layout",
   "oyjh0381/moonoci/codec",
   "oyjh0381/moonoci/pathing",
   "moonbitlang/core/encoding/utf8",
 }
 
 import {
-  "oyjh0381/moonoci/layout",
+  "oyjh0381/moonoci/builder",
+  "oyjh0381/moonoci/archive",
 } for "test"
