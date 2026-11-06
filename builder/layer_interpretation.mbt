@@ -17,7 +17,7 @@ fn interpret_layer_blob(
 ) -> LayerInterpretation raise @model.MoonOciError {
   let uncompressed = decode_layer_blob(media_type, data)
   let entries = @archive.read_tar(uncompressed)
-  { uncompressed, entries }
+  { uncompressed, entries, }
 }
 
 ///|

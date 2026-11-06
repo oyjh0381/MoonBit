@@ -33,3 +33,4 @@ docs/agents/
 
 # Keep the repository ignore policy itself versioned.
 !.gitignore
+/.private/

@@ -6,11 +6,11 @@ import {
 }
 
 // Values
-pub fn compare_utf8(String, String) -> Int
+pub fn compare_utf8(String, String) -> Int32
 
 pub fn is_whiteout_path(String) -> Bool
 
-pub let max_path_bytes : Int
+pub let max_path_bytes : Int32
 
 pub fn normalize_archive_path(String) -> String raise @model.MoonOciError
 

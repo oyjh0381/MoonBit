@@ -45,21 +45,21 @@ pub fn verify_memory(
     blobs_checked += counts.blobs
     layers_checked += counts.layers
   }
-  { findings, manifests_checked, blobs_checked, layers_checked }
+  { findings, manifests_checked, blobs_checked, layers_checked, }
 }
 
 ///|
 priv struct VerificationCounts {
-  manifests : Int
-  blobs : Int
-  layers : Int
+  manifests : Int32
+  blobs : Int32
+  layers : Int32
 }
 
 ///|
 fn verify_manifest_branch(
   layout : @layout.MemoryLayout,
   manifest_descriptor : @model.Descriptor,
-  manifest_index : Int,
+  manifest_index : Int32,
   findings : Array[@model.ValidationFinding],
 ) -> VerificationCounts {
   let manifest_path = "index.manifests[" + manifest_index.to_string() + "]"
@@ -84,12 +84,12 @@ fn verify_manifest_branch(
       blobs_checked += 1
       data
     }
-    None => return { manifests: 0, blobs: blobs_checked, layers: 0 }
+    None => return { manifests: 0, blobs: blobs_checked, layers: 0, }
   }
   let manifest = @codec.decode_manifest(manifest_data) catch {
     error => {
       push_verification_error(findings, error, manifest_path)
-      return { manifests: 0, blobs: blobs_checked, layers: 0 }
+      return { manifests: 0, blobs: blobs_checked, layers: 0, }
     }
   }
   if manifest.schema_version != 2 {
@@ -268,7 +268,7 @@ fn push_verification_error(
 fn empty_verification_report(
   findings : Array[@model.ValidationFinding],
 ) -> @model.VerificationReport {
-  { findings, manifests_checked: 0, blobs_checked: 0, layers_checked: 0 }
+  { findings, manifests_checked: 0, blobs_checked: 0, layers_checked: 0, }
 }
 
 ///|

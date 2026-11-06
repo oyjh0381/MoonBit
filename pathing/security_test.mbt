@@ -8,7 +8,7 @@ test "path security matrix rejects traversal and host-specific absolute forms" {
   ]
   for value in unsafe_cases {
     let mut raised = false
-    ignore(normalize_spec_path(value)) catch {
+    ignore(@pathing.normalize_spec_path(value)) catch {
       _ => raised = true
     }
     assert_true(raised, msg="expected unsafe path rejection: " + value)
@@ -24,7 +24,7 @@ test "path security matrix accepts normalized portable forms" {
     "日本語", "one/two/three",
   ]
   for value in safe {
-    let normalized = normalize_spec_path(value)
+    let normalized = @pathing.normalize_spec_path(value)
     assert_false(normalized.has_prefix("/"))
     assert_false(normalized.contains("\\"))
     assert_false(normalized.contains(".."))
@@ -35,9 +35,9 @@ test "path security matrix accepts normalized portable forms" {
 test "property: accepted paths are idempotent and archive-safe" {
   @quickcheck.quick_check_fn((value : String) => {
     try {
-      let normalized = normalize_spec_path(value)
-      normalize_archive_path(normalized) == normalized &&
-      normalize_spec_path(normalized) == normalized &&
+      let normalized = @pathing.normalize_spec_path(value)
+      @pathing.normalize_archive_path(normalized) == normalized &&
+      @pathing.normalize_spec_path(normalized) == normalized &&
       !normalized.has_prefix("/") &&
       !normalized.contains("\\")
     } catch {

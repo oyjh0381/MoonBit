@@ -1,9 +1,9 @@
 ///|
 /// Optional normalized metadata applied to entries read from a Layer Source.
 pub(all) struct MetadataSpec {
-  mode : Int?
-  uid : Int?
-  gid : Int?
+  mode : Int32?
+  uid : Int32?
+  gid : Int32?
   mtime : Int64?
   preserve_mtime : Bool
 } derive(Debug, Eq)
@@ -29,7 +29,7 @@ pub(all) struct OutputSpec {
 ///|
 /// Strict schemaVersion 1 input consumed by MoonOCI.
 pub(all) struct BuildSpec {
-  schema_version : Int
+  schema_version : Int32
   reference : String
   platform : @model.Platform
   layers : Array[LayerSpec]
@@ -42,5 +42,29 @@ pub(all) struct BuildSpec {
 
 ///|
 pub fn default_metadata_spec() -> MetadataSpec {
-  { mode: None, uid: None, gid: None, mtime: None, preserve_mtime: false }
+  { mode: None, uid: None, gid: None, mtime: None, preserve_mtime: false, }
 }
+
+///|
+pub extend MetadataSpec with @debug.Debug::{to_repr}
+
+///|
+pub extend MetadataSpec with Eq::{not_equal, equal}
+
+///|
+pub extend LayerSpec with @debug.Debug::{to_repr}
+
+///|
+pub extend LayerSpec with Eq::{not_equal, equal}
+
+///|
+pub extend OutputSpec with @debug.Debug::{to_repr}
+
+///|
+pub extend OutputSpec with Eq::{not_equal, equal}
+
+///|
+pub extend BuildSpec with @debug.Debug::{to_repr}
+
+///|
+pub extend BuildSpec with Eq::{not_equal, equal}

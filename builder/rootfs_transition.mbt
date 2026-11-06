@@ -127,7 +127,7 @@ fn validate_whiteout_marker(
 fn apply_rootfs_transitions(
   current : Array[@model.RootfsEntry],
   transitions : Array[RootfsTransition],
-  layer_index : Int,
+  layer_index : Int32,
 ) -> Array[@model.RootfsEntry] raise @model.MoonOciError {
   let opaque_paths : Array[String] = []
   let removed_paths : Array[String] = []

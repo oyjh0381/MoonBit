@@ -1,6 +1,6 @@
 ///|
 test "minimal Build Specification applies deterministic defaults" {
-  let spec = parse_build_spec(
+  let spec = @spec.parse_build_spec(
     b"{\"schemaVersion\":1,\"layers\":[{\"source\":\"rootfs\"}]}",
   )
   assert_eq(spec.schema_version, 1)
@@ -31,7 +31,7 @@ test "full Build Specification maps supported fields" {
     #|  "annotations":{"org.example":"demo"},
     #|  "output":{"layout":"dist/image"}
     #|}
-  let spec = parse_build_spec(@utf8.encode(json))
+  let spec = @spec.parse_build_spec(@utf8.encode(json))
   assert_eq(spec.platform.architecture, "arm64")
   assert_eq(spec.layers[0].compression, @model.Compression::Gzip)
   assert_eq(spec.layers[0].remove, ["old"])
@@ -91,7 +91,7 @@ test "Build Specification rejects unsupported host metadata preservation" {
 ///|
 fn assert_spec_fails(data : Bytes) -> Unit raise {
   let mut raised = false
-  ignore(parse_build_spec(data)) catch {
+  ignore(@spec.parse_build_spec(data)) catch {
     _ => raised = true
   }
   assert_true(raised)

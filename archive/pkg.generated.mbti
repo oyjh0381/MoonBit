@@ -7,7 +7,7 @@ import {
 }
 
 // Values
-pub fn read_tar(Bytes, max_entries? : Int, max_path_bytes? : Int) -> Array[TarEntry] raise @model.MoonOciError
+pub fn read_tar(Bytes, max_entries? : Int32, max_path_bytes? : Int32) -> Array[TarEntry] raise @model.MoonOciError
 
 pub fn write_tar(Array[TarEntry]) -> Bytes raise @model.MoonOciError
 
@@ -17,18 +17,21 @@ pub fn write_tar(Array[TarEntry]) -> Bytes raise @model.MoonOciError
 pub(all) struct TarEntry {
   path : String
   kind : TarEntryKind
-  mode : Int
-  uid : Int
-  gid : Int
+  mode : Int32
+  uid : Int32
+  gid : Int32
   mtime : Int64
   data : Bytes
   link_target : String?
 } derive(Eq, @debug.Debug)
-pub fn TarEntry::directory(String, mode? : Int) -> Self raise @model.MoonOciError
-pub fn TarEntry::file(String, Bytes, mode? : Int) -> Self raise @model.MoonOciError
+pub fn TarEntry::directory(String, mode? : Int32) -> Self raise @model.MoonOciError
+pub fn TarEntry::equal(Self, Self) -> Bool
+pub fn TarEntry::file(String, Bytes, mode? : Int32) -> Self raise @model.MoonOciError
+pub fn TarEntry::not_equal(Self, Self) -> Bool
 pub fn TarEntry::opaque_marker(String) -> Self raise @model.MoonOciError
 pub fn TarEntry::size(Self) -> Int64
 pub fn TarEntry::symlink(String, String) -> Self raise @model.MoonOciError
+pub fn TarEntry::to_repr(Self) -> @debug.Repr
 pub fn TarEntry::whiteout(String) -> Self raise @model.MoonOciError
 
 pub(all) enum TarEntryKind {
@@ -36,6 +39,9 @@ pub(all) enum TarEntryKind {
   Directory
   Symlink
 } derive(Eq, @debug.Debug)
+pub fn TarEntryKind::equal(Self, Self) -> Bool
+pub fn TarEntryKind::not_equal(Self, Self) -> Bool
+pub fn TarEntryKind::to_repr(Self) -> @debug.Repr
 
 // Type aliases
 

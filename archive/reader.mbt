@@ -1,5 +1,5 @@
 ///|
-let default_max_entries : Int = 1_000_000
+let default_max_entries : Int32 = 1_000_000
 
 ///|
 /// Parse a tar layer into normalized entries while enforcing safety limits.
@@ -7,8 +7,8 @@ let default_max_entries : Int = 1_000_000
 /// records. Sparse files and special device-like entries are rejected.
 pub fn read_tar(
   data : Bytes,
-  max_entries? : Int = default_max_entries,
-  max_path_bytes? : Int = @pathing.max_path_bytes,
+  max_entries~ : Int32 = default_max_entries,
+  max_path_bytes~ : Int32 = @pathing.max_path_bytes,
 ) -> Array[TarEntry] raise @model.MoonOciError {
   if max_entries <= 0 || max_path_bytes <= 0 {
     raise @model.InvalidArgument("tar limits must be positive")
@@ -147,7 +147,7 @@ pub fn read_tar(
 }
 
 ///|
-fn padded_size(size : Int) -> Int {
+fn padded_size(size : Int32) -> Int32 {
   if size % tar_block_size == 0 {
     size
   } else {
@@ -156,7 +156,7 @@ fn padded_size(size : Int) -> Int {
 }
 
 ///|
-fn block_is_zero(data : Bytes, offset : Int) -> Bool {
+fn block_is_zero(data : Bytes, offset : Int32) -> Bool {
   for i in 0..<tar_block_size {
     if data[offset + i] != b'\x00' {
       return false
@@ -168,7 +168,7 @@ fn block_is_zero(data : Bytes, offset : Int) -> Bool {
 ///|
 fn validate_checksum(
   data : Bytes,
-  offset : Int,
+  offset : Int32,
 ) -> Unit raise @model.MoonOciError {
   let expected = read_octal(data, offset + 148, 8, "checksum")
   let mut actual = 0L
@@ -187,8 +187,8 @@ fn validate_checksum(
 ///|
 fn read_octal(
   data : Bytes,
-  offset : Int,
-  width : Int,
+  offset : Int32,
+  width : Int32,
   field : String,
 ) -> Int64 raise @model.MoonOciError {
   let mut value = 0L
@@ -218,8 +218,8 @@ fn read_octal(
 ///|
 fn read_text(
   data : Bytes,
-  offset : Int,
-  width : Int,
+  offset : Int32,
+  width : Int32,
   field : String,
 ) -> String raise @model.MoonOciError {
   let mut length = 0
@@ -232,8 +232,8 @@ fn read_text(
 ///|
 fn read_long_text(
   data : Bytes,
-  offset : Int,
-  length : Int,
+  offset : Int32,
+  length : Int32,
   field : String,
 ) -> String raise @model.MoonOciError {
   let mut actual = length
@@ -246,8 +246,8 @@ fn read_long_text(
 ///|
 fn decode_utf8(
   data : Bytes,
-  offset : Int,
-  length : Int,
+  offset : Int32,
+  length : Int32,
   field : String,
 ) -> String raise @model.MoonOciError {
   @utf8.decode(data[offset:offset + length]) catch {
@@ -256,7 +256,7 @@ fn decode_utf8(
 }
 
 ///|
-fn copy_bytes(data : Bytes, offset : Int, length : Int) -> Bytes {
+fn copy_bytes(data : Bytes, offset : Int32, length : Int32) -> Bytes {
   let output = Array::make(length, b'\x00')
   for i in 0..<length {
     output[i] = data[offset + i]
@@ -267,8 +267,8 @@ fn copy_bytes(data : Bytes, offset : Int, length : Int) -> Bytes {
 ///|
 fn parse_pax(
   data : Bytes,
-  offset : Int,
-  size : Int,
+  offset : Int32,
+  size : Int32,
 ) -> Array[@model.KeyValue] raise @model.MoonOciError {
   let records : Array[@model.KeyValue] = []
   let mut cursor = 0
@@ -316,7 +316,7 @@ fn parse_pax(
       body_end - equals - 2,
       "PAX value",
     )
-    records.push({ key, value })
+    records.push({ key, value, })
     cursor = body_end
   }
   records

@@ -39,7 +39,7 @@ pub fn build_single_layer(
     reference: request.reference,
     annotations: request.annotations,
   })
-  { layout: result.layout, report: result.report }
+  { layout: result.layout, report: result.report, }
 }
 
 ///|
@@ -58,3 +58,15 @@ pub fn default_single_layer_request(
     compression: @model.Compression::Uncompressed,
   }
 }
+
+///|
+pub extend SingleLayerRequest with @debug.Debug::{to_repr}
+
+///|
+pub extend SingleLayerRequest with Eq::{not_equal, equal}
+
+///|
+pub extend BuildResult with @debug.Debug::{to_repr}
+
+///|
+pub extend BuildResult with Eq::{not_equal, equal}

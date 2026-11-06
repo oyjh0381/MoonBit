@@ -1,6 +1,6 @@
 ///|
 test "memory layout deduplicates identical blobs" {
-  let layout = MemoryLayout::new()
+  let layout = @layout.MemoryLayout::new()
   let first = layout.put_blob(@model.media_type_config, b"same")
   let second = layout.put_blob(@model.media_type_config, b"same")
   assert_eq(first, second)
@@ -10,9 +10,9 @@ test "memory layout deduplicates identical blobs" {
 
 ///|
 test "memory layout detects descriptor size mismatch" {
-  let layout = MemoryLayout::new()
+  let layout = @layout.MemoryLayout::new()
   let descriptor = layout.put_blob(@model.media_type_config, b"content")
-  let wrong : @model.Descriptor = { ..descriptor, size: descriptor.size + 1L }
+  let wrong : @model.Descriptor = { ..descriptor, size: descriptor.size + 1L, }
   let mut raised = false
   ignore(layout.require_blob(wrong)) catch {
     _ => raised = true

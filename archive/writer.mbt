@@ -1,5 +1,5 @@
 ///|
-let tar_block_size : Int = 512
+let tar_block_size : Int32 = 512
 
 ///|
 /// Build a deterministic uncompressed layer tar.
@@ -119,9 +119,9 @@ fn write_entry(
 ///|
 fn make_header(
   path : String,
-  mode : Int,
-  uid : Int,
-  gid : Int,
+  mode : Int32,
+  uid : Int32,
+  gid : Int32,
   size : Int64,
   mtime : Int64,
   typeflag : Byte,
@@ -155,8 +155,8 @@ fn make_header(
 ///|
 fn write_text(
   output : FixedArray[Byte],
-  offset : Int,
-  width : Int,
+  offset : Int32,
+  width : Int32,
   value : String,
 ) -> Unit raise @model.MoonOciError {
   let encoded = @utf8.encode(value)
@@ -169,7 +169,7 @@ fn write_text(
 }
 
 ///|
-fn write_raw(output : FixedArray[Byte], offset : Int, value : Bytes) -> Unit {
+fn write_raw(output : FixedArray[Byte], offset : Int32, value : Bytes) -> Unit {
   for i in 0..<value.length() {
     output[offset + i] = value[i]
   }
@@ -178,8 +178,8 @@ fn write_raw(output : FixedArray[Byte], offset : Int, value : Bytes) -> Unit {
 ///|
 fn write_octal(
   output : FixedArray[Byte],
-  offset : Int,
-  width : Int,
+  offset : Int32,
+  width : Int32,
   value : Int64,
 ) -> Unit raise @model.MoonOciError {
   let digits = value.to_string(radix=8)
@@ -195,7 +195,7 @@ fn write_octal(
 }
 
 ///|
-fn write_checksum(output : FixedArray[Byte], value : Int) -> Unit {
+fn write_checksum(output : FixedArray[Byte], value : Int32) -> Unit {
   let digits = value.to_string(radix=8)
   let padding = 6 - digits.length()
   for i in 0..<padding {
@@ -238,7 +238,7 @@ fn append_bytes(output : Array[Byte], data : Bytes) -> Unit {
 }
 
 ///|
-fn append_padding(output : Array[Byte], size : Int) -> Unit {
+fn append_padding(output : Array[Byte], size : Int32) -> Unit {
   let remainder = size % tar_block_size
   if remainder != 0 {
     append_zeros(output, tar_block_size - remainder)
@@ -246,7 +246,7 @@ fn append_padding(output : Array[Byte], size : Int) -> Unit {
 }
 
 ///|
-fn append_zeros(output : Array[Byte], count : Int) -> Unit {
+fn append_zeros(output : Array[Byte], count : Int32) -> Unit {
   for _ in 0..<count {
     output.push(b'\x00')
   }

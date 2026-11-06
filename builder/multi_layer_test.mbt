@@ -1,6 +1,6 @@
 ///|
 test "multi-layer build applies whiteout and opaque semantics" {
-  let request : ImageBuildRequest = {
+  let request : @builder.ImageBuildRequest = {
     layers: [
       {
         entries: [
@@ -31,9 +31,9 @@ test "multi-layer build applies whiteout and opaque semantics" {
     reference: "multi",
     annotations: [],
   }
-  let result = build_image(request)
+  let result = @builder.build_image(request)
   assert_eq(result.report.layers.length(), 2)
-  assert_true(verify_memory(result.layout).is_valid())
+  assert_true(@builder.verify_memory(result.layout).is_valid())
   assert_eq(result.rootfs.map(entry => entry.path), [
     "cache", "cache/current", "etc", "etc/new", "keep",
   ])
@@ -42,7 +42,7 @@ test "multi-layer build applies whiteout and opaque semantics" {
 
 ///|
 test "whiteout and opaque markers are physically present in layer tar" {
-  let request : ImageBuildRequest = {
+  let request : @builder.ImageBuildRequest = {
     layers: [
       {
         entries: [],
@@ -58,7 +58,7 @@ test "whiteout and opaque markers are physically present in layer tar" {
     reference: "markers",
     annotations: [],
   }
-  let result = build_image(request)
+  let result = @builder.build_image(request)
   let entries = @archive.read_tar(
     result.layout.require_blob(result.report.layers[0]),
   )
@@ -69,7 +69,7 @@ test "whiteout and opaque markers are physically present in layer tar" {
 
 ///|
 test "layer cannot add and remove the same path" {
-  let request : ImageBuildRequest = {
+  let request : @builder.ImageBuildRequest = {
     layers: [
       {
         entries: [@archive.TarEntry::file("same", b"value")],
@@ -86,7 +86,7 @@ test "layer cannot add and remove the same path" {
     annotations: [],
   }
   let mut raised = false
-  ignore(build_image(request)) catch {
+  ignore(@builder.build_image(request)) catch {
     _ => raised = true
   }
   assert_true(raised)
@@ -94,7 +94,7 @@ test "layer cannot add and remove the same path" {
 
 ///|
 test "cannot add a child below a surviving regular file" {
-  let request : ImageBuildRequest = {
+  let request : @builder.ImageBuildRequest = {
     layers: [
       {
         entries: [@archive.TarEntry::file("parent", b"file")],
@@ -117,7 +117,7 @@ test "cannot add a child below a surviving regular file" {
     annotations: [],
   }
   let mut raised = false
-  ignore(build_image(request)) catch {
+  ignore(@builder.build_image(request)) catch {
     _ => raised = true
   }
   assert_true(raised)
@@ -125,7 +125,7 @@ test "cannot add a child below a surviving regular file" {
 
 ///|
 test "redeclared directory preserves inherited children" {
-  let request : ImageBuildRequest = {
+  let request : @builder.ImageBuildRequest = {
     layers: [
       {
         entries: [
@@ -154,18 +154,18 @@ test "redeclared directory preserves inherited children" {
     reference: "directory-merge",
     annotations: [],
   }
-  let result = build_image(request)
+  let result = @builder.build_image(request)
   let expected = ["parent", "parent/inherited", "parent/new"]
   assert_eq(result.rootfs.map(entry => entry.path), expected)
   assert_eq(
-    rootfs_from_layout(result.layout).map(entry => entry.path),
+    @builder.rootfs_from_layout(result.layout).map(entry => entry.path),
     expected,
   )
 }
 
 ///|
 test "reserved whiteout path cannot be supplied as an addition" {
-  let request : ImageBuildRequest = {
+  let request : @builder.ImageBuildRequest = {
     layers: [
       {
         entries: [@archive.TarEntry::file("etc/.wh.hidden", b"payload")],
@@ -182,7 +182,7 @@ test "reserved whiteout path cannot be supplied as an addition" {
     annotations: [],
   }
   let mut raised = false
-  ignore(build_image(request)) catch {
+  ignore(@builder.build_image(request)) catch {
     _ => raised = true
   }
   assert_true(raised)

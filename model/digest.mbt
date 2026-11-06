@@ -20,7 +20,7 @@ pub fn Digest::sha256(encoded : String) -> Digest raise MoonOciError {
       )
     }
   }
-  { algorithm: "sha256", encoded }
+  { algorithm: "sha256", encoded, }
 }
 
 ///|
@@ -48,3 +48,9 @@ pub fn Digest::to_string(self : Digest) -> String {
 pub fn Digest::blob_path(self : Digest) -> String {
   "blobs/" + self.algorithm + "/" + self.encoded
 }
+
+///|
+pub extend Digest with @debug.Debug::{to_repr}
+
+///|
+pub extend Digest with Eq::{not_equal, equal}

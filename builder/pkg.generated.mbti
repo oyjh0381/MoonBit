@@ -28,6 +28,9 @@ pub(all) struct BuildResult {
   layout : @layout.MemoryLayout
   report : @model.BuildReport
 } derive(Eq, @debug.Debug)
+pub fn BuildResult::equal(Self, Self) -> Bool
+pub fn BuildResult::not_equal(Self, Self) -> Bool
+pub fn BuildResult::to_repr(Self) -> @debug.Repr
 
 pub(all) struct ImageBuildRequest {
   layers : Array[LayerBuildRequest]
@@ -38,12 +41,18 @@ pub(all) struct ImageBuildRequest {
   reference : String
   annotations : Array[@model.KeyValue]
 } derive(Eq, @debug.Debug)
+pub fn ImageBuildRequest::equal(Self, Self) -> Bool
+pub fn ImageBuildRequest::not_equal(Self, Self) -> Bool
+pub fn ImageBuildRequest::to_repr(Self) -> @debug.Repr
 
 pub(all) struct ImageBuildResult {
   layout : @layout.MemoryLayout
   report : @model.BuildReport
   rootfs : Array[@model.RootfsEntry]
 } derive(Eq, @debug.Debug)
+pub fn ImageBuildResult::equal(Self, Self) -> Bool
+pub fn ImageBuildResult::not_equal(Self, Self) -> Bool
+pub fn ImageBuildResult::to_repr(Self) -> @debug.Repr
 
 pub(all) struct LayerBuildRequest {
   entries : Array[@archive.TarEntry]
@@ -51,6 +60,9 @@ pub(all) struct LayerBuildRequest {
   opaque_dirs : Array[String]
   compression : @model.Compression
 } derive(Eq, @debug.Debug)
+pub fn LayerBuildRequest::equal(Self, Self) -> Bool
+pub fn LayerBuildRequest::not_equal(Self, Self) -> Bool
+pub fn LayerBuildRequest::to_repr(Self) -> @debug.Repr
 
 pub(all) struct SingleLayerRequest {
   entries : Array[@archive.TarEntry]
@@ -62,6 +74,9 @@ pub(all) struct SingleLayerRequest {
   annotations : Array[@model.KeyValue]
   compression : @model.Compression
 } derive(Eq, @debug.Debug)
+pub fn SingleLayerRequest::equal(Self, Self) -> Bool
+pub fn SingleLayerRequest::not_equal(Self, Self) -> Bool
+pub fn SingleLayerRequest::to_repr(Self) -> @debug.Repr
 
 // Type aliases
 

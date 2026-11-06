@@ -11,9 +11,9 @@ pub(all) enum TarEntryKind {
 pub(all) struct TarEntry {
   path : String
   kind : TarEntryKind
-  mode : Int
-  uid : Int
-  gid : Int
+  mode : Int32
+  uid : Int32
+  gid : Int32
   mtime : Int64
   data : Bytes
   link_target : String?
@@ -24,7 +24,7 @@ pub(all) struct TarEntry {
 pub fn TarEntry::file(
   path : String,
   data : Bytes,
-  mode? : Int = 0o644,
+  mode~ : Int32 = 0o644,
 ) -> TarEntry raise @model.MoonOciError {
   {
     path: @pathing.normalize_archive_path(path),
@@ -42,7 +42,7 @@ pub fn TarEntry::file(
 /// Construct a normalized directory entry.
 pub fn TarEntry::directory(
   path : String,
-  mode? : Int = 0o755,
+  mode~ : Int32 = 0o755,
 ) -> TarEntry raise @model.MoonOciError {
   {
     path: @pathing.normalize_archive_path(path),
@@ -97,3 +97,15 @@ pub fn TarEntry::size(self : TarEntry) -> Int64 {
     Directory | Symlink => 0L
   }
 }
+
+///|
+pub extend TarEntryKind with @debug.Debug::{to_repr}
+
+///|
+pub extend TarEntryKind with Eq::{not_equal, equal}
+
+///|
+pub extend TarEntry with @debug.Debug::{to_repr}
+
+///|
+pub extend TarEntry with Eq::{not_equal, equal}

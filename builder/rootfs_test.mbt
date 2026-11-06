@@ -1,6 +1,6 @@
 ///|
 test "Root Filesystem can be reconstructed from layout Blobs" {
-  let request : ImageBuildRequest = {
+  let request : @builder.ImageBuildRequest = {
     layers: [
       {
         entries: [
@@ -26,8 +26,8 @@ test "Root Filesystem can be reconstructed from layout Blobs" {
     reference: "rootfs",
     annotations: [],
   }
-  let result = build_image(request)
-  assert_eq(rootfs_from_layout(result.layout), result.rootfs)
+  let result = @builder.build_image(request)
+  assert_eq(@builder.rootfs_from_layout(result.layout), result.rootfs)
 }
 
 ///|
@@ -78,7 +78,7 @@ test "Root Filesystem rejects conflicting archived transitions" {
     @archive.TarEntry::file("same", b"value"),
   ])
   let mut raised = false
-  ignore(rootfs_from_layout(layout)) catch {
+  ignore(@builder.rootfs_from_layout(layout)) catch {
     _ => raised = true
   }
   assert_true(raised)
@@ -90,7 +90,7 @@ test "Root Filesystem rejects non-empty Whiteout markers" {
     @archive.TarEntry::file(".wh.removed", b"not-empty"),
   ])
   let mut raised = false
-  ignore(rootfs_from_layout(layout)) catch {
+  ignore(@builder.rootfs_from_layout(layout)) catch {
     _ => raised = true
   }
   assert_true(raised)

@@ -1,5 +1,5 @@
 ///|
-let max_json_bytes : Int = 16 * 1024 * 1024
+let max_json_bytes : Int32 = 16 * 1024 * 1024
 
 ///|
 /// Validate an OCI Image Layout marker while tolerating extension fields and
@@ -131,9 +131,9 @@ fn reject_duplicate_object_keys(data : Bytes) -> Unit raise @model.MoonOciError 
 ///|
 fn scan_json_value(
   data : Bytes,
-  start : Int,
-  depth : Int,
-) -> Int raise @model.MoonOciError {
+  start : Int32,
+  depth : Int32,
+) -> Int32 raise @model.MoonOciError {
   if depth > 128 {
     raise @model.ResourceLimitExceeded("JSON nesting exceeds 128 levels")
   }
@@ -168,9 +168,9 @@ fn scan_json_value(
 ///|
 fn scan_json_object(
   data : Bytes,
-  start : Int,
-  depth : Int,
-) -> Int raise @model.MoonOciError {
+  start : Int32,
+  depth : Int32,
+) -> Int32 raise @model.MoonOciError {
   let keys : Array[String] = []
   let mut cursor = skip_json_space(data, start)
   if cursor < data.length() && data[cursor] == b'}' {
@@ -208,9 +208,9 @@ fn scan_json_object(
 ///|
 fn scan_json_array(
   data : Bytes,
-  start : Int,
-  depth : Int,
-) -> Int raise @model.MoonOciError {
+  start : Int32,
+  depth : Int32,
+) -> Int32 raise @model.MoonOciError {
   let mut cursor = skip_json_space(data, start)
   if cursor < data.length() && data[cursor] == b']' {
     return cursor + 1
@@ -233,8 +233,8 @@ fn scan_json_array(
 ///|
 fn scan_json_string_end(
   data : Bytes,
-  start : Int,
-) -> (String, Int) raise @model.MoonOciError {
+  start : Int32,
+) -> (String, Int32) raise @model.MoonOciError {
   let mut cursor = start + 1
   let mut escaped = false
   while cursor < data.length() {
@@ -262,7 +262,7 @@ fn scan_json_string_end(
 }
 
 ///|
-fn skip_json_space(data : Bytes, start : Int) -> Int {
+fn skip_json_space(data : Bytes, start : Int32) -> Int32 {
   let mut cursor = start
   while cursor < data.length() &&
         (
@@ -279,7 +279,7 @@ fn skip_json_space(data : Bytes, start : Int) -> Int {
 ///|
 fn validate_json_depth(
   text : String,
-  maximum : Int,
+  maximum : Int32,
 ) -> Unit raise @model.MoonOciError {
   let mut depth = 0
   let mut in_string = false
@@ -376,8 +376,8 @@ fn expect_string(
 fn required_int(
   object : Map[String, Json],
   name : String,
-) -> Int raise @model.MoonOciError {
-  let value : Int = @json.from_json(required(object, name)) catch {
+) -> Int32 raise @model.MoonOciError {
+  let value : Int32 = @json.from_json(required(object, name)) catch {
     _ => raise @model.InvalidJson(name + " must be an integer")
   }
   value
@@ -483,8 +483,8 @@ fn decode_runtime(
   for item in optional_string_array(object, "Env") {
     match item.split_once("=") {
       Some((key, value)) =>
-        env.push({ key: key.to_owned(), value: value.to_owned() })
-      None => env.push({ key: item, value: "" })
+        env.push({ key: key.to_owned(), value: value.to_owned(), })
+      None => env.push({ key: item, value: "", })
     }
   }
   {

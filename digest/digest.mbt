@@ -8,7 +8,7 @@ pub struct Sha256 {
 ///|
 /// Create an empty SHA-256 state.
 pub fn Sha256::new() -> Sha256 {
-  { state: @crypto.SHA256::new(), bytes_seen: 0L }
+  { state: @crypto.SHA256::new(), bytes_seen: 0L, }
 }
 
 ///|

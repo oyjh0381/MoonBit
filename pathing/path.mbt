@@ -1,10 +1,10 @@
 ///|
-pub let max_path_bytes : Int = 4096
+pub let max_path_bytes : Int32 = 4096
 
 ///|
 /// Compare strings by encoded UTF-8 bytes. MoonBit's built-in String
 /// comparison is shortlex, which is not the archive ordering MoonOCI promises.
-pub fn compare_utf8(left : String, right : String) -> Int {
+pub fn compare_utf8(left : String, right : String) -> Int32 {
   let a = @utf8.encode(left)
   let b = @utf8.encode(right)
   let shared = if a.length() < b.length() { a.length() } else { b.length() }

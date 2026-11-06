@@ -69,7 +69,7 @@ pub(all) struct ImageConfig {
 ///|
 /// OCI image manifest for one platform image.
 pub(all) struct ImageManifest {
-  schema_version : Int
+  schema_version : Int32
   media_type : String
   config : Descriptor
   layers : Array[Descriptor]
@@ -79,7 +79,7 @@ pub(all) struct ImageManifest {
 ///|
 /// OCI image index containing one or more manifest descriptors.
 pub(all) struct ImageIndex {
-  schema_version : Int
+  schema_version : Int32
   media_type : String
   manifests : Array[Descriptor]
   annotations : Array[KeyValue]
@@ -106,9 +106,9 @@ pub(all) struct ValidationFinding {
 /// Complete verification result.
 pub(all) struct VerificationReport {
   findings : Array[ValidationFinding]
-  manifests_checked : Int
-  blobs_checked : Int
-  layers_checked : Int
+  manifests_checked : Int32
+  blobs_checked : Int32
+  layers_checked : Int32
 } derive(Debug, Eq)
 
 ///|
@@ -128,7 +128,7 @@ pub(all) struct BuildReport {
   manifest : Descriptor
   config : Descriptor
   layers : Array[Descriptor]
-  blobs_written : Int
+  blobs_written : Int32
   bytes_written : Int64
 } derive(Debug, Eq)
 
@@ -137,16 +137,16 @@ pub(all) struct BuildReport {
 pub(all) struct RootfsEntry {
   path : String
   kind : String
-  mode : Int
+  mode : Int32
   size : Int64
   link_target : String?
-  layer_index : Int
+  layer_index : Int32
 } derive(Debug, Eq)
 
 ///|
 /// Default Linux/amd64 platform used by the simple CLI form.
 pub fn default_platform() -> Platform {
-  { os: "linux", architecture: "amd64", variant: None, os_version: None }
+  { os: "linux", architecture: "amd64", variant: None, os_version: None, }
 }
 
 ///|
@@ -164,3 +164,87 @@ pub fn default_runtime_config() -> RuntimeConfig {
     stop_signal: None,
   }
 }
+
+///|
+pub extend Compression with @debug.Debug::{to_repr}
+
+///|
+pub extend Compression with Eq::{not_equal, equal}
+
+///|
+pub extend KeyValue with @debug.Debug::{to_repr}
+
+///|
+pub extend KeyValue with Eq::{not_equal, equal}
+
+///|
+pub extend Platform with @debug.Debug::{to_repr}
+
+///|
+pub extend Platform with Eq::{not_equal, equal}
+
+///|
+pub extend Descriptor with @debug.Debug::{to_repr}
+
+///|
+pub extend Descriptor with Eq::{not_equal, equal}
+
+///|
+pub extend RuntimeConfig with @debug.Debug::{to_repr}
+
+///|
+pub extend RuntimeConfig with Eq::{not_equal, equal}
+
+///|
+pub extend History with @debug.Debug::{to_repr}
+
+///|
+pub extend History with Eq::{not_equal, equal}
+
+///|
+pub extend ImageConfig with @debug.Debug::{to_repr}
+
+///|
+pub extend ImageConfig with Eq::{not_equal, equal}
+
+///|
+pub extend ImageManifest with @debug.Debug::{to_repr}
+
+///|
+pub extend ImageManifest with Eq::{not_equal, equal}
+
+///|
+pub extend ImageIndex with @debug.Debug::{to_repr}
+
+///|
+pub extend ImageIndex with Eq::{not_equal, equal}
+
+///|
+pub extend FindingLevel with @debug.Debug::{to_repr}
+
+///|
+pub extend FindingLevel with Eq::{not_equal, equal}
+
+///|
+pub extend ValidationFinding with @debug.Debug::{to_repr}
+
+///|
+pub extend ValidationFinding with Eq::{not_equal, equal}
+
+///|
+pub extend VerificationReport with @debug.Debug::{to_repr}
+
+///|
+pub extend VerificationReport with Eq::{not_equal, equal}
+
+///|
+pub extend BuildReport with @debug.Debug::{to_repr}
+
+///|
+pub extend BuildReport with Eq::{not_equal, equal}
+
+///|
+pub extend RootfsEntry with @debug.Debug::{to_repr}
+
+///|
+pub extend RootfsEntry with Eq::{not_equal, equal}

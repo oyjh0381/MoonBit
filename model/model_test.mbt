@@ -1,7 +1,7 @@
 ///|
 test "parse and render sha256 digest" {
   let encoded = "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
-  let digest = Digest::parse("sha256:" + encoded)
+  let digest = @model.Digest::parse("sha256:" + encoded)
   inspect(
     digest.to_string(),
     content="sha256:0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
@@ -14,17 +14,17 @@ test "parse and render sha256 digest" {
 
 ///|
 test "verification report detects errors" {
-  let valid : VerificationReport = {
+  let valid : @model.VerificationReport = {
     findings: [],
     manifests_checked: 1,
     blobs_checked: 2,
     layers_checked: 1,
   }
   assert_true(valid.is_valid())
-  let invalid : VerificationReport = {
+  let invalid : @model.VerificationReport = {
     findings: [
       {
-        level: FindingLevel::Error,
+        level: @model.FindingLevel::Error,
         code: "x",
         message: "bad",
         object_path: None,
@@ -40,11 +40,11 @@ test "verification report detects errors" {
 ///|
 test "public enum values are available" {
   debug_inspect(
-    [Compression::Uncompressed, Compression::Gzip],
+    [@model.Compression::Uncompressed, @model.Compression::Gzip],
     content="[Uncompressed, Gzip]",
   )
   debug_inspect(
-    [FindingLevel::Warning, FindingLevel::Info],
+    [@model.FindingLevel::Warning, @model.FindingLevel::Info],
     content="[Warning, Info]",
   )
 }

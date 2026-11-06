@@ -36,7 +36,7 @@ pub fn MoonOciError::code(self : MoonOciError) -> String {
 
 ///|
 /// Map a library error to the documented CLI exit status.
-pub fn MoonOciError::exit_code(self : MoonOciError) -> Int {
+pub fn MoonOciError::exit_code(self : MoonOciError) -> Int32 {
   match self {
     InvalidArgument(_) | InvalidBuildSpec(_) => 2
     IoFailure(_) => 3
@@ -67,3 +67,9 @@ pub fn MoonOciError::message(self : MoonOciError) -> String {
     | Unsupported(message) => message
   }
 }
+
+///|
+pub extend MoonOciError with @debug.Debug::{to_repr}
+
+///|
+pub extend MoonOciError with Eq::{not_equal, equal}

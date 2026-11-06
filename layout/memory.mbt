@@ -16,7 +16,7 @@ pub struct MemoryLayout {
 ///|
 /// Construct an empty OCI Image Layout with the v1 marker.
 pub fn MemoryLayout::new() -> MemoryLayout {
-  { marker: b"{\"imageLayoutVersion\":\"1.0.0\"}", index: b"", blobs: [] }
+  { marker: b"{\"imageLayoutVersion\":\"1.0.0\"}", index: b"", blobs: [], }
 }
 
 ///|
@@ -30,9 +30,9 @@ pub fn MemoryLayout::from_untrusted_parts(
   let records : Array[BlobRecord] = []
   for pair in blobs {
     let (descriptor, data) = pair
-    records.push({ descriptor, data })
+    records.push({ descriptor, data, })
   }
-  { marker, index, blobs: records }
+  { marker, index, blobs: records, }
 }
 
 ///|
@@ -51,7 +51,7 @@ pub fn MemoryLayout::blob_records(self : MemoryLayout) -> Array[BlobRecord] {
 }
 
 ///|
-pub fn MemoryLayout::blob_count(self : MemoryLayout) -> Int {
+pub fn MemoryLayout::blob_count(self : MemoryLayout) -> Int32 {
   self.blobs.length()
 }
 
@@ -71,7 +71,7 @@ pub fn MemoryLayout::put_blob(
   self : MemoryLayout,
   media_type : String,
   data : Bytes,
-  annotations? : Array[@model.KeyValue] = [],
+  annotations~ : Array[@model.KeyValue] = [],
   platform? : @model.Platform,
 ) -> @model.Descriptor raise @model.MoonOciError {
   let descriptor : @model.Descriptor = {
@@ -91,7 +91,7 @@ pub fn MemoryLayout::put_blob(
       return descriptor
     }
   }
-  self.blobs.push({ descriptor, data })
+  self.blobs.push({ descriptor, data, })
   descriptor
 }
 
@@ -148,3 +148,15 @@ pub fn MemoryLayout::blob_bytes(self : MemoryLayout) -> Int64 {
   }
   total
 }
+
+///|
+pub extend BlobRecord with @debug.Debug::{to_repr}
+
+///|
+pub extend BlobRecord with Eq::{not_equal, equal}
+
+///|
+pub extend MemoryLayout with @debug.Debug::{to_repr}
+
+///|
+pub extend MemoryLayout with Eq::{not_equal, equal}

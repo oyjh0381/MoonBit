@@ -4,7 +4,7 @@ test "verification rejects gzip expansion above 200 to one" {
     #|H4sIAAAAAAAEAO3BMQEAAADCoPVPbQhfoAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAPgMc6jinAAAQAA==
   let compressed = @base64.decode(fixture)
   let mut raised = false
-  ignore(decode_layer_blob(@model.media_type_layer_gzip, compressed)) catch {
+  ignore(@builder.decode_layer_blob(@model.media_type_layer_gzip, compressed)) catch {
     _ => raised = true
   }
   assert_true(raised)
@@ -13,7 +13,7 @@ test "verification rejects gzip expansion above 200 to one" {
 ///|
 test "verification rejects unsupported layer media type" {
   let mut raised = false
-  ignore(decode_layer_blob("application/example", b"data")) catch {
+  ignore(@builder.decode_layer_blob("application/example", b"data")) catch {
     _ => raised = true
   }
   assert_true(raised)
@@ -21,8 +21,10 @@ test "verification rejects unsupported layer media type" {
 
 ///|
 test "layout verification rejects unknown layer media type" {
-  let source = build_single_layer(
-    default_single_layer_request([@archive.TarEntry::file("file", b"data")]),
+  let source = @builder.build_single_layer(
+    @builder.default_single_layer_request([
+      @archive.TarEntry::file("file", b"data"),
+    ]),
   )
   let source_manifest = @codec.decode_manifest(
     source.layout.require_blob(source.report.manifest),
@@ -53,7 +55,7 @@ test "layout verification rejects unknown layer media type" {
       annotations: [],
     }),
   )
-  let report = verify_memory(target)
+  let report = @builder.verify_memory(target)
   assert_false(report.is_valid())
   assert_eq(report.findings.length(), 1)
   assert_eq(report.findings[0].level, @model.FindingLevel::Error)
@@ -62,20 +64,24 @@ test "layout verification rejects unknown layer media type" {
 
 ///|
 test "layout verification rejects index document media type" {
-  let image = build_single_layer(
-    default_single_layer_request([@archive.TarEntry::file("file", b"data")]),
+  let image = @builder.build_single_layer(
+    @builder.default_single_layer_request([
+      @archive.TarEntry::file("file", b"data"),
+    ]),
   )
   let index = @codec.decode_index(image.layout.index())
   image.layout.set_index(
-    @codec.encode_index({ ..index, media_type: "application/example" }),
+    @codec.encode_index({ ..index, media_type: "application/example", }),
   )
-  assert_false(verify_memory(image.layout).is_valid())
+  assert_false(@builder.verify_memory(image.layout).is_valid())
 }
 
 ///|
 test "layout verification rejects manifest descriptor media type" {
-  let image = build_single_layer(
-    default_single_layer_request([@archive.TarEntry::file("file", b"data")]),
+  let image = @builder.build_single_layer(
+    @builder.default_single_layer_request([
+      @archive.TarEntry::file("file", b"data"),
+    ]),
   )
   let index = @codec.decode_index(image.layout.index())
   let descriptor = {
@@ -83,15 +89,17 @@ test "layout verification rejects manifest descriptor media type" {
     media_type: @model.media_type_config,
   }
   image.layout.set_index(
-    @codec.encode_index({ ..index, manifests: [descriptor] }),
+    @codec.encode_index({ ..index, manifests: [descriptor], }),
   )
-  assert_false(verify_memory(image.layout).is_valid())
+  assert_false(@builder.verify_memory(image.layout).is_valid())
 }
 
 ///|
 test "layout verification rejects manifest and config media types" {
-  let wrong_manifest = build_single_layer(
-    default_single_layer_request([@archive.TarEntry::file("file", b"data")]),
+  let wrong_manifest = @builder.build_single_layer(
+    @builder.default_single_layer_request([
+      @archive.TarEntry::file("file", b"data"),
+    ]),
   )
   let wrong_manifest_index = @codec.decode_index(wrong_manifest.layout.index())
   let manifest = @codec.decode_manifest(
@@ -99,7 +107,7 @@ test "layout verification rejects manifest and config media types" {
   )
   let manifest_descriptor = wrong_manifest.layout.put_blob(
     @model.media_type_manifest,
-    @codec.encode_manifest({ ..manifest, media_type: "application/example" }),
+    @codec.encode_manifest({ ..manifest, media_type: "application/example", }),
   )
   wrong_manifest.layout.set_index(
     @codec.encode_index({
@@ -107,10 +115,12 @@ test "layout verification rejects manifest and config media types" {
       manifests: [manifest_descriptor],
     }),
   )
-  assert_false(verify_memory(wrong_manifest.layout).is_valid())
+  assert_false(@builder.verify_memory(wrong_manifest.layout).is_valid())
 
-  let wrong_config = build_single_layer(
-    default_single_layer_request([@archive.TarEntry::file("file", b"data")]),
+  let wrong_config = @builder.build_single_layer(
+    @builder.default_single_layer_request([
+      @archive.TarEntry::file("file", b"data"),
+    ]),
   )
   let wrong_config_index = @codec.decode_index(wrong_config.layout.index())
   let config_manifest = @codec.decode_manifest(
@@ -122,7 +132,7 @@ test "layout verification rejects manifest and config media types" {
   }
   let config_manifest_descriptor = wrong_config.layout.put_blob(
     @model.media_type_manifest,
-    @codec.encode_manifest({ ..config_manifest, config: config_descriptor }),
+    @codec.encode_manifest({ ..config_manifest, config: config_descriptor, }),
   )
   wrong_config.layout.set_index(
     @codec.encode_index({
@@ -130,21 +140,23 @@ test "layout verification rejects manifest and config media types" {
       manifests: [config_manifest_descriptor],
     }),
   )
-  assert_false(verify_memory(wrong_config.layout).is_valid())
+  assert_false(@builder.verify_memory(wrong_config.layout).is_valid())
 }
 
 ///|
 test "verification accumulates independent manifest findings with paths" {
-  let image = build_single_layer(
-    default_single_layer_request([@archive.TarEntry::file("file", b"data")]),
+  let image = @builder.build_single_layer(
+    @builder.default_single_layer_request([
+      @archive.TarEntry::file("file", b"data"),
+    ]),
   )
   let index = @codec.decode_index(image.layout.index())
-  let first = { ..index.manifests[0], media_type: @model.media_type_config }
-  let second = { ..index.manifests[0], size: index.manifests[0].size + 1L }
+  let first = { ..index.manifests[0], media_type: @model.media_type_config, }
+  let second = { ..index.manifests[0], size: index.manifests[0].size + 1L, }
   image.layout.set_index(
-    @codec.encode_index({ ..index, manifests: [first, second] }),
+    @codec.encode_index({ ..index, manifests: [first, second], }),
   )
-  let report = verify_memory(image.layout)
+  let report = @builder.verify_memory(image.layout)
   assert_false(report.is_valid())
   assert_eq(report.findings.length(), 2)
   assert_eq(report.findings.map(finding => finding.object_path), [

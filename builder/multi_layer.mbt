@@ -87,7 +87,7 @@ pub fn build_image(
   let manifest_descriptor = layout.put_blob(
     @model.media_type_manifest,
     @codec.encode_manifest(manifest),
-    annotations=[{ key: @model.annotation_ref_name, value: request.reference }],
+    annotations=[{ key: @model.annotation_ref_name, value: request.reference, }],
     platform=request.platform,
   )
   let index : @model.ImageIndex = {
@@ -123,9 +123,27 @@ fn compress_layer(
       }
       let compressed = @fzip.gzip_sync(
         FixedArray::makei(layer_tar.length(), i => layer_tar[i]),
-        opts={ level: 0, mem: 0, dictionary: None, mtime: 0, filename: "" },
+        opts={ level: 0, mem: 0, dictionary: None, mtime: 0, filename: "", },
       )
       (@model.media_type_layer_gzip, Bytes::from_array(compressed))
     }
   }
 }
+
+///|
+pub extend LayerBuildRequest with @debug.Debug::{to_repr}
+
+///|
+pub extend LayerBuildRequest with Eq::{not_equal, equal}
+
+///|
+pub extend ImageBuildRequest with @debug.Debug::{to_repr}
+
+///|
+pub extend ImageBuildRequest with Eq::{not_equal, equal}
+
+///|
+pub extend ImageBuildResult with @debug.Debug::{to_repr}
+
+///|
+pub extend ImageBuildResult with Eq::{not_equal, equal}

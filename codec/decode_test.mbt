@@ -20,9 +20,9 @@ test "manifest codec round trips the supported OCI model" {
     media_type: @model.media_type_manifest,
     config,
     layers: [layer],
-    annotations: [{ key: "org.example", value: "value" }],
+    annotations: [{ key: "org.example", value: "value", }],
   }
-  let decoded = decode_manifest(encode_manifest(manifest)) catch {
+  let decoded = @codec.decode_manifest(@codec.encode_manifest(manifest)) catch {
     error => abort(error.message())
   }
   assert_eq(decoded, manifest)
@@ -34,7 +34,7 @@ test "index codec round trips descriptor platform and reference" {
     media_type: @model.media_type_manifest,
     digest: fixture_digest('f'),
     size: 88L,
-    annotations: [{ key: @model.annotation_ref_name, value: "latest" }],
+    annotations: [{ key: @model.annotation_ref_name, value: "latest", }],
     platform: Some(@model.default_platform()),
   }
   let index : @model.ImageIndex = {
@@ -43,7 +43,7 @@ test "index codec round trips descriptor platform and reference" {
     manifests: [descriptor],
     annotations: [],
   }
-  let decoded = decode_index(encode_index(index)) catch {
+  let decoded = @codec.decode_index(@codec.encode_index(index)) catch {
     error => abort(error.message())
   }
   assert_eq(decoded, index)
@@ -57,11 +57,11 @@ test "configuration codec round trips supported runtime fields" {
     platform: @model.default_platform(),
     runtime: {
       user: Some("1000:1000"),
-      env: [{ key: "A", value: "one=two" }],
+      env: [{ key: "A", value: "one=two", }],
       entrypoint: ["/app"],
       cmd: ["run"],
       working_dir: "/work",
-      labels: [{ key: "name", value: "demo" }],
+      labels: [{ key: "name", value: "demo", }],
       exposed_ports: ["8080/tcp"],
       volumes: ["/data"],
       stop_signal: Some("SIGTERM"),
@@ -77,14 +77,14 @@ test "configuration codec round trips supported runtime fields" {
       },
     ],
   }
-  assert_eq(decode_config(encode_config(config)), config)
+  assert_eq(@codec.decode_config(@codec.encode_config(config)), config)
 }
 
 ///|
 test "JSON decoder rejects excessive document size" {
   let oversized = Bytes::from_array(Array::make(16 * 1024 * 1024 + 1, b' '))
   let mut raised = false
-  ignore(decode_index(oversized)) catch {
+  ignore(@codec.decode_index(oversized)) catch {
     _ => raised = true
   }
   assert_true(raised)
@@ -100,7 +100,7 @@ test "JSON decoder enforces nesting depth without counting strings" {
     deeply_nested += "]"
   }
   let mut raised = false
-  ignore(decode_index(@utf8.encode(deeply_nested))) catch {
+  ignore(@codec.decode_index(@utf8.encode(deeply_nested))) catch {
     _ => raised = true
   }
   assert_true(raised)
@@ -108,7 +108,7 @@ test "JSON decoder enforces nesting depth without counting strings" {
 
 ///|
 test "layout marker tolerates formatting and extension fields" {
-  validate_layout_marker(
+  @codec.validate_layout_marker(
     b"{ \"extension\": true, \"imageLayoutVersion\" : \"1.0.0\" }",
   )
 }

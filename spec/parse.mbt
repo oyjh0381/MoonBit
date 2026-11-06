@@ -33,7 +33,7 @@ pub fn parse_build_spec(data : Bytes) -> BuildSpec raise @model.MoonOciError {
   }
   let output = match object.get("output") {
     Some(value) => parse_output(value)
-    None => { layout: "oci-layout" }
+    None => { layout: "oci-layout", }
   }
   {
     schema_version,
@@ -296,7 +296,7 @@ fn optional_string_array(
 fn required_int(
   object : Map[String, Json],
   name : String,
-) -> Int raise @model.MoonOciError {
+) -> Int32 raise @model.MoonOciError {
   match required(object, name) {
     Number(number, ..) if number == number.floor() &&
       number >= -2147483648.0 &&
@@ -309,7 +309,7 @@ fn required_int(
 fn optional_int(
   object : Map[String, Json],
   name : String,
-) -> Int? raise @model.MoonOciError {
+) -> Int32? raise @model.MoonOciError {
   match object.get(name) {
     None => None
     Some(_) => Some(required_int(object, name))

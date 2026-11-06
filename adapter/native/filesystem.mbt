@@ -104,7 +104,7 @@ async fn apply_metadata(
       @fs.mtime(full_path, follow_symlink=false).0
     None => 0L
   }
-  { ..entry, mode, uid, gid, mtime }
+  { ..entry, mode, uid, gid, mtime, }
 }
 
 ///|

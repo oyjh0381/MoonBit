@@ -1,12 +1,12 @@
 ///|
 test "gzip layer stores compressed digest and uncompressed DiffID" {
   let request = {
-    ..default_single_layer_request([
+    ..@builder.default_single_layer_request([
       @archive.TarEntry::file("large.txt", @utf8.encode("repeat".repeat(100))),
     ]),
     compression: @model.Compression::Gzip,
   }
-  let result = build_single_layer(request)
+  let result = @builder.build_single_layer(request)
   let layer = result.report.layers[0]
   assert_eq(layer.media_type, @model.media_type_layer_gzip)
   let blob = result.layout.require_blob(layer)
@@ -20,29 +20,32 @@ test "gzip layer stores compressed digest and uncompressed DiffID" {
     result.layout.require_blob(result.report.config),
   )
   assert_true(config.diff_ids[0] != layer.digest)
-  assert_true(verify_memory(result.layout).is_valid())
+  assert_true(@builder.verify_memory(result.layout).is_valid())
 }
 
 ///|
 test "gzip builds are reproducible" {
   let request = {
-    ..default_single_layer_request([
+    ..@builder.default_single_layer_request([
       @archive.TarEntry::file("data", b"deterministic"),
     ]),
     compression: @model.Compression::Gzip,
   }
-  assert_eq(build_single_layer(request), build_single_layer(request))
+  assert_eq(
+    @builder.build_single_layer(request),
+    @builder.build_single_layer(request),
+  )
 }
 
 ///|
 test "verification rejects corrupted gzip content" {
   let request = {
-    ..default_single_layer_request([
+    ..@builder.default_single_layer_request([
       @archive.TarEntry::file("data", b"deterministic"),
     ]),
     compression: @model.Compression::Gzip,
   }
-  let result = build_single_layer(request)
+  let result = @builder.build_single_layer(request)
   let parts : Array[(@model.Descriptor, Bytes)] = []
   for blob in result.layout.blob_records() {
     let descriptor = blob.descriptor()
@@ -60,9 +63,9 @@ test "verification rejects corrupted gzip content" {
     result.layout.index(),
     parts,
   )
-  assert_false(verify_memory(corrupted).is_valid())
+  assert_false(@builder.verify_memory(corrupted).is_valid())
   let mut rootfs_raised = false
-  ignore(rootfs_from_layout(corrupted)) catch {
+  ignore(@builder.rootfs_from_layout(corrupted)) catch {
     _ => rootfs_raised = true
   }
   assert_true(rootfs_raised)
@@ -74,18 +77,18 @@ test "Layer Interpretation is equivalent across supported media types" {
     @archive.TarEntry::directory("app"),
     @archive.TarEntry::file("app/data", b"same"),
   ]
-  let uncompressed = build_single_layer({
-    ..default_single_layer_request(entries),
+  let uncompressed = @builder.build_single_layer({
+    ..@builder.default_single_layer_request(entries),
     compression: Uncompressed,
   })
-  let compressed = build_single_layer({
-    ..default_single_layer_request(entries),
+  let compressed = @builder.build_single_layer({
+    ..@builder.default_single_layer_request(entries),
     compression: Gzip,
   })
   assert_eq(
-    rootfs_from_layout(uncompressed.layout),
-    rootfs_from_layout(compressed.layout),
+    @builder.rootfs_from_layout(uncompressed.layout),
+    @builder.rootfs_from_layout(compressed.layout),
   )
-  assert_true(verify_memory(uncompressed.layout).is_valid())
-  assert_true(verify_memory(compressed.layout).is_valid())
+  assert_true(@builder.verify_memory(uncompressed.layout).is_valid())
+  assert_true(@builder.verify_memory(compressed.layout).is_valid())
 }

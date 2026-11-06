@@ -15,8 +15,8 @@ preferred_target = "native"
 description = "Deterministic OCI image layout builder and validator for MoonBit"
 
 import {
-  "moonbitlang/x@0.4.49",
-  "hustcer/fzip@0.8.6",
-  "moonbitlang/async@0.20.4",
-  "moonbitlang/quickcheck@0.14.0",
+  "moonbitlang/x@0.5.5",
+  "hustcer/fzip@0.8.8",
+  "moonbitlang/async@0.20.6",
+  "moonbitlang/quickcheck@0.15.1",
 }
