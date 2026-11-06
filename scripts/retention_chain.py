@@ -52,11 +52,15 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--binary', type=Path, required=True)
     parser.add_argument('--oras', type=Path)
+    parser.add_argument('--buffered', action='store_true')
     args = parser.parse_args()
     binary = args.binary.resolve()
+    export_command = 'retain-export-buffered' if args.buffered else 'retain-export'
     directory = Path(tempfile.mkdtemp(prefix='retention-', dir=ROOT / '_build'))
 
     def run(*arguments, status=0):
+        if arguments and arguments[0] == 'retain-export':
+            arguments = (export_command, *arguments[1:])
         result = subprocess.run([str(binary), *map(str, arguments)], cwd=ROOT,
                                 capture_output=True, text=True, encoding='utf-8', timeout=120)
         if result.returncode != status:
@@ -193,7 +197,8 @@ def main():
                   independent_store_and_review_pins=True, aliases_and_extensions_preserved=True,
                   image_consumption_verified=True, source_unchanged_by_export=True, stale_plan_refused=True,
                   weak_subject_modes=True, index_subject_preserved=True, semantic_failure_refused=True,
-                  oras_discovery_verified=oras_verified, source_deletions=0)
+                  oras_discovery_verified=oras_verified, source_deletions=0,
+                  write_profile='buffered' if args.buffered else 'data-synchronous')
     (directory / 'report.json').write_bytes(encode(report))
     print(json.dumps(report, indent=2))
 

@@ -4,6 +4,9 @@ All notable changes to MoonOCI are documented here. The format follows Keep a Ch
 
 ## [Unreleased]
 
+- Preserve data-synchronous default layout publication and add explicit buffered retained-copy export for reconstructible caches.
+- Prevalidate physical digests/sizes/unique paths before materializing any Blob path; create staged files exclusively.
+
 - Catalog bounded mixed physical stores, including orphan integrity, exact source pins and memoized metadata topology.
 - Retain explicit image/index/artifact closures with subject/referrer modes and extension-preserving root rewrites.
 - Bind retention review to physical membership and policy; reject stale plans and publish only verified new copies.

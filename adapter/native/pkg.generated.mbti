@@ -30,7 +30,7 @@ pub async fn create_delta_file(String, String, String) -> Unit
 
 pub async fn export_artifact_payload(String, @model.Digest, Int32, String) -> Unit
 
-pub async fn export_retained_layout(String, @model.Digest, Array[@model.Digest], @model.Digest, String, policy? : @lifecycle.RetentionPolicy) -> @lifecycle.RetentionPlan
+pub async fn export_retained_layout(String, @model.Digest, Array[@model.Digest], @model.Digest, String, policy? : @lifecycle.RetentionPolicy, buffered? : Bool) -> @lifecycle.RetentionPlan
 
 pub async fn export_transfer_chunk(String, String, @model.Digest, Int32, String) -> Unit
 
@@ -52,7 +52,7 @@ pub async fn transfer_progress(String, @model.Digest) -> TransferProgress
 
 pub fn transfer_progress_json(TransferProgress) -> String
 
-pub async fn write_layout(String, @layout.MemoryLayout) -> Unit
+pub async fn write_layout(String, @layout.MemoryLayout, buffered? : Bool) -> Unit
 
 // Errors
 

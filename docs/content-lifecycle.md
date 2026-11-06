@@ -59,6 +59,7 @@ The CLI exposes the same process:
 moonoci content-catalog INPUT EXPECTED_INDEX_PIN
 moonoci retain-plan INPUT EXPECTED_INDEX_PIN MODE ROOT [ROOT...]
 moonoci retain-export INPUT EXPECTED_INDEX_PIN PLAN_PIN MODE OUTPUT ROOT [ROOT...]
+moonoci retain-export-buffered INPUT EXPECTED_INDEX_PIN PLAN_PIN MODE OUTPUT ROOT [ROOT...]
 ```
 
 | Mode | Incoming attachments | Outgoing weak subject |
@@ -77,6 +78,27 @@ The plan records all discarded digests and savings for caller review. They are
 not automatic deletion instructions or evidence that arbitrary consumers no
 longer need those objects. Host retention roots and any later deletion policy
 remain caller decisions.
+
+### Explicit output write profiles
+
+`retain-export` keeps the existing data-synchronous per-file writes. The explicit
+`retain-export-buffered` alternative uses OS-buffered writes, intended for
+reconstructible local caches or temporary exports. `write_layout` and
+`export_retained_layout` expose the same optional `buffered=true` flag; false
+remains the default. Buffered completion does not guarantee data survives power
+loss or delayed storage errors. Neither mode proves directory crash durability.
+
+Both modes verify input physical digests/size/unique paths, compare the review
+pin, run the supported semantic checks and publish through a fresh no-replace
+staging rename. Write profile does not change logical content or review identity;
+the caller must make the durability choice separately. A buffered copy is not a
+safe replacement for a caller's sole durable copy. Sources are never deleted.
+
+The dependency's `write_file` defaults to `SyncMode::Data`, so thousands of tiny
+files cause thousands of data synchronization operations. A bounded-coroutine
+experiment did not remove the bottleneck and was withdrawn before commit. The
+implementation uses a simple serial writer with explicit synchronization policy
+rather than retaining unproven concurrency complexity.
 
 ## Identity and interoperability
 
@@ -140,6 +162,7 @@ Registry GC and background retention scheduling are outside this adapter.
 
 ```text
 python scripts/retention_benchmark.py --binary _build/native/release/build/cmd/moonoci/moonoci.exe --runs 3
+python scripts/retention_benchmark.py --binary _build/native/release/build/cmd/moonoci/moonoci.exe --runs 3 --buffered
 ```
 
 This builds independently authored 100/1,000-image stores with one attachment per
@@ -148,12 +171,32 @@ selection, validates literal expected closures and all emitted content hashes,
 and reports planning versus verified export wall times separately under `_build`.
 Measurements include startup, bounded filesystem loading and hashing. They do not
 compare against Registry garbage collectors or measure peak process memory.
+Results for different write profiles must disclose their durability tradeoff;
+they are not equivalent durability workloads or a universal speedup promise.
+
+Observed Windows medians from three runs per case:
+
+| Source / selected images (one attachment per image) | Data-synchronous baseline export | Explicit buffered export |
+| --- | ---: | ---: |
+| 100 / 10 | 1,381 ms | 213 ms |
+| 1,000 / 10 | 2,563 ms | 1,580 ms |
+| 1,000 / 1,000 | 129,578 ms | 4,307 ms |
+
+The full-selection copy contains 4,003 Blobs / 1,604,917 bytes. Input loading,
+hashing and semantic checks are included. The baseline uses the saved original
+data-synchronous writer; the new buffered writer also adds physical prevalidation
+and exclusive staged files. This is a local write-policy tradeoff, not a claim
+of improved throughput under identical persistence guarantees. Raw cases, binary
+SHA-256 and machine conditions remain in ignored workload reports. No Linux
+performance or peak-memory result is implied.
 
 For N stored bytes, V objects and E known edges, catalog content hashing and
 topology parsing cost O(N + V + E), plus digest sorting O(V log V). Memoization
 prevents expansion of repeated DAG branches; each physical Blob is hashed once
 for catalog preparation. Retention uses an indexed queue and reverse subject
-edges, O(V + E) worst case plus sorted announcements. Snapshot/plan wrappers reuse
+edges, O(V + E) traversal plus O(V log V) digest ordering for incoming lists and
+announcements. Rewriting root JSON also sorts keys and serializes retained
+metadata; it is not constant-time. Snapshot/plan wrappers reuse
 immutable Bytes rather than duplicate payload buffers. Applying an old plan costs
 a new full source validation. Native export's semantic checks and staged file IO
 add their own costs; no claim is made that the complete workflow is sublinear.

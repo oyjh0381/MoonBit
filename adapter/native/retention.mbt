@@ -9,6 +9,7 @@ pub async fn export_retained_layout(
   expected_plan : @model.Digest,
   destination : String,
   policy~ : @lifecycle.RetentionPolicy = @lifecycle.RetentionPolicy::default(),
+  buffered~ : Bool = false,
 ) -> @lifecycle.RetentionPlan {
   if @fs.exists(destination) {
     raise @model.IoFailure("retained layout destination already exists")
@@ -28,6 +29,6 @@ pub async fn export_retained_layout(
       "retained content fails the supported image/artifact verification profile",
     )
   }
-  write_layout(destination, result)
+  write_layout(destination, result, buffered~)
   plan
 }

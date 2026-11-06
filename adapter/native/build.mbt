@@ -70,6 +70,7 @@ test "SOURCE_DATE_EPOCH converts to canonical UTC creation time" {
 pub async fn write_layout(
   destination : String,
   layout : @layout.MemoryLayout,
+  buffered~ : Bool = false,
 ) -> Unit {
   if destination == "" {
     raise @model.InvalidArgument("layout destination must not be empty")
@@ -81,23 +82,47 @@ pub async fn write_layout(
   if @fs.exists(staging) {
     raise @model.IoFailure("staging destination already exists: " + staging)
   }
+  // Validate uniqueness and canonical digests before deriving any file path.
+  let marker = layout.marker()
+  let index = layout.index()
+  let records = layout.blob_records()
+  let seen : Map[String, Bool] = Map([])
+  for blob in records {
+    let descriptor = blob.descriptor()
+    let key = descriptor.digest.to_string()
+    ignore(@model.Digest::parse(key))
+    if seen.contains(key) {
+      raise @model.InvalidOci("duplicate physical Blob during materialization")
+    }
+    seen[key] = true
+    if descriptor.size != blob.data().length().to_int64() {
+      raise @model.SizeMismatch("materialized Blob size mismatch")
+    }
+    if @digest.sha256(blob.data()) != descriptor.digest {
+      raise @model.DigestMismatch("materialized Blob SHA-256 mismatch")
+    }
+  }
+  let sync : @fs.SyncMode = if buffered { NoSync } else { Data }
   try {
     @fs.mkdir(join_path(staging, "blobs/sha256"), recursive=true)
     @fs.write_file(
       join_path(staging, "oci-layout"),
-      layout.marker(),
-      create_mode=CreateOrTruncate,
+      marker,
+      create_mode=CreateNew,
+      sync~,
     )
     @fs.write_file(
       join_path(staging, "index.json"),
-      layout.index(),
-      create_mode=CreateOrTruncate,
+      index,
+      create_mode=CreateNew,
+      sync~,
     )
-    for blob in layout.blob_records() {
+    for blob in records {
       @fs.write_file(
         join_path(staging, blob.descriptor().digest.blob_path()),
         blob.data(),
-        create_mode=CreateOrTruncate,
+        create_mode=CreateNew,
+        sync~,
       )
     }
     @fs.rename(staging, destination, replace=false)

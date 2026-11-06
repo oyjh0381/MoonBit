@@ -38,7 +38,7 @@ async fn main {
         let plan = catalog.retain(roots, policy=retention_policy(args[4]))
         @stdio.stdout.write(@lifecycle.retention_json(plan) + "\n")
       }
-      "retain-export" => {
+      "retain-export" | "retain-export-buffered" => {
         if args.length() < 8 {
           raise @model.InvalidArgument(
             "usage: moonoci retain-export INPUT EXPECTED_INDEX_PIN PLAN_PIN MODE OUTPUT ROOT [ROOT...]",
@@ -54,6 +54,7 @@ async fn main {
           @model.Digest::parse(args[4]),
           args[6],
           policy=retention_policy(args[5]),
+          buffered=args[1] == "retain-export-buffered",
         )
         @stdio.stdout.write(@lifecycle.retention_json(plan) + "\n")
       }
@@ -552,6 +553,7 @@ async fn print_usage() -> Unit {
       #|  moonoci content-catalog INPUT EXPECTED_INDEX_PIN
       #|  moonoci retain-plan INPUT EXPECTED_INDEX_PIN MODE ROOT [ROOT...]
       #|  moonoci retain-export INPUT EXPECTED_INDEX_PIN PLAN_PIN MODE OUTPUT ROOT [ROOT...]
+      #|  moonoci retain-export-buffered INPUT EXPECTED_INDEX_PIN PLAN_PIN MODE OUTPUT ROOT [ROOT...]
       #|  Retention MODE: closure | referrers | complete
       #|  moonoci transfer-batch SESSION EXPECTED_PIN MAX_CHUNKS MAX_BYTES
       #|  moonoci transfer-recover-chunk SESSION EXPECTED_PIN INDEX

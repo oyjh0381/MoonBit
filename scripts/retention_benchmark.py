@@ -29,6 +29,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--binary', required=True, type=Path)
     parser.add_argument('--runs', type=int, default=3)
+    parser.add_argument('--buffered', action='store_true', help='explicitly skip per-file data synchronization for reconstructible output copies')
     args = parser.parse_args()
     if not 1 <= args.runs <= 5:
         parser.error('runs must be 1..5')
@@ -108,7 +109,8 @@ def main():
                 assert int(plan['reclaimable_bytes']) == sum(size for key, size in physical.items() if key not in expected)
                 output = directory / f'export-{count}-{selected_count}-{trial}'
                 start = time.perf_counter()
-                exported = json.loads(run('retain-export', store, source_pin, plan['plan_pin'], 'referrers', output, *selection))
+                command = 'retain-export-buffered' if args.buffered else 'retain-export'
+                exported = json.loads(run(command, store, source_pin, plan['plan_pin'], 'referrers', output, *selection))
                 exporting.append(round((time.perf_counter() - start) * 1000, 3))
                 assert exported == plan
                 actual = {pin(path.read_bytes()) for path in (output / 'blobs/sha256').iterdir()}
@@ -121,6 +123,7 @@ def main():
                 independent_content_sets=True))
     report = dict(schema='moonoci.retention-workload.v1', os=platform.platform(), python=platform.python_version(),
                   runs=args.runs, binary_sha256=hashlib.sha256(binary.read_bytes()).hexdigest(), cases=cases,
+                  write_profile='buffered' if args.buffered else 'data-synchronous',
                   peak_memory_measured=False, source_deletions=0)
     (directory / 'report.json').write_bytes(encode(report))
     print(json.dumps(report, indent=2))
