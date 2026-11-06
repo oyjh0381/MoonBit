@@ -2,10 +2,17 @@
 package "oyjh0381/moonoci/transfer"
 
 import {
+  "oyjh0381/moonoci/digest",
   "oyjh0381/moonoci/model",
 }
 
 // Values
+pub fn decode_plan(Bytes, @model.Digest, limits? : ChunkLimits) -> PreparedTransfer raise @model.MoonOciError
+
+pub fn encode_plan(PreparedTransfer) -> Bytes
+
+pub let max_plan_bytes : Int32
+
 pub fn plan_bytes(Bytes, chunk_bytes? : Int32, limits? : ChunkLimits) -> PreparedTransfer raise @model.MoonOciError
 
 pub fn prepare(ChunkPlan, @model.Digest, limits? : ChunkLimits) -> PreparedTransfer raise @model.MoonOciError
@@ -47,6 +54,16 @@ pub fn PreparedTransfer::chunk_count(Self) -> Int32
 pub fn PreparedTransfer::digest(Self) -> @model.Digest
 pub fn PreparedTransfer::size(Self) -> Int64
 pub fn PreparedTransfer::verify_chunk(Self, Int32, Bytes) -> Unit raise @model.MoonOciError
+
+pub struct TransferVerifier {
+  plan : PreparedTransfer
+  state : @digest.Sha256
+  mut next : Int32
+}
+pub fn TransferVerifier::accept(Self, Int32, Bytes) -> Unit raise @model.MoonOciError
+pub fn TransferVerifier::accepted_chunks(Self) -> Int32
+pub fn TransferVerifier::finish(Self) -> @model.Digest raise @model.MoonOciError
+pub fn TransferVerifier::new(PreparedTransfer) -> Self
 
 // Type aliases
 
