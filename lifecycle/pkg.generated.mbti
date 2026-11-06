@@ -25,23 +25,14 @@ pub fn CatalogLimits::default() -> Self
 pub fn CatalogLimits::validate(Self) -> Unit raise @model.MoonOciError
 
 pub struct ContentCatalog {
-  marker : Bytes
-  index : Bytes
-  index_pin : @model.Digest
-  store_pin : @model.Digest
-  records : Map[String, Bytes]
-  physical : Array[@model.Descriptor]
-  nodes : Map[String, ContentNode]
-  root_values : Array[Json]
-  stored_bytes : Int64
+  // private fields
 }
 pub fn ContentCatalog::metadata_count(Self) -> Int32
+pub fn ContentCatalog::snapshot(Self) -> @layout.MemoryLayout
 pub fn ContentCatalog::source_index(Self) -> @model.Digest
 pub fn ContentCatalog::store_pin(Self) -> @model.Digest
 pub fn ContentCatalog::stored_blobs(Self) -> Int32
 pub fn ContentCatalog::stored_bytes(Self) -> Int64
-
-type ContentNode
 
 // Type aliases
 

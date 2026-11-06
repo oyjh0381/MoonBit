@@ -12,8 +12,7 @@ import {
 
 // Types and methods
 pub struct BlobRecord {
-  descriptor : @model.Descriptor
-  data : Bytes
+  // private fields
 } derive(Eq, @debug.Debug)
 pub fn BlobRecord::data(Self) -> Bytes
 pub fn BlobRecord::descriptor(Self) -> @model.Descriptor
@@ -22,10 +21,7 @@ pub fn BlobRecord::not_equal(Self, Self) -> Bool
 pub fn BlobRecord::to_repr(Self) -> @debug.Repr
 
 pub struct MemoryLayout {
-  marker : Bytes
-  mut index : Bytes
-  blobs : Array[BlobRecord]
-  lookup : Map[String, Int32]
+  // private fields
 } derive(Eq, @debug.Debug)
 pub fn MemoryLayout::blob_bytes(Self) -> Int64
 pub fn MemoryLayout::blob_count(Self) -> Int32

@@ -2,7 +2,6 @@
 package "oyjh0381/moonoci/digest"
 
 import {
-  "moonbitlang/x/crypto",
   "oyjh0381/moonoci/model",
 }
 
@@ -13,8 +12,7 @@ pub fn sha256(Bytes) -> @model.Digest
 
 // Types and methods
 pub struct Sha256 {
-  state : @crypto.SHA256
-  mut bytes_seen : Int64
+  // private fields
 }
 pub fn Sha256::finish(Self) -> @model.Digest
 pub fn Sha256::length(Self) -> Int64

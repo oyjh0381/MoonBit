@@ -2,9 +2,9 @@
 /// Ordered final verification; does not retain content or trust a checkpoint's
 /// claimed completion. Invalid chunks leave the accepted prefix unchanged.
 pub struct TransferVerifier {
-  plan : PreparedTransfer
-  state : @digest.Sha256
-  mut next : Int32
+  priv plan : PreparedTransfer
+  priv state : @digest.Sha256
+  priv mut next : Int32
 }
 
 ///|

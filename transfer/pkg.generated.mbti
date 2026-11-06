@@ -2,7 +2,6 @@
 package "oyjh0381/moonoci/transfer"
 
 import {
-  "oyjh0381/moonoci/digest",
   "oyjh0381/moonoci/model",
 }
 
@@ -45,10 +44,7 @@ pub(all) struct ChunkSpec {
 }
 
 pub struct PreparedTransfer {
-  digest : @model.Digest
-  size : Int64
-  chunk_bytes : Int32
-  chunks : Array[@model.Digest]
+  // private fields
 }
 pub fn PreparedTransfer::batch(Self, Array[Int32], max_chunks? : Int32, max_bytes? : Int64) -> TransferBatch raise @model.MoonOciError
 pub fn PreparedTransfer::chunk(Self, Int32) -> ChunkSpec raise @model.MoonOciError
@@ -65,9 +61,7 @@ pub(all) struct TransferBatch {
 }
 
 pub struct TransferVerifier {
-  plan : PreparedTransfer
-  state : @digest.Sha256
-  mut next : Int32
+  // private fields
 }
 pub fn TransferVerifier::accept(Self, Int32, Bytes) -> Unit raise @model.MoonOciError
 pub fn TransferVerifier::accepted_chunks(Self) -> Int32

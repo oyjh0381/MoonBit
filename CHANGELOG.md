@@ -4,6 +4,8 @@ All notable changes to MoonOCI are documented here. The format follows Keep a Ch
 
 ## [Unreleased]
 
+- Make validated layout/hash/transfer/catalog internals explicitly private; public struct field visibility previously allowed mutable container references to escape. Method-based consumers remain supported; direct internal field access is intentionally incompatible.
+
 - Add bounded pinned chunk plans, versioned metadata and mandatory whole-content verification.
 - Stream file planning/export and persist restartable sessions without trusting completion counters.
 - Recover verified pending chunks/complete partial outputs, retaining corrupt evidence without replacement.

@@ -37,7 +37,7 @@ pub fn CatalogLimits::validate(
 }
 
 ///|
-struct ContentNode {
+priv struct ContentNode {
   descriptor : @model.Descriptor
   advertisement : Json
   children : Array[@model.Descriptor]
@@ -50,15 +50,15 @@ struct ContentNode {
 /// Verified bytes and bounded metadata topology. Layer/DiffID semantics,
 /// signature identity and artifact document semantics require separate checks.
 pub struct ContentCatalog {
-  marker : Bytes
-  index : Bytes
-  index_pin : @model.Digest
-  store_pin : @model.Digest
-  records : Map[String, Bytes]
-  physical : Array[@model.Descriptor]
-  nodes : Map[String, ContentNode]
-  root_values : Array[Json]
-  stored_bytes : Int64
+  priv marker : Bytes
+  priv index : Bytes
+  priv index_pin : @model.Digest
+  priv store_pin : @model.Digest
+  priv records : Map[String, Bytes]
+  priv physical : Array[@model.Descriptor]
+  priv nodes : Map[String, ContentNode]
+  priv root_values : Array[Json]
+  priv stored_bytes : Int64
 }
 
 ///|
@@ -298,6 +298,16 @@ pub fn catalog(
 ///|
 pub fn ContentCatalog::source_index(self : ContentCatalog) -> @model.Digest {
   self.index_pin
+}
+
+///|
+/// Return a separate mutable layout wrapper over verified immutable byte data.
+pub fn ContentCatalog::snapshot(self : ContentCatalog) -> @layout.MemoryLayout {
+  @layout.MemoryLayout::from_untrusted_parts(
+    self.marker,
+    self.index,
+    self.physical.map(d => (d, self.records[d.digest.to_string()])),
+  )
 }
 
 ///|

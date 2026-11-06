@@ -43,8 +43,8 @@ async fn open_transfer_session(
 /// An immutable plan snapshot for a serialized long-lived host. Filesystem
 /// contents are still revalidated for every read; no completion cache is trusted.
 pub struct TransferSession {
-  path : String
-  plan : @transfer.PreparedTransfer
+  priv path : String
+  priv plan : @transfer.PreparedTransfer
 }
 
 ///|

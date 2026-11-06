@@ -62,8 +62,7 @@ pub(all) struct TransferProgress {
 pub fn TransferProgress::complete(Self) -> Bool
 
 pub struct TransferSession {
-  path : String
-  plan : @transfer.PreparedTransfer
+  // private fields
 }
 pub async fn TransferSession::batch(Self, Int32, Int64) -> @transfer.TransferBatch
 pub async fn TransferSession::finish(Self, String) -> Unit

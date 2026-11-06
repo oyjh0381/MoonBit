@@ -1,17 +1,17 @@
 ///|
 /// One immutable content-addressed object stored in an in-memory layout.
 pub struct BlobRecord {
-  descriptor : @model.Descriptor
-  data : Bytes
+  priv descriptor : @model.Descriptor
+  priv data : Bytes
 } derive(Debug, Eq)
 
 ///|
 /// Portable in-memory representation of the files in an OCI Image Layout.
 pub struct MemoryLayout {
-  marker : Bytes
-  mut index : Bytes
-  blobs : Array[BlobRecord]
-  lookup : Map[String, Int32]
+  priv marker : Bytes
+  priv mut index : Bytes
+  priv blobs : Array[BlobRecord]
+  priv lookup : Map[String, Int32]
 } derive(Debug, Eq)
 
 ///|

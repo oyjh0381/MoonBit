@@ -39,10 +39,10 @@ pub(all) struct ChunkPlan {
 ///|
 /// Validated snapshot; later mutation of a caller's digest array cannot alter it.
 pub struct PreparedTransfer {
-  digest : @model.Digest
-  size : Int64
-  chunk_bytes : Int32
-  chunks : Array[@model.Digest]
+  priv digest : @model.Digest
+  priv size : Int64
+  priv chunk_bytes : Int32
+  priv chunks : Array[@model.Digest]
 }
 
 ///|

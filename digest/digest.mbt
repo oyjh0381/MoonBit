@@ -1,8 +1,8 @@
 ///|
 /// Incremental SHA-256 state used by streaming adapters.
 pub struct Sha256 {
-  state : @crypto.SHA256
-  mut bytes_seen : Int64
+  priv state : @crypto.SHA256
+  priv mut bytes_seen : Int64
 }
 
 ///|
