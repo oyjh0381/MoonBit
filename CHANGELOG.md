@@ -4,6 +4,12 @@ All notable changes to MoonOCI are documented here. The format follows Keep a Ch
 
 ## [Unreleased]
 
+- Trace final file payloads, ownership, timestamps and links to contributing layers.
+- Compare file content and execution configuration; bind explicit upgrade review to both exact versions.
+- Expose read-only inventory/diff/config-diff/upgrade-check commands and an independently observed consumer.
+- Reject implicit first-manifest filesystem selection in multi-image layouts.
+- Correct the development observer's root opacity and directory-replacement handling and independently check provenance.
+
 - Develop 0.2.0 against MoonBit 0.10.16 with supported dependencies and explicit exports.
 - Compose/select flat multi-platform image distributions with platform/config checks.
 - Plan and serialize missing-content updates, verify externally pinned envelopes and hydrate complete standalone layouts.

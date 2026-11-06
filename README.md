@@ -19,6 +19,12 @@ indexed blob lookups and a caller-owned release-policy gate. See
 [offline delivery](docs/offline-delivery.md) for the reproducible Windows/Linux
 consumer and the exact transfer/security boundaries.
 
+Content-aware [upgrade review](docs/upgrade-review.md) adds final file/layer
+provenance, same-size payload change detection, execution configuration changes
+without echoing environment values, and approvals bound to both image versions.
+The Native `files`, `diff`, `config-diff` and `upgrade-check` commands expose these
+public library capabilities. Multi-image filesystem queries require selection.
+
 - deterministic USTAR/PAX writer and safety-focused USTAR/PAX/GNU reader;
 - SHA-256 Digest and content-addressed in-memory OCI Image Layout;
 - uncompressed and deterministic gzip Layers with correct compressed Layer Digest and uncompressed DiffID handling;

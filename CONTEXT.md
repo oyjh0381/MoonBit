@@ -95,3 +95,11 @@ _Avoid_: In-place patch, extraction
 **Release Policy**:
 Caller-owned constraints on verified image configuration and content, producing an allow/block decision separately from OCI structural validity.
 _Avoid_: Runtime security proof, vulnerability scan
+
+**File Evidence**:
+An observation of a final filesystem path bound to its content and contributing layer, with source ownership and link metadata.
+_Avoid_: Extracted file, original source file
+
+**Upgrade Approval**:
+A host decision accepting observed changed paths or execution fields between two exact pinned manifests.
+_Avoid_: Compatibility proof, reusable allowlist

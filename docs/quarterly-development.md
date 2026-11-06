@@ -20,7 +20,7 @@ integration examples, measured resource costs and maintenance documentation:
 | Offline delivery | Versioned delta archives, trusted pins, bounded hydration, independent Windows/Linux consumer | Interrupted-transfer recovery and external transport integration |
 | Content lifecycle | Indexed lookup, reachable/stored accounting, nonmutating compaction | Host retention/garbage-collection transactions and workload measurements |
 | Release governance | All-platform runtime metadata rules, quotas, structured decisions and gate CLI | Host policy integration and additional contract cases |
-| Change analysis | Existing rootfs metadata reconstruction | Content-aware tree diff, file provenance, config compatibility comparison |
+| Change analysis | Final-file content/ownership provenance, structured file/config comparisons, pinned upgrade review and independent consumer | Larger workload evidence, host approval integration and additional platform cases |
 | Supply-chain attachments | Not implemented | OCI artifact/referrer models, provenance binding, interoperability fixtures |
 | Performance and robustness | Existing unit/property tests | Workload curves, decode limits, large graph tests, regression baselines |
 

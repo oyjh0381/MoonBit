@@ -122,6 +122,8 @@ jobs:
       - run: moon update
       - run: python3 scripts/runtime_chain.py
       - run: python3 scripts/offline_chain.py --binary _build/native/release/build/cmd/moonoci/moonoci.exe
+      - run: python3 scripts/independent_cases.py
+      - run: python3 scripts/upgrade_chain.py --binary _build/native/release/build/cmd/moonoci/moonoci.exe
       - uses: actions/upload-artifact@v4
         if: always()
         with:
