@@ -2,18 +2,36 @@
 package "oyjh0381/moonoci/policy"
 
 import {
+  "oyjh0381/moonoci/artifacts",
   "oyjh0381/moonoci/layout",
   "oyjh0381/moonoci/model",
 }
 
 // Values
+pub fn artifact_requirements_json(ArtifactRequirementDecision) -> String
+
 pub fn evaluate(@layout.MemoryLayout, policy? : ReleasePolicy) -> PolicyDecision raise @model.MoonOciError
+
+pub fn evaluate_artifact_requirements(@layout.MemoryLayout, @model.Digest, Array[ArtifactRequirement], limits? : @artifacts.ArtifactLimits) -> ArtifactRequirementDecision raise @model.MoonOciError
 
 pub fn render_json(PolicyDecision) -> String
 
 // Errors
 
 // Types and methods
+pub(all) struct ArtifactRequirement {
+  artifact_type : String
+  minimum : Int32
+  maximum : Int32
+}
+
+pub(all) struct ArtifactRequirementDecision {
+  allowed : Bool
+  subject : @model.Digest
+  verified_artifacts : Array[@model.Digest]
+  findings : Array[PolicyFinding]
+}
+
 pub(all) struct PolicyDecision {
   allowed : Bool
   findings : Array[PolicyFinding]

@@ -1,4 +1,5 @@
 import {
+  "oyjh0381/moonoci/artifacts",
   "oyjh0381/moonoci/model",
   "oyjh0381/moonoci/layout",
   "oyjh0381/moonoci/distribution",
