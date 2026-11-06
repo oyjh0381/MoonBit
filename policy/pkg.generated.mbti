@@ -1,0 +1,44 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "oyjh0381/moonoci/policy"
+
+import {
+  "oyjh0381/moonoci/layout",
+  "oyjh0381/moonoci/model",
+}
+
+// Values
+pub fn evaluate(@layout.MemoryLayout, policy? : ReleasePolicy) -> PolicyDecision raise @model.MoonOciError
+
+pub fn render_json(PolicyDecision) -> String
+
+// Errors
+
+// Types and methods
+pub(all) struct PolicyDecision {
+  allowed : Bool
+  findings : Array[PolicyFinding]
+  manifests_checked : Int32
+  reachable_bytes : Int64
+}
+
+pub(all) struct PolicyFinding {
+  code : String
+  path : String
+  message : String
+}
+
+pub(all) struct ReleasePolicy {
+  max_manifests : Int32
+  max_layers_per_image : Int32
+  max_reachable_bytes : Int64
+  allowed_platforms : Array[@model.Platform]?
+  require_numeric_nonroot : Bool
+  require_command : Bool
+  required_labels : Array[String]
+  forbidden_env_names : Array[String]
+}
+pub fn ReleasePolicy::recommended() -> Self
+
+// Type aliases
+
+// Traits

@@ -1,0 +1,12 @@
+import {
+  "oyjh0381/moonoci/model",
+  "oyjh0381/moonoci/layout",
+  "oyjh0381/moonoci/distribution",
+  "oyjh0381/moonoci/codec",
+  "moonbitlang/core/string",
+}
+
+import {
+  "oyjh0381/moonoci/archive",
+  "oyjh0381/moonoci/builder",
+} for "test"

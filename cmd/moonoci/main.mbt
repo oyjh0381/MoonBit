@@ -11,6 +11,14 @@ async fn main {
       return
     }
     match args[1] {
+      "gate" => {
+        require_arity(args, 3, "usage: moonoci gate INPUT")
+        let decision = @policy.evaluate(@native.load_layout(args[2]))
+        @stdio.stdout.write(@policy.render_json(decision) + "\n")
+        if !decision.allowed {
+          process_exit(5)
+        }
+      }
       "delta-pack" => {
         require_arity(args, 5, "usage: moonoci delta-pack BASE TARGET ARCHIVE")
         @native.create_delta_file(args[2], args[3], args[4])
@@ -143,7 +151,8 @@ async fn main {
         @native.archive_layout_file(args[2], args[3])
         @stdio.stdout.write("wrote " + args[3] + "\n")
       }
-      "version" | "--version" | "-V" => @stdio.stdout.write("moonoci 0.1.4\n")
+      "version" | "--version" | "-V" =>
+        @stdio.stdout.write("moonoci 0.2.0 (unreleased)\n")
       "help" | "--help" | "-h" => print_usage()
       command => raise @model.InvalidArgument("unknown command: " + command)
     }
@@ -175,6 +184,14 @@ async fn print_usage() -> Unit {
       #|MoonOCI — deterministic OCI Image Layout builder and validator
       #|
       #|Usage:
+      #|  moonoci merge OUTPUT INPUT INPUT [INPUT...]
+      #|  moonoci select INPUT OUTPUT OS ARCH
+      #|  moonoci delta BASE TARGET
+      #|  moonoci delta-pack BASE TARGET ARCHIVE
+      #|  moonoci delta-apply BASE ARCHIVE EXPECTED_INDEX_DIGEST OUTPUT
+      #|  moonoci compact INPUT OUTPUT
+      #|  moonoci storage INPUT
+      #|  moonoci gate INPUT
       #|  moonoci build <spec.json>
       #|  moonoci inspect <layout>
       #|  moonoci list <layout>
