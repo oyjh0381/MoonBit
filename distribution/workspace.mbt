@@ -116,9 +116,9 @@ pub fn missing_blobs(
   require_valid(base)
   require_valid(target)
   let missing : Array[@model.Descriptor] = []
-  for blob in target.blob_records() {
-    if base.get_blob(blob.descriptor().digest) is None {
-      missing.push(blob.descriptor())
+  for descriptor in reachable_blobs(target) {
+    if base.get_blob(descriptor.digest) is None {
+      missing.push(descriptor)
     }
   }
   missing.sort_by((a, b) => a.digest.to_string().compare(b.digest.to_string()))

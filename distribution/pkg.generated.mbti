@@ -7,19 +7,61 @@ import {
 }
 
 // Values
+pub fn compact(@layout.MemoryLayout) -> @layout.MemoryLayout raise @model.MoonOciError
+
+pub fn create_delta(@layout.MemoryLayout, @layout.MemoryLayout, limits? : TransferLimits) -> DeltaEnvelope raise @model.MoonOciError
+
+pub fn decode_delta(Bytes, limits? : TransferLimits) -> DeltaEnvelope raise @model.MoonOciError
+
+pub fn encode_delta(DeltaEnvelope, limits? : TransferLimits) -> Bytes raise @model.MoonOciError
+
+pub fn hydrate(@layout.MemoryLayout, DeltaEnvelope, @model.Digest, limits? : TransferLimits) -> @layout.MemoryLayout raise @model.MoonOciError
+
 pub fn merge(Array[@layout.MemoryLayout]) -> @layout.MemoryLayout raise @model.MoonOciError
 
 pub fn missing_blobs(@layout.MemoryLayout, @layout.MemoryLayout) -> Array[@model.Descriptor] raise @model.MoonOciError
 
+pub fn reachable_blobs(@layout.MemoryLayout) -> Array[@model.Descriptor] raise @model.MoonOciError
+
 pub fn select(@layout.MemoryLayout, @model.Platform) -> @model.Descriptor raise @model.MoonOciError
 
 pub fn slice(@layout.MemoryLayout, @model.Platform) -> @layout.MemoryLayout raise @model.MoonOciError
+
+pub fn storage_inventory(@layout.MemoryLayout) -> StorageInventory raise @model.MoonOciError
 
 pub fn verify_pin(@layout.MemoryLayout, @model.Digest) -> Unit raise @model.MoonOciError
 
 // Errors
 
 // Types and methods
+pub(all) struct DeltaBlob {
+  descriptor : @model.Descriptor
+  data : Bytes
+}
+
+pub(all) struct DeltaEnvelope {
+  base_index : @model.Digest
+  target_index : @model.Digest
+  marker : Bytes
+  index : Bytes
+  blobs : Array[DeltaBlob]
+}
+
+pub(all) struct StorageInventory {
+  stored_blobs : Int32
+  reachable_blobs : Int32
+  stored_bytes : Int64
+  reachable_bytes : Int64
+  reclaimable_bytes : Int64
+}
+
+pub(all) struct TransferLimits {
+  max_blobs : Int32
+  max_blob_bytes : Int64
+  max_total_bytes : Int64
+  max_index_bytes : Int32
+}
+pub fn TransferLimits::default() -> Self
 
 // Type aliases
 
