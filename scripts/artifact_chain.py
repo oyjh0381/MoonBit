@@ -93,6 +93,10 @@ def main():
             assert manifest['subject']['digest'] == subject
             payload_pin = 'sha256:' + hashlib.sha256(payload).hexdigest()
             assert manifest['layers'][0]['digest'] == payload_pin
+            fetched = directory / (reference + '-oras-payload.json')
+            subprocess.run([str(oras), 'blob', 'fetch', '--oci-layout', str(current) + '@' + payload_pin,
+                            '--output', str(fetched)], check=True, capture_output=True, timeout=60)
+            assert fetched.read_bytes() == payload
     report = dict(schema='moonoci.artifact-consumer.v1', subject=subject, artifacts=2,
                   original_image_unchanged=True, independent_payload_hashes=True,
                   referrer_filter_verified=True, export_preserves_weak_subject=True,
