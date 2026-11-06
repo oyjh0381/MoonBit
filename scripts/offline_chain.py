@@ -41,8 +41,12 @@ def main():
     run('delta-pack', base, target, archive)
     run('delta-pack', base, target, directory / 'again.tar')
     assert archive.read_bytes() == (directory / 'again.tar').read_bytes()
+    preserved = archive.read_bytes()
+    run('delta-pack', base, target, archive, status=3)
+    assert archive.read_bytes() == preserved
     restored = directory / 'restored'
     run('delta-apply', base, archive, pin, restored)
+    run('delta-apply', base, archive, pin, restored, status=3)
     assert observe(restored) == observe(target)
     assert (restored / 'index.json').read_bytes() == target_index
     full = directory / 'full.tar'
@@ -60,6 +64,9 @@ def main():
     assert observe(chosen) == observe(target)
     stats = json.loads(run('storage', restored))
     assert stats['reclaimable_bytes'] == '0'
+    blocked = json.loads(run('gate', target, status=5))
+    assert not blocked['allowed']
+    assert any(f['code'] == 'nonroot-user-required' for f in blocked['findings'])
     report = dict(schema='moonoci.offline.v1', full_archive_bytes=full.stat().st_size,
                   delta_archive_bytes=archive.stat().st_size, target_pin=pin,
                   independently_observed=True, deterministic=True, wrong_pin_refused=True,

@@ -5,12 +5,17 @@ pub async fn create_delta_file(
   target : String,
   destination : String,
 ) -> Unit {
+  if @fs.exists(destination) {
+    raise @model.IoFailure("transfer destination already exists")
+  }
   let envelope = @distribution.create_delta(
     load_layout(base),
     load_layout(target),
   )
   let bytes = @distribution.encode_delta(envelope)
-  @fs.write_file(destination, bytes, create_mode=CreateNew)
+  @fs.write_file(destination, bytes, create_mode=CreateNew) catch {
+    error => raise @model.IoFailure("cannot write transfer archive: \{error}")
+  }
 }
 
 ///|
