@@ -174,6 +174,17 @@ pub fn attach(
       source.blob_records().map(b => (b.descriptor(), b.data())),
     )
     ignore(promoted.put_blob(@model.media_type_index, source.index()))
+    // Advertise the preserved subject descriptor so layout clients can resolve
+    // its media type by digest rather than treating the blob as octet-stream.
+    let original = @codec.decode_index(source.index())
+    if !original.manifests.any(d => d.digest == subject.digest) {
+      promoted.set_index(
+        @codec.encode_index({
+          ..original,
+          manifests: original.manifests + [subject],
+        }),
+      )
+    }
     return assemble(
       promoted,
       Some(subject),

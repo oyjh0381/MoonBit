@@ -18,6 +18,11 @@ test "release-index attachment preserves the exact pre-attachment subject bytes"
   assert_eq(image.layout.index(), before)
   assert_eq(artifact.layout.require_blob(subject), before)
   assert_true(
+    @codec.decode_index(artifact.layout.index()).manifests.any(d => {
+      d.digest == pin && d.media_type == @model.media_type_index
+    }),
+  )
+  assert_true(
     @artifacts.inspect(
       artifact.layout,
       artifact.descriptor,
