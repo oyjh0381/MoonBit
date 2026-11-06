@@ -50,6 +50,10 @@ def main():
         expected = independent['files'][item['path']]
         assert item['mode'] == expected['mode']
         assert int(item['bytes']) == expected['bytes']
+        assert item['uid'] == expected['uid'] and item['gid'] == expected['gid']
+        assert int(item['mtime']) == expected['mtime']
+        assert item['layer_index'] == expected['layer_index'] and item['layer_digest'] == expected['layer_digest']
+        assert item['link_target'] == expected['link_target']
         if item['kind'] == 'file':
             assert item['content_digest'] == 'sha256:' + expected['sha256']
     by_path = {item['path']: item for item in inventory['entries']}
