@@ -1,0 +1,30 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "oyjh0381/moonoci/artifacts"
+
+import {
+  "oyjh0381/moonoci/model",
+}
+
+// Values
+pub fn decode_manifest(Bytes) -> ArtifactManifest raise @model.MoonOciError
+
+pub let empty_media_type : String
+
+pub fn encode_manifest(ArtifactManifest) -> Bytes raise @model.MoonOciError
+
+pub fn validate_media_type(String) -> Unit raise @model.MoonOciError
+
+// Errors
+
+// Types and methods
+pub(all) struct ArtifactManifest {
+  artifact_type : String
+  config : @model.Descriptor
+  payloads : Array[@model.Descriptor]
+  subject : @model.Descriptor?
+  annotations : Array[@model.KeyValue]
+}
+
+// Type aliases
+
+// Traits
