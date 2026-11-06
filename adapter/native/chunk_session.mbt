@@ -40,6 +40,29 @@ async fn open_transfer_session(
 }
 
 ///|
+/// An immutable plan snapshot for a serialized long-lived host. Filesystem
+/// contents are still revalidated for every read; no completion cache is trusted.
+pub struct TransferSession {
+  path : String
+  plan : @transfer.PreparedTransfer
+}
+
+///|
+pub async fn TransferSession::open(
+  path : String,
+  expected : @model.Digest,
+) -> TransferSession {
+  { path, plan: open_transfer_session(path, expected), }
+}
+
+///|
+pub fn TransferSession::plan(
+  self : TransferSession,
+) -> @transfer.PreparedTransfer {
+  self.plan
+}
+
+///|
 fn chunk_path(session : String, index : Int32) -> String {
   join_path(session, "chunks/" + index.to_string())
 }
@@ -95,7 +118,18 @@ pub async fn receive_transfer_chunk(
   index : Int32,
   input : String,
 ) -> Unit {
-  let plan = open_transfer_session(session, expected)
+  TransferSession::open(session, expected).receive(index, input)
+}
+
+///|
+/// Reuse a prepared plan: O(chunk bytes), without reparsing K digest records.
+pub async fn TransferSession::receive(
+  self : TransferSession,
+  index : Int32,
+  input : String,
+) -> Unit {
+  let plan = self.plan
+  let session = self.path
   let spec = plan.chunk(index)
   require_transfer_kind(input, Regular)
   let bytes = read_bounded_file(input, spec.size)
@@ -122,7 +156,15 @@ pub async fn transfer_progress(
   session : String,
   expected : @model.Digest,
 ) -> TransferProgress {
-  let plan = open_transfer_session(session, expected)
+  TransferSession::open(session, expected).progress()
+}
+
+///|
+pub async fn TransferSession::progress(
+  self : TransferSession,
+) -> TransferProgress {
+  let plan = self.plan
+  let session = self.path
   let missing = []
   let mut received_bytes = 0L
   let mut received_chunks = 0
@@ -180,10 +222,19 @@ pub async fn finish_transfer(
   expected : @model.Digest,
   destination : String,
 ) -> Unit {
+  TransferSession::open(session, expected).finish(destination)
+}
+
+///|
+pub async fn TransferSession::finish(
+  self : TransferSession,
+  destination : String,
+) -> Unit {
   if destination.is_empty() {
     raise @model.InvalidArgument("transfer output path must not be empty")
   }
-  let plan = open_transfer_session(session, expected)
+  let plan = self.plan
+  let session = self.path
   let staging = destination + ".moonoci-partial"
   if @fs.exists(destination) || @fs.exists(staging) {
     raise @model.IoFailure("transfer output or partial file already exists")

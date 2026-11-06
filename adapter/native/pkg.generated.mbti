@@ -61,6 +61,16 @@ pub(all) struct TransferProgress {
 }
 pub fn TransferProgress::complete(Self) -> Bool
 
+pub struct TransferSession {
+  path : String
+  plan : @transfer.PreparedTransfer
+}
+pub async fn TransferSession::finish(Self, String) -> Unit
+pub async fn TransferSession::open(String, @model.Digest) -> Self
+pub fn TransferSession::plan(Self) -> @transfer.PreparedTransfer
+pub async fn TransferSession::progress(Self) -> TransferProgress
+pub async fn TransferSession::receive(Self, Int32, String) -> Unit
+
 // Type aliases
 
 // Traits
