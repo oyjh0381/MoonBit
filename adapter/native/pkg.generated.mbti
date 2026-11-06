@@ -37,6 +37,10 @@ pub async fn load_layout(String) -> @layout.MemoryLayout
 
 pub async fn receive_transfer_chunk(String, @model.Digest, Int32, String) -> Unit
 
+pub async fn recover_transfer_chunk(String, @model.Digest, Int32) -> String
+
+pub async fn recover_transfer_output(String, @model.Digest, String) -> Unit
+
 pub async fn start_transfer(String, @model.Digest, String) -> Unit
 
 pub async fn transfer_progress(String, @model.Digest) -> TransferProgress

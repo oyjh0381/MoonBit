@@ -136,12 +136,36 @@ def main():
     run('transfer-start', directory / 'empty-plan.json', empty_pin, directory / 'empty-session')
     run('transfer-finish', directory / 'empty-session', empty_pin, directory / 'empty-output')
     assert (directory / 'empty-output').read_bytes() == b''
+
+    # Model the exact on-disk states left at commit boundaries. This is not a
+    # power-loss or live kill test. Verified recovery must preserve bad inputs.
+    recovery = directory / 'recovery-session'
+    run('transfer-start', plan_path, pin, recovery)
+    assert run('transfer-recover-chunk', recovery, pin, 0) == 'missing'
+    (recovery / 'chunks' / '0.pending').write_bytes(chunks[0])
+    assert run('transfer-recover-chunk', recovery, pin, 0) == 'recovered'
+    assert run('transfer-recover-chunk', recovery, pin, 0) == 'committed'
+    (recovery / 'chunks' / '1.pending').write_bytes(b'bad')
+    run('transfer-recover-chunk', recovery, pin, 1, status=5)
+    assert (recovery / 'chunks' / '1.pending').read_bytes() == b'bad'
+    recovered_output = directory / 'recovered-output'
+    partial = Path(str(recovered_output) + '.moonoci-partial')
+    partial.write_bytes(payload)
+    run('transfer-recover-output', recovery, pin, recovered_output)
+    assert recovered_output.read_bytes() == payload and not partial.exists()
+    bad_output = directory / 'bad-recovery-output'
+    bad_partial = Path(str(bad_output) + '.moonoci-partial')
+    bad_partial.write_bytes(bytes([payload[0] ^ 1]) + payload[1:])
+    run('transfer-recover-output', recovery, pin, bad_output, status=5)
+    assert bad_partial.exists() and not bad_output.exists()
     report = dict(schema='moonoci.resumable-consumer.v1', source_bytes=len(payload),
                   chunk_bytes=chunk_bytes, chunks=len(chunks), reused_bytes=reused_bytes,
                   remaining_bytes=len(payload) - reused_bytes, process_restart_verified=True,
                   whole_pin=pin, independent_chunk_hashes=True, delta_hydration_verified=True,
                   corrupt_cache_refused=True, forged_chunk_metadata_refused=True,
-                  no_overwrite=True, empty_file_verified=True, power_loss_tested=False)
+                  no_overwrite=True, empty_file_verified=True, pending_recovery_verified=True,
+                  complete_partial_recovery_verified=True, bad_partial_preserved=True,
+                  power_loss_tested=False)
     (directory / 'report.json').write_text(json.dumps(report, indent=2), encoding='utf-8')
     print(json.dumps(report, indent=2))
 

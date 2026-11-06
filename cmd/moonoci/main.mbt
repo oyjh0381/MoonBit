@@ -11,6 +11,27 @@ async fn main {
       return
     }
     match args[1] {
+      "transfer-recover-chunk" => {
+        require_arity(
+          args, 5, "usage: moonoci transfer-recover-chunk SESSION EXPECTED_PIN INDEX",
+        )
+        let result = @native.recover_transfer_chunk(
+          args[2],
+          @model.Digest::parse(args[3]),
+          integer_argument(args[4]),
+        )
+        @stdio.stdout.write(result + "\n")
+      }
+      "transfer-recover-output" => {
+        require_arity(
+          args, 5, "usage: moonoci transfer-recover-output SESSION EXPECTED_PIN OUTPUT_FILE",
+        )
+        @native.recover_transfer_output(
+          args[2],
+          @model.Digest::parse(args[3]),
+          args[4],
+        )
+      }
       "chunk-plan" => {
         require_arity(
           args, 5, "usage: moonoci chunk-plan SOURCE CHUNK_BYTES OUTPUT_PLAN",
@@ -467,6 +488,8 @@ async fn print_usage() -> Unit {
       #|MoonOCI — deterministic OCI Image Layout builder and validator
       #|
       #|Usage:
+      #|  moonoci transfer-recover-chunk SESSION EXPECTED_PIN INDEX
+      #|  moonoci transfer-recover-output SESSION EXPECTED_PIN OUTPUT_FILE
       #|  moonoci chunk-plan SOURCE CHUNK_BYTES OUTPUT_PLAN
       #|  moonoci chunk-export SOURCE PLAN EXPECTED_PIN INDEX OUTPUT_CHUNK
       #|  moonoci transfer-start PLAN EXPECTED_PIN SESSION
