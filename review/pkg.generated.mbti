@@ -14,7 +14,11 @@ pub fn compare_files(@layout.MemoryLayout, @model.Descriptor, @layout.MemoryLayo
 
 pub fn configuration_json(ConfigComparison) -> String
 
+pub fn evaluate_upgrade(@layout.MemoryLayout, @model.Descriptor, @layout.MemoryLayout, @model.Descriptor, UpgradeApproval) -> UpgradeDecision raise @model.MoonOciError
+
 pub fn files_json(FileComparison) -> String
+
+pub fn upgrade_json(UpgradeDecision) -> String
 
 // Errors
 
@@ -49,6 +53,22 @@ pub(all) struct FileComparison {
   removed : Int32
   modified : Int32
   provenance_only : Int32
+}
+
+pub(all) struct UpgradeApproval {
+  expected_base : @model.Digest
+  expected_target : @model.Digest
+  approved_paths : Array[String]
+  approved_fields : Array[String]
+  allow_additions : Bool
+}
+
+pub(all) struct UpgradeDecision {
+  allowed : Bool
+  files : FileComparison
+  configuration : ConfigComparison
+  unreviewed_paths : Array[String]
+  unreviewed_fields : Array[String]
 }
 
 // Type aliases
