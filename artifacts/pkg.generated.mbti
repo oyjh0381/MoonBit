@@ -14,6 +14,8 @@ pub fn build(String, Array[ArtifactPayload], subject? : @model.Descriptor, annot
 
 pub fn decode_manifest(Bytes) -> ArtifactManifest raise @model.MoonOciError
 
+pub fn decode_referrer_page(Bytes, max_entries? : Int32) -> Array[ReferrerAdvertisement] raise @model.MoonOciError
+
 pub let empty_media_type : String
 
 pub fn encode_manifest(ArtifactManifest) -> Bytes raise @model.MoonOciError
@@ -35,6 +37,8 @@ pub fn resolve_subject(@layout.MemoryLayout, @model.Digest, limits? : @graph.Wal
 pub fn validate_media_type(String) -> Unit raise @model.MoonOciError
 
 pub fn verification_json(StoreVerification) -> String
+
+pub fn verify_referrer_page(@layout.MemoryLayout, @model.Digest, Array[ReferrerAdvertisement], artifact_type? : String) -> ReferrerPageVerification raise @model.MoonOciError
 
 pub fn verify_store(@layout.MemoryLayout, artifact_limits? : ArtifactLimits, graph_limits? : @graph.WalkLimits, require_subject? : Bool, max_total_payload_bytes? : Int64) -> StoreVerification raise @model.MoonOciError
 
@@ -83,11 +87,22 @@ pub(all) struct Referrer {
   subject : @model.Descriptor
 }
 
+pub(all) struct ReferrerAdvertisement {
+  descriptor : @model.Descriptor
+  artifact_type : String?
+}
+
 pub(all) struct ReferrerDiscovery {
   subject : @model.Digest
   referrers : Array[Referrer]
   unrecognized : Array[@graph.SkippedDescriptor]
   complete : Bool
+}
+
+pub(all) struct ReferrerPageVerification {
+  valid : Bool
+  checked : Int32
+  findings : Array[StoreFinding]
 }
 
 pub(all) struct StoreFinding {
