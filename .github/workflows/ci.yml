@@ -9,7 +9,7 @@ permissions:
 
 jobs:
   artifact-interop:
-    name: Artifact interoperability (${{ matrix.os }})
+    name: OCI consumers (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -42,9 +42,15 @@ jobs:
       - name: ORAS consumer (Linux)
         if: runner.os == 'Linux'
         run: python scripts/artifact_chain.py --binary _build/native/release/build/cmd/moonoci/moonoci.exe --oras _build/tools/oras-1.3.6/linux_amd64/oras
+      - name: Reviewed retention consumer (Linux)
+        if: runner.os == 'Linux'
+        run: python scripts/retention_chain.py --binary _build/native/release/build/cmd/moonoci/moonoci.exe --oras _build/tools/oras-1.3.6/linux_amd64/oras
       - name: ORAS consumer (Windows)
         if: runner.os == 'Windows'
         run: python scripts/artifact_chain.py --binary _build/native/release/build/cmd/moonoci/moonoci.exe --oras _build/tools/oras-1.3.6/windows_amd64/oras.exe
+      - name: Reviewed retention consumer (Windows)
+        if: runner.os == 'Windows'
+        run: python scripts/retention_chain.py --binary _build/native/release/build/cmd/moonoci/moonoci.exe --oras _build/tools/oras-1.3.6/windows_amd64/oras.exe
 
   documentation:
     name: Documentation and public API

@@ -1,5 +1,13 @@
 # MoonOCI
 
+**Content Catalog**: An immutable snapshot of verified physical SHA-256 content
+and recognized metadata topology. Its store pin includes orphan membership.
+It is a content-integrity observation, not a layer/runtime semantic proof.
+
+**Retention Plan**: A caller-selected strong content closure with explicit weak
+subject/referrer policy, exact copied metadata and an unsigned review identity.
+It creates a new copy and never performs source filesystem deletion.
+
 **Prepared Transfer**: An immutable validated snapshot of a whole-content pin,
 size, chunk size and ordered chunk digests. Per-chunk success does not prove the
 whole content; final verification remains mandatory.

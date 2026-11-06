@@ -4,6 +4,12 @@ All notable changes to MoonOCI are documented here. The format follows Keep a Ch
 
 ## [Unreleased]
 
+- Catalog bounded mixed physical stores, including orphan integrity, exact source pins and memoized metadata topology.
+- Retain explicit image/index/artifact closures with subject/referrer modes and extension-preserving root rewrites.
+- Bind retention review to physical membership and policy; reject stale plans and publish only verified new copies.
+- Preflight Native layout counts/sizes before Blob allocation; add independently checked CPython/ORAS lifecycle consumers.
+- Reject fractional/overflowing schema versions and support lossless scalar-number text when rewriting extensions.
+
 - Make validated layout/hash/transfer/catalog internals explicitly private; public struct field visibility previously allowed mutable container references to escape. Method-based consumers remain supported; direct internal field access is intentionally incompatible.
 
 - Add bounded pinned chunk plans, versioned metadata and mandatory whole-content verification.

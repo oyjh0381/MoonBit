@@ -41,6 +41,13 @@ The Windows consumer resumes an actual delta delivery across separate processes,
 then independently verifies the reconstructed image. Long-lived Native hosts can
 reuse a prepared session rather than parsing a full plan per arrival.
 
+[Mixed-content lifecycle](docs/content-lifecycle.md) adds pinned physical
+catalogs, explicit subject/referrer retention, extension-preserving copies and
+review identities that reject stale physical membership. Native export verifies
+supported image/artifact semantics before writing a new destination. The Windows
+consumer independently checks closure/identity and ORAS discovery; source data
+is never deleted. [Validated internals are private](docs/api-encapsulation.md).
+
 - deterministic USTAR/PAX writer and safety-focused USTAR/PAX/GNU reader;
 - SHA-256 Digest and content-addressed in-memory OCI Image Layout;
 - uncompressed and deterministic gzip Layers with correct compressed Layer Digest and uncompressed DiffID handling;
