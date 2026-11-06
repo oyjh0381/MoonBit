@@ -1,0 +1,9 @@
+import {
+  "oyjh0381/moonoci/model",
+  "oyjh0381/moonoci/artifacts",
+  "moonbitlang/core/encoding/utf8",
+}
+
+import {
+  "oyjh0381/moonoci/registry",
+} for "test"
