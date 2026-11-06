@@ -1,5 +1,5 @@
 ///|
-extern "C" fn process_exit(code : Int) = "exit"
+extern "C" fn process_exit(code : Int32) = "exit"
 
 ///|
 async fn main {
@@ -11,6 +11,40 @@ async fn main {
       return
     }
     match args[1] {
+      "merge" => {
+        if args.length() < 5 {
+          raise @model.InvalidArgument(
+            "usage: moonoci merge OUTPUT INPUT INPUT [INPUT...]",
+          )
+        }
+        let sources = []
+        for i in 3..<args.length() {
+          sources.push(@native.load_layout(args[i]))
+        }
+        @native.write_layout(args[2], @distribution.merge(sources))
+      }
+      "select" => {
+        require_arity(args, 6, "usage: moonoci select INPUT OUTPUT OS ARCH")
+        let chosen = @distribution.slice(@native.load_layout(args[2]), {
+          os: args[4],
+          architecture: args[5],
+          variant: None,
+          os_version: None,
+        })
+        @native.write_layout(args[3], chosen)
+      }
+      "delta" => {
+        require_arity(args, 4, "usage: moonoci delta BASE TARGET")
+        let missing = @distribution.missing_blobs(
+          @native.load_layout(args[2]),
+          @native.load_layout(args[3]),
+        )
+        for item in missing {
+          @stdio.stdout.write(
+            item.digest.to_string() + "\t" + item.size.to_string() + "\n",
+          )
+        }
+      }
       "build" => {
         if args.length() != 3 {
           raise @model.InvalidArgument("usage: moonoci build <spec.json>")
@@ -120,7 +154,7 @@ async fn print_usage() -> Unit {
 ///|
 fn require_arity(
   args : Array[String],
-  expected : Int,
+  expected : Int32,
   usage : String,
 ) -> Unit raise @model.MoonOciError {
   if args.length() != expected {
@@ -129,7 +163,7 @@ fn require_arity(
 }
 
 ///|
-async fn fail_with(code : String, message : String, status : Int) -> Unit {
+async fn fail_with(code : String, message : String, status : Int32) -> Unit {
   @stdio.stderr.write(code + ": " + message + "\n")
   process_exit(status)
 }

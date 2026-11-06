@@ -1,0 +1,26 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "oyjh0381/moonoci/distribution"
+
+import {
+  "oyjh0381/moonoci/layout",
+  "oyjh0381/moonoci/model",
+}
+
+// Values
+pub fn merge(Array[@layout.MemoryLayout]) -> @layout.MemoryLayout raise @model.MoonOciError
+
+pub fn missing_blobs(@layout.MemoryLayout, @layout.MemoryLayout) -> Array[@model.Descriptor] raise @model.MoonOciError
+
+pub fn select(@layout.MemoryLayout, @model.Platform) -> @model.Descriptor raise @model.MoonOciError
+
+pub fn slice(@layout.MemoryLayout, @model.Platform) -> @layout.MemoryLayout raise @model.MoonOciError
+
+pub fn verify_pin(@layout.MemoryLayout, @model.Digest) -> Unit raise @model.MoonOciError
+
+// Errors
+
+// Types and methods
+
+// Type aliases
+
+// Traits
