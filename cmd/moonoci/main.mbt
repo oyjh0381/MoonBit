@@ -11,6 +11,42 @@ async fn main {
       return
     }
     match args[1] {
+      "delta-pack" => {
+        require_arity(args, 5, "usage: moonoci delta-pack BASE TARGET ARCHIVE")
+        @native.create_delta_file(args[2], args[3], args[4])
+      }
+      "delta-apply" => {
+        require_arity(
+          args, 6, "usage: moonoci delta-apply BASE ARCHIVE EXPECTED_INDEX_DIGEST OUTPUT",
+        )
+        @native.apply_delta_file(
+          args[2],
+          args[3],
+          @model.Digest::parse(args[4]),
+          args[5],
+        )
+      }
+      "compact" => {
+        require_arity(args, 4, "usage: moonoci compact INPUT OUTPUT")
+        @native.write_layout(
+          args[3],
+          @distribution.compact(@native.load_layout(args[2])),
+        )
+      }
+      "storage" => {
+        require_arity(args, 3, "usage: moonoci storage INPUT")
+        let stats = @distribution.storage_inventory(
+          @native.load_layout(args[2]),
+        )
+        let output : Json = {
+          "stored_blobs": Json::number(stats.stored_blobs.to_double()),
+          "reachable_blobs": Json::number(stats.reachable_blobs.to_double()),
+          "stored_bytes": Json::string(stats.stored_bytes.to_string()),
+          "reachable_bytes": Json::string(stats.reachable_bytes.to_string()),
+          "reclaimable_bytes": Json::string(stats.reclaimable_bytes.to_string()),
+        }
+        @stdio.stdout.write(output.stringify() + "\n")
+      }
       "merge" => {
         if args.length() < 5 {
           raise @model.InvalidArgument(

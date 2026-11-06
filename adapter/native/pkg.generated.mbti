@@ -10,6 +10,8 @@ import {
 }
 
 // Values
+pub async fn apply_delta_file(String, String, @model.Digest, String) -> Unit
+
 pub fn archive_layout_bytes(@layout.MemoryLayout) -> Bytes raise @model.MoonOciError
 
 pub async fn archive_layout_file(String, String) -> Unit
@@ -17,6 +19,8 @@ pub async fn archive_layout_file(String, String) -> Unit
 pub async fn build_from_file(String) -> @builder.ImageBuildResult
 
 pub async fn collect_layer_source(String, @spec.LayerSpec) -> Array[@archive.TarEntry]
+
+pub async fn create_delta_file(String, String, String) -> Unit
 
 pub async fn load_layout(String) -> @layout.MemoryLayout
 
