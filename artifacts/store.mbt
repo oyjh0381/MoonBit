@@ -210,6 +210,11 @@ fn assemble(
   let layers = payloads.map(p => {
     layout.put_blob(p.media_type, p.data, annotations=p.annotations)
   })
+  // Follow OCI's portable empty-artifact guidance rather than emitting an
+  // empty layers array rejected by some artifact consumers.
+  if layers.is_empty() {
+    layers.push(config)
+  }
   let manifest : ArtifactManifest = {
     artifact_type,
     config,

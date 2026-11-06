@@ -79,6 +79,13 @@ test "standalone artifacts may carry weak subjects in separate graphs" {
     [],
     subject=image.report.manifest,
   )
+  let minimal = @artifacts.inspect(artifact.layout, artifact.descriptor)
+  assert_eq(minimal.manifest.payloads.length(), 1)
+  assert_eq(
+    minimal.manifest.payloads[0].media_type,
+    @artifacts.empty_media_type,
+  )
+  assert_eq(minimal.manifest.payloads[0].size, 2L)
   assert_false(
     @artifacts.inspect(artifact.layout, artifact.descriptor).subject_present,
   )
