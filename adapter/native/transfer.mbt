@@ -26,38 +26,8 @@ pub async fn apply_delta_file(
   expected : @model.Digest,
   destination : String,
 ) -> Unit {
-  let wire = read_transfer_file(archive)
+  let wire = read_bounded_file(archive, 570425344)
   let envelope = @distribution.decode_delta(wire)
   let hydrated = @distribution.hydrate(load_layout(base), envelope, expected)
   write_layout(destination, hydrated)
-}
-
-///|
-// Bounds apply before allocation and reads. Files must be trusted/quiescent;
-// size-change detection cannot detect concurrent equal-size rewrites.
-async fn read_transfer_file(path : String) -> Bytes {
-  let file = @fs.open(path, mode=@fs.ReadOnly)
-  defer file.close()
-  let size = file.size()
-  if size < 0L || size > 570425344L {
-    raise @model.ResourceLimitExceeded("transfer file exceeds 544 MiB")
-  }
-  let buffer = FixedArray::make(size.to_int() + 1, b'\x00')
-  let mut received = 0
-  while received < buffer.length() {
-    let count = file.read_at(
-      buffer,
-      position=received.to_int64(),
-      offset=received,
-      len=buffer.length() - received,
-    )
-    if count == 0 {
-      break
-    }
-    received += count
-  }
-  if received.to_int64() != size {
-    raise @model.IoFailure("transfer file changed during reading")
-  }
-  Bytes::from_array(buffer)[0:received].to_owned()
 }

@@ -11,6 +11,92 @@ async fn main {
       return
     }
     match args[1] {
+      "artifact-attach" => {
+        require_arity(
+          args, 9, "usage: moonoci artifact-attach INPUT SUBJECT_DIGEST ARTIFACT_TYPE PAYLOAD_MEDIA FILE REF OUTPUT",
+        )
+        let descriptor = @native.attach_artifact_file(
+          args[2],
+          @model.Digest::parse(args[3]),
+          args[4],
+          args[5],
+          args[6],
+          args[7],
+          args[8],
+        )
+        @stdio.stdout.write(descriptor.digest.to_string() + "\n")
+      }
+      "artifact-inspect" => {
+        require_arity(
+          args, 4, "usage: moonoci artifact-inspect INPUT ARTIFACT_DIGEST",
+        )
+        let store = @native.load_layout(args[2])
+        let descriptor = @artifacts.resolve_subject(
+          store,
+          @model.Digest::parse(args[3]),
+        )
+        @stdio.stdout.write(
+          @artifacts.observation_json(@artifacts.inspect(store, descriptor)) +
+          "\n",
+        )
+      }
+      "artifact-export" => {
+        require_arity(
+          args, 5, "usage: moonoci artifact-export INPUT ARTIFACT_DIGEST OUTPUT",
+        )
+        let store = @native.load_layout(args[2])
+        let descriptor = @artifacts.resolve_subject(
+          store,
+          @model.Digest::parse(args[3]),
+        )
+        @native.write_layout(
+          args[4],
+          @artifacts.export_artifact(store, descriptor),
+        )
+      }
+      "artifact-payload" => {
+        require_arity(
+          args, 6, "usage: moonoci artifact-payload INPUT ARTIFACT_DIGEST INDEX OUTPUT",
+        )
+        let index = @string.parse_int(args[4]) catch {
+          _ => raise @model.InvalidArgument("payload index must be an integer")
+        }
+        @native.export_artifact_payload(
+          args[2],
+          @model.Digest::parse(args[3]),
+          index,
+          args[5],
+        )
+      }
+      "referrers" => {
+        if args.length() != 4 && args.length() != 5 {
+          raise @model.InvalidArgument(
+            "usage: moonoci referrers INPUT SUBJECT_DIGEST [ARTIFACT_TYPE]",
+          )
+        }
+        let store = @native.load_layout(args[2])
+        let subject = @model.Digest::parse(args[3])
+        let report = if args.length() == 5 {
+          @artifacts.referrers(store, subject, artifact_type=args[4])
+        } else {
+          @artifacts.referrers(store, subject)
+        }
+        @stdio.stdout.write(@artifacts.referrers_json(report) + "\n")
+        if !report.complete {
+          @stdio.stderr.write(
+            "referrer discovery incomplete: unsupported descriptors present\n",
+          )
+          process_exit(4)
+        }
+      }
+      "verify-store" => {
+        require_arity(args, 3, "usage: moonoci verify-store INPUT")
+        let report = @artifacts.verify_store(@native.load_layout(args[2]))
+        @stdio.stdout.write(@artifacts.verification_json(report) + "\n")
+        if !report.valid {
+          process_exit(5)
+        }
+      }
       "flatten-pinned" => {
         if args.length() != 5 &&
           !(args.length() == 6 && args[5] == "--images-only") {
@@ -304,6 +390,12 @@ async fn print_usage() -> Unit {
       #|MoonOCI — deterministic OCI Image Layout builder and validator
       #|
       #|Usage:
+      #|  moonoci artifact-attach INPUT SUBJECT TYPE PAYLOAD_MEDIA FILE REF OUTPUT
+      #|  moonoci artifact-inspect INPUT DIGEST
+      #|  moonoci artifact-export INPUT DIGEST OUTPUT
+      #|  moonoci artifact-payload INPUT DIGEST INDEX OUTPUT
+      #|  moonoci referrers INPUT SUBJECT [ARTIFACT_TYPE]
+      #|  moonoci verify-store INPUT
       #|  moonoci flatten-pinned INPUT EXPECTED_ROOT_PIN OUTPUT [--images-only]
       #|  moonoci tree INPUT
       #|  moonoci flatten INPUT OUTPUT [--images-only]

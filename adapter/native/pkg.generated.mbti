@@ -16,11 +16,15 @@ pub fn archive_layout_bytes(@layout.MemoryLayout) -> Bytes raise @model.MoonOciE
 
 pub async fn archive_layout_file(String, String) -> Unit
 
+pub async fn attach_artifact_file(String, @model.Digest, String, String, String, String, String) -> @model.Descriptor
+
 pub async fn build_from_file(String) -> @builder.ImageBuildResult
 
 pub async fn collect_layer_source(String, @spec.LayerSpec) -> Array[@archive.TarEntry]
 
 pub async fn create_delta_file(String, String, String) -> Unit
+
+pub async fn export_artifact_payload(String, @model.Digest, Int32, String) -> Unit
 
 pub async fn load_layout(String) -> @layout.MemoryLayout
 
