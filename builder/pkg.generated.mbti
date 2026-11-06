@@ -17,6 +17,8 @@ pub fn decode_layer_blob(String, Bytes) -> Bytes raise @model.MoonOciError
 
 pub fn default_single_layer_request(Array[@archive.TarEntry]) -> SingleLayerRequest
 
+pub fn inventory_from_manifest(@layout.MemoryLayout, @model.Descriptor) -> Array[FileEvidence] raise @model.MoonOciError
+
 pub fn rootfs_from_layout(@layout.MemoryLayout) -> Array[@model.RootfsEntry] raise @model.MoonOciError
 
 pub fn verify_memory(@layout.MemoryLayout) -> @model.VerificationReport
@@ -31,6 +33,15 @@ pub(all) struct BuildResult {
 pub fn BuildResult::equal(Self, Self) -> Bool
 pub fn BuildResult::not_equal(Self, Self) -> Bool
 pub fn BuildResult::to_repr(Self) -> @debug.Repr
+
+pub(all) struct FileEvidence {
+  entry : @model.RootfsEntry
+  layer_digest : @model.Digest
+  content_digest : @model.Digest?
+  uid : Int32
+  gid : Int32
+  mtime : Int64
+}
 
 pub(all) struct ImageBuildRequest {
   layers : Array[LayerBuildRequest]
