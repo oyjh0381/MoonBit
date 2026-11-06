@@ -6,6 +6,12 @@ It provides a portable core for Wasm, Wasm-GC, JavaScript, and Native targets, p
 
 ## Features
 
+Current local development adds verified multi-platform composition, exact
+platform selection, standalone slicing, offline transfer planning and external
+index pins. See [runtime validation without a local VM](docs/runtime-validation.md)
+and the [development programme](docs/quarterly-development.md). These additions
+are not yet published; Linux container execution awaits its CI run.
+
 - deterministic USTAR/PAX writer and safety-focused USTAR/PAX/GNU reader;
 - SHA-256 Digest and content-addressed in-memory OCI Image Layout;
 - uncompressed and deterministic gzip Layers with correct compressed Layer Digest and uncompressed DiffID handling;
