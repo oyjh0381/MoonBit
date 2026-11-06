@@ -8,13 +8,27 @@ import {
 }
 
 // Values
+pub fn compare_configuration(@model.ImageConfig, @model.ImageConfig) -> ConfigComparison
+
 pub fn compare_files(@layout.MemoryLayout, @model.Descriptor, @layout.MemoryLayout, @model.Descriptor, include_provenance? : Bool) -> FileComparison raise @model.MoonOciError
+
+pub fn configuration_json(ConfigComparison) -> String
 
 pub fn files_json(FileComparison) -> String
 
 // Errors
 
 // Types and methods
+pub(all) struct ConfigChange {
+  field : String
+  impact : String
+}
+
+pub(all) struct ConfigComparison {
+  changes : Array[ConfigChange]
+  requires_review : Bool
+}
+
 pub(all) struct FileChange {
   path : String
   kind : String
