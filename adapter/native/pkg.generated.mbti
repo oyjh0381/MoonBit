@@ -7,6 +7,7 @@ import {
   "oyjh0381/moonoci/layout",
   "oyjh0381/moonoci/model",
   "oyjh0381/moonoci/spec",
+  "oyjh0381/moonoci/transfer",
 }
 
 // Values
@@ -22,9 +23,13 @@ pub async fn build_from_file(String) -> @builder.ImageBuildResult
 
 pub async fn collect_layer_source(String, @spec.LayerSpec) -> Array[@archive.TarEntry]
 
+pub async fn create_chunk_plan(String, Int32, String, limits? : @transfer.ChunkLimits) -> @transfer.PreparedTransfer
+
 pub async fn create_delta_file(String, String, String) -> Unit
 
 pub async fn export_artifact_payload(String, @model.Digest, Int32, String) -> Unit
+
+pub async fn export_transfer_chunk(String, String, @model.Digest, Int32, String) -> Unit
 
 pub async fn load_layout(String) -> @layout.MemoryLayout
 
