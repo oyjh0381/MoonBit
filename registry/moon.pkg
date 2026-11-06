@@ -1,6 +1,9 @@
 import {
   "oyjh0381/moonoci/model",
   "oyjh0381/moonoci/artifacts",
+  "oyjh0381/moonoci/codec",
+  "oyjh0381/moonoci/digest",
+  "moonbitlang/core/string",
   "moonbitlang/core/encoding/utf8",
 }
 

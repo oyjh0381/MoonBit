@@ -8,19 +8,31 @@ import {
 // Values
 pub fn blob_path(String, @model.Digest) -> String raise @model.MoonOciError
 
+pub fn check_response_head(Int32, Array[@model.KeyValue], Int32, expected_size? : Int64) -> Unit raise @model.MoonOciError
+
+pub fn content_length(Array[@model.KeyValue]) -> Int64? raise @model.MoonOciError
+
 pub fn encode_query_value(String) -> String
 
 pub fn manifest_headers() -> Array[@model.KeyValue]
 
+pub fn manifest_media_type(Array[@model.KeyValue]) -> String raise @model.MoonOciError
+
 pub fn manifest_path(String, String) -> String raise @model.MoonOciError
 
 pub fn referrers_path(String, @model.Digest, artifact_type? : String) -> String raise @model.MoonOciError
+
+pub fn single_header(Array[@model.KeyValue], String) -> String? raise @model.MoonOciError
 
 pub fn tags_path(String, count? : Int32, last? : String) -> String raise @model.MoonOciError
 
 pub fn validate_reference(String) -> Unit raise @model.MoonOciError
 
 pub fn validate_repository(String) -> Unit raise @model.MoonOciError
+
+pub fn verify_blob_response(Int32, Array[@model.KeyValue], Bytes, @model.Descriptor, max_bytes? : Int32) -> Unit raise @model.MoonOciError
+
+pub fn verify_manifest_response(Int32, Array[@model.KeyValue], Bytes, @model.Digest, max_bytes? : Int32, expected_size? : Int64, expected_media? : String) -> @model.Descriptor raise @model.MoonOciError
 
 // Errors
 
