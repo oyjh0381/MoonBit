@@ -9,6 +9,10 @@ import {
 // Values
 pub fn flatten_images(@layout.MemoryLayout, limits? : WalkLimits, allow_skipped? : Bool) -> @layout.MemoryLayout raise @model.MoonOciError
 
+pub fn render_json(IndexWalk) -> String
+
+pub fn select_image(@layout.MemoryLayout, @model.Platform, limits? : WalkLimits) -> @layout.MemoryLayout raise @model.MoonOciError
+
 pub fn walk_indexes(@layout.MemoryLayout, limits? : WalkLimits) -> IndexWalk raise @model.MoonOciError
 
 // Errors

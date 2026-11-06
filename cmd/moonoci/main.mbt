@@ -11,6 +11,42 @@ async fn main {
       return
     }
     match args[1] {
+      "tree" => {
+        require_arity(args, 3, "usage: moonoci tree INPUT")
+        @stdio.stdout.write(
+          @graph.render_json(@graph.walk_indexes(@native.load_layout(args[2]))) +
+          "\n",
+        )
+      }
+      "flatten" => {
+        if args.length() != 4 &&
+          !(args.length() == 5 && args[4] == "--images-only") {
+          raise @model.InvalidArgument(
+            "usage: moonoci flatten INPUT OUTPUT [--images-only]",
+          )
+        }
+        @native.write_layout(
+          args[3],
+          @graph.flatten_images(
+            @native.load_layout(args[2]),
+            allow_skipped=args.length() == 5,
+          ),
+        )
+      }
+      "tree-select" => {
+        require_arity(
+          args, 6, "usage: moonoci tree-select INPUT OUTPUT OS ARCH",
+        )
+        @native.write_layout(
+          args[3],
+          @graph.select_image(@native.load_layout(args[2]), {
+            os: args[4],
+            architecture: args[5],
+            variant: None,
+            os_version: None,
+          }),
+        )
+      }
       "files" => {
         require_arity(args, 5, "usage: moonoci files INPUT OS ARCH")
         let source = @native.load_layout(args[2])
@@ -253,6 +289,9 @@ async fn print_usage() -> Unit {
       #|MoonOCI — deterministic OCI Image Layout builder and validator
       #|
       #|Usage:
+      #|  moonoci tree INPUT
+      #|  moonoci flatten INPUT OUTPUT [--images-only]
+      #|  moonoci tree-select INPUT OUTPUT OS ARCH
       #|  moonoci files INPUT OS ARCH
       #|  moonoci diff BASE TARGET OS ARCH
       #|  moonoci config-diff BASE TARGET OS ARCH
