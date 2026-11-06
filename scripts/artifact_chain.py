@@ -44,6 +44,9 @@ def main():
         ('application/spdx+json', 'sbom', b'{"spdxVersion":"SPDX-2.3","name":"example"}'),
         ('application/vnd.in-toto+json', 'provenance', b'{"_type":"https://in-toto.io/Statement/v1","predicateType":"example"}'),
     ]
+    required_types = [d[0] for d in documents]
+    missing = json.loads(run('artifact-gate', image, subject, *required_types, status=5))
+    assert not missing['allowed']
     current = image
     artifacts = []
     for media_type, reference, content in documents:
@@ -64,10 +67,30 @@ def main():
     assert (image / 'index.json').read_bytes() == original_index
     verified = json.loads(run('verify-store', current))
     assert verified['valid'] and verified['images_checked'] == 1 and verified['artifacts_checked'] == 2
+    approved = json.loads(run('artifact-gate', current, subject, *required_types))
+    assert approved['allowed'] and len(approved['verified_artifacts']) == 2
     listed = json.loads(run('referrers', current, subject))
     assert {d['artifactType'] for d in listed['manifests']} == {d[0] for d in documents}
     filtered = json.loads(run('referrers', current, subject, 'application/spdx+json'))
     assert len(filtered['manifests']) == 1
+    # Release metadata can bind a multi-platform index rather than one image.
+    arm_spec = dict(specification, platform=dict(os='linux', architecture='arm64'), output=dict(layout=str(directory / 'arm64')))
+    arm_path = directory / 'arm64.json'
+    arm_path.write_text(json.dumps(arm_spec), encoding='utf-8')
+    run('build', arm_path)
+    multi = directory / 'multi'
+    run('merge', multi, image, directory / 'arm64')
+    multi_index = (multi / 'index.json').read_bytes()
+    multi_subject = 'sha256:' + hashlib.sha256(multi_index).hexdigest()
+    release = directory / 'release'
+    release_payload = directory / 'release.json'
+    release_payload.write_bytes(b'{"kind":"release-metadata"}')
+    release_digest = run('artifact-attach', multi, multi_subject, 'application/vnd.example.release+json',
+                         'application/json', release_payload, 'release', release)
+    release_info = json.loads(run('artifact-inspect', release, release_digest))
+    assert release_info['subject'] == multi_subject and release_info['subject_present']
+    assert (release / 'blobs/sha256' / multi_subject.split(':')[1]).read_bytes() == multi_index
+    assert json.loads(run('verify-store', release))['images_checked'] == 2
     first_digest, first_payload, _ = artifacts[0]
     exported = directory / 'artifact-only'
     run('artifact-export', current, first_digest, exported)
@@ -79,7 +102,9 @@ def main():
     payload_digest = hashlib.sha256(first_payload).hexdigest()
     (corrupted / 'blobs/sha256' / payload_digest).write_bytes(b'!' * len(first_payload))
     assert not json.loads(run('verify-store', corrupted, status=5))['valid']
+    assert not json.loads(run('artifact-gate', corrupted, subject, *required_types, status=5))['allowed']
     oras_version = None
+    oras_discovery_verified = False
     if args.oras:
         oras = args.oras.resolve()
         oras_version = subprocess.check_output([str(oras), 'version'], text=True, encoding='utf-8', timeout=30).strip()
@@ -97,10 +122,21 @@ def main():
             subprocess.run([str(oras), 'blob', 'fetch', '--oci-layout', str(current) + '@' + payload_pin,
                             '--output', str(fetched)], check=True, capture_output=True, timeout=60)
             assert fetched.read_bytes() == payload
+        discovered = json.loads(subprocess.check_output([str(oras), 'discover', '--oci-layout', str(current) + '@' + subject,
+                                                         '--format', 'json', '--depth', '1'], text=True, encoding='utf-8', timeout=60))
+        assert {d['digest'] for d in discovered['referrers']} == {d[0] for d in artifacts}
+        filtered_oras = json.loads(subprocess.check_output([str(oras), 'discover', '--oci-layout', str(current) + '@' + subject,
+                    '--format', 'json', '--depth', '1', '--artifact-type', 'application/spdx+json'], text=True, encoding='utf-8', timeout=60))
+        assert {d['digest'] for d in filtered_oras['referrers']} == {artifacts[0][0]}
+        release_oras = json.loads(subprocess.check_output([str(oras), 'discover', '--oci-layout', str(release) + '@' + multi_subject,
+                           '--format', 'json', '--depth', '1'], text=True, encoding='utf-8', timeout=60))
+        assert {d['digest'] for d in release_oras['referrers']} == {release_digest}
+        oras_discovery_verified = True
     report = dict(schema='moonoci.artifact-consumer.v1', subject=subject, artifacts=2,
                   original_image_unchanged=True, independent_payload_hashes=True,
                   referrer_filter_verified=True, export_preserves_weak_subject=True,
-                  corrupt_payload_refused=True, oras_version=oras_version)
+                  corrupt_payload_refused=True, required_artifact_gate=True, multi_platform_index_subject=True,
+                  oras_version=oras_version, oras_discovery_verified=oras_discovery_verified)
     (directory / 'report.json').write_text(json.dumps(report, indent=2), encoding='utf-8')
     print(json.dumps(report, indent=2))
 

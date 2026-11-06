@@ -11,6 +11,30 @@ async fn main {
       return
     }
     match args[1] {
+      "artifact-gate" => {
+        if args.length() < 5 {
+          raise @model.InvalidArgument(
+            "usage: moonoci artifact-gate INPUT SUBJECT_DIGEST REQUIRED_TYPE [REQUIRED_TYPE...]",
+          )
+        }
+        let requirements : Array[@policy.ArtifactRequirement] = []
+        for i in 4..<args.length() {
+          requirements.push({
+            artifact_type: args[i],
+            minimum: 1,
+            maximum: 128,
+          })
+        }
+        let decision = @policy.evaluate_artifact_requirements(
+          @native.load_layout(args[2]),
+          @model.Digest::parse(args[3]),
+          requirements,
+        )
+        @stdio.stdout.write(@policy.artifact_requirements_json(decision) + "\n")
+        if !decision.allowed {
+          process_exit(5)
+        }
+      }
       "artifact-attach" => {
         require_arity(
           args, 9, "usage: moonoci artifact-attach INPUT SUBJECT_DIGEST ARTIFACT_TYPE PAYLOAD_MEDIA FILE REF OUTPUT",
@@ -390,6 +414,7 @@ async fn print_usage() -> Unit {
       #|MoonOCI — deterministic OCI Image Layout builder and validator
       #|
       #|Usage:
+      #|  moonoci artifact-gate INPUT SUBJECT REQUIRED_TYPE [REQUIRED_TYPE...]
       #|  moonoci artifact-attach INPUT SUBJECT TYPE PAYLOAD_MEDIA FILE REF OUTPUT
       #|  moonoci artifact-inspect INPUT DIGEST
       #|  moonoci artifact-export INPUT DIGEST OUTPUT
