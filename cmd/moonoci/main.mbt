@@ -11,6 +11,21 @@ async fn main {
       return
     }
     match args[1] {
+      "flatten-pinned" => {
+        if args.length() != 5 &&
+          !(args.length() == 6 && args[5] == "--images-only") {
+          raise @model.InvalidArgument(
+            "usage: moonoci flatten-pinned INPUT EXPECTED_ROOT_PIN OUTPUT [--images-only]",
+          )
+        }
+        let projected = @graph.project_pinned(
+          @native.load_layout(args[2]),
+          @model.Digest::parse(args[3]),
+          allow_skipped=args.length() == 6,
+        )
+        @native.write_layout(args[4], projected.layout)
+        @stdio.stdout.write(@graph.receipt_json(projected.receipt) + "\n")
+      }
       "tree" => {
         require_arity(args, 3, "usage: moonoci tree INPUT")
         @stdio.stdout.write(
@@ -289,6 +304,7 @@ async fn print_usage() -> Unit {
       #|MoonOCI — deterministic OCI Image Layout builder and validator
       #|
       #|Usage:
+      #|  moonoci flatten-pinned INPUT EXPECTED_ROOT_PIN OUTPUT [--images-only]
       #|  moonoci tree INPUT
       #|  moonoci flatten INPUT OUTPUT [--images-only]
       #|  moonoci tree-select INPUT OUTPUT OS ARCH
