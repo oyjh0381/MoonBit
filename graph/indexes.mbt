@@ -199,6 +199,15 @@ pub fn flatten_images(
   allow_skipped~ : Bool = false,
 ) -> @layout.MemoryLayout raise @model.MoonOciError {
   let walk = walk_indexes(source, limits~)
+  flatten_walk(source, walk, allow_skipped)
+}
+
+///|
+fn flatten_walk(
+  source : @layout.MemoryLayout,
+  walk : IndexWalk,
+  allow_skipped : Bool,
+) -> @layout.MemoryLayout raise @model.MoonOciError {
   if !walk.complete && !allow_skipped {
     raise @model.Unsupported(
       "index tree contains skipped non-image descriptors",

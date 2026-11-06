@@ -9,11 +9,17 @@ import {
 // Values
 pub fn flatten_images(@layout.MemoryLayout, limits? : WalkLimits, allow_skipped? : Bool) -> @layout.MemoryLayout raise @model.MoonOciError
 
+pub fn project_pinned(@layout.MemoryLayout, @model.Digest, limits? : WalkLimits, allow_skipped? : Bool) -> PinnedProjection raise @model.MoonOciError
+
+pub fn receipt_json(ProjectionReceipt) -> String
+
 pub fn render_json(IndexWalk) -> String
 
 pub fn select_image(@layout.MemoryLayout, @model.Platform, limits? : WalkLimits) -> @layout.MemoryLayout raise @model.MoonOciError
 
 pub fn walk_indexes(@layout.MemoryLayout, limits? : WalkLimits) -> IndexWalk raise @model.MoonOciError
+
+pub fn walk_pinned(@layout.MemoryLayout, @model.Digest, limits? : WalkLimits) -> IndexWalk raise @model.MoonOciError
 
 // Errors
 
@@ -31,6 +37,18 @@ pub(all) struct IndexWalk {
   visits : Int32
   metadata_bytes : Int64
   complete : Bool
+}
+
+pub(all) struct PinnedProjection {
+  layout : @layout.MemoryLayout
+  receipt : ProjectionReceipt
+}
+
+pub(all) struct ProjectionReceipt {
+  source_index : @model.Digest
+  projected_index : @model.Digest
+  image_manifests : Array[@model.Digest]
+  skipped_descriptors : Int32
 }
 
 pub(all) struct SkippedDescriptor {
