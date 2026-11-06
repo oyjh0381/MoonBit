@@ -22,7 +22,7 @@ pub fn encode_index(@model.ImageIndex) -> Bytes raise @model.MoonOciError
 
 pub fn encode_manifest(@model.ImageManifest) -> Bytes raise @model.MoonOciError
 
-pub fn parse_json_document(Bytes) -> Json raise @model.MoonOciError
+pub fn parse_json_document(Bytes, preserve_number_repr? : Bool) -> Json raise @model.MoonOciError
 
 pub fn validate_layout_marker(Bytes) -> Unit raise @model.MoonOciError
 

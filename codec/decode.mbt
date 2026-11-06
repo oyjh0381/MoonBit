@@ -108,7 +108,10 @@ pub fn decode_descriptor(
 ///|
 /// Parse bounded UTF-8 JSON for portable consumers such as the Build
 /// Specification parser. The returned tree has at most 128 nesting levels.
-pub fn parse_json_document(data : Bytes) -> Json raise @model.MoonOciError {
+pub fn parse_json_document(
+  data : Bytes,
+  preserve_number_repr~ : Bool = false,
+) -> Json raise @model.MoonOciError {
   if data.length() > max_json_bytes {
     raise @model.ResourceLimitExceeded("JSON document exceeds 16 MiB")
   }
@@ -117,7 +120,7 @@ pub fn parse_json_document(data : Bytes) -> Json raise @model.MoonOciError {
   }
   reject_duplicate_object_keys(data)
   validate_json_depth(text, 128)
-  @json.parse(text) catch {
+  @json.parse(text, preserve_number_repr~) catch {
     error => raise @model.InvalidJson("cannot parse JSON: " + error.to_string())
   }
 }
@@ -377,10 +380,12 @@ fn required_int(
   object : Map[String, Json],
   name : String,
 ) -> Int32 raise @model.MoonOciError {
-  let value : Int32 = @json.from_json(required(object, name)) catch {
-    _ => raise @model.InvalidJson(name + " must be an integer")
+  match required(object, name) {
+    Number(value, ..) if value == value.floor() &&
+      value >= -2147483648.0 &&
+      value <= 2147483647.0 => value.to_int()
+    _ => raise @model.InvalidJson(name + " must be an exact 32-bit integer")
   }
-  value
 }
 
 ///|

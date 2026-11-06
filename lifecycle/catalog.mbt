@@ -137,7 +137,8 @@ fn metadata_node(
   }
   state.metadata_bytes += bytes.length().to_int64()
   state.active[key] = true
-  let fields = match @codec.parse_json_document(bytes) {
+  let fields = match
+    @codec.parse_json_document(bytes, preserve_number_repr=true) {
     Object(fields) => fields
     _ => raise @model.InvalidOci("catalog metadata must be an object")
   }
@@ -249,7 +250,8 @@ pub fn catalog(
   if index.schema_version != 2 || index.media_type != @model.media_type_index {
     raise @model.InvalidOci("catalog requires OCI index root")
   }
-  let root_values = match @codec.parse_json_document(source.index()) {
+  let root_values = match
+    @codec.parse_json_document(source.index(), preserve_number_repr=true) {
     Object(fields) =>
       match fields.get("manifests") {
         Some(Array(values)) => values
