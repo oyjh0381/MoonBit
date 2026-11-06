@@ -11,6 +11,75 @@ async fn main {
       return
     }
     match args[1] {
+      "files" => {
+        require_arity(args, 5, "usage: moonoci files INPUT OS ARCH")
+        let source = @native.load_layout(args[2])
+        let descriptor = @distribution.select(source, {
+          os: args[3],
+          architecture: args[4],
+          variant: None,
+          os_version: None,
+        })
+        @stdio.stdout.write(
+          @review.inventory_json(
+            @builder.inventory_from_manifest(source, descriptor),
+          ) +
+          "\n",
+        )
+      }
+      "diff" | "config-diff" | "upgrade-check" => {
+        if args[1] == "upgrade-check" {
+          require_arity(
+            args, 8, "usage: moonoci upgrade-check BASE TARGET OS ARCH BASE_PIN TARGET_PIN",
+          )
+        } else {
+          require_arity(
+            args, 6, "usage: moonoci diff|config-diff BASE TARGET OS ARCH",
+          )
+        }
+        let base = @native.load_layout(args[2])
+        let target = @native.load_layout(args[3])
+        let platform : @model.Platform = {
+          os: args[4],
+          architecture: args[5],
+          variant: None,
+          os_version: None,
+        }
+        let old = @distribution.select(base, platform)
+        let next = @distribution.select(target, platform)
+        match args[1] {
+          "diff" =>
+            @stdio.stdout.write(
+              @review.files_json(@review.compare_files(base, old, target, next)) +
+              "\n",
+            )
+          "config-diff" => {
+            let a = @codec.decode_manifest(base.require_blob(old))
+            let b = @codec.decode_manifest(target.require_blob(next))
+            let comparison = @review.compare_configuration(
+              @codec.decode_config(base.require_blob(a.config)),
+              @codec.decode_config(target.require_blob(b.config)),
+            )
+            @stdio.stdout.write(@review.configuration_json(comparison) + "\n")
+          }
+          _ => {
+            let approval : @review.UpgradeApproval = {
+              expected_base: @model.Digest::parse(args[6]),
+              expected_target: @model.Digest::parse(args[7]),
+              approved_paths: [],
+              approved_fields: [],
+              allow_additions: false,
+            }
+            let decision = @review.evaluate_upgrade(
+              base, old, target, next, approval,
+            )
+            @stdio.stdout.write(@review.upgrade_json(decision) + "\n")
+            if !decision.allowed {
+              process_exit(5)
+            }
+          }
+        }
+      }
       "gate" => {
         require_arity(args, 3, "usage: moonoci gate INPUT")
         let decision = @policy.evaluate(@native.load_layout(args[2]))
@@ -184,6 +253,10 @@ async fn print_usage() -> Unit {
       #|MoonOCI — deterministic OCI Image Layout builder and validator
       #|
       #|Usage:
+      #|  moonoci files INPUT OS ARCH
+      #|  moonoci diff BASE TARGET OS ARCH
+      #|  moonoci config-diff BASE TARGET OS ARCH
+      #|  moonoci upgrade-check BASE TARGET OS ARCH BASE_PIN TARGET_PIN
       #|  moonoci merge OUTPUT INPUT INPUT [INPUT...]
       #|  moonoci select INPUT OUTPUT OS ARCH
       #|  moonoci delta BASE TARGET

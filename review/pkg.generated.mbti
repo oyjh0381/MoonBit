@@ -18,6 +18,8 @@ pub fn evaluate_upgrade(@layout.MemoryLayout, @model.Descriptor, @layout.MemoryL
 
 pub fn files_json(FileComparison) -> String
 
+pub fn inventory_json(Array[@builder.FileEvidence]) -> String
+
 pub fn upgrade_json(UpgradeDecision) -> String
 
 // Errors
