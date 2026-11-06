@@ -17,22 +17,7 @@ pub fn inventory_from_manifest(
   source : @layout.MemoryLayout,
   descriptor : @model.Descriptor,
 ) -> Array[FileEvidence] raise @model.MoonOciError {
-  if !verify_memory(source).is_valid() {
-    raise @model.InvalidOci("file inventory requires a verified graph")
-  }
-  let index = @codec.decode_index(source.index())
-  if !index.manifests.contains(descriptor) {
-    raise @model.InvalidArgument(
-      "inventory manifest must be a root index member",
-    )
-  }
-  let manifest = @codec.decode_manifest(source.require_blob(descriptor))
-  let config = @codec.decode_config(source.require_blob(manifest.config))
-  if descriptor.platform is Some(platform) {
-    if platform != config.platform {
-      raise @model.InvalidOci("inventory platform disagrees with config")
-    }
-  }
+  let manifest = require_root_manifest(source, descriptor)
   let mut rootfs : Array[@model.RootfsEntry] = []
   let mut evidence : Map[String, FileEvidence] = Map([])
   for layer_index, layer in manifest.layers {

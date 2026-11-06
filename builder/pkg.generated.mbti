@@ -21,6 +21,8 @@ pub fn inventory_from_manifest(@layout.MemoryLayout, @model.Descriptor) -> Array
 
 pub fn rootfs_from_layout(@layout.MemoryLayout) -> Array[@model.RootfsEntry] raise @model.MoonOciError
 
+pub fn rootfs_from_manifest(@layout.MemoryLayout, @model.Descriptor) -> Array[@model.RootfsEntry] raise @model.MoonOciError
+
 pub fn verify_memory(@layout.MemoryLayout) -> @model.VerificationReport
 
 // Errors

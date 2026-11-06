@@ -285,15 +285,26 @@ fn require_media_type(
 }
 
 ///|
-/// Reconstruct the effective Root Filesystem from the first manifest.
+/// Reconstruct a single-image layout. Multi-image layouts require explicit
+/// manifest selection through rootfs_from_manifest instead of guessing.
 pub fn rootfs_from_layout(
   layout : @layout.MemoryLayout,
 ) -> Array[@model.RootfsEntry] raise @model.MoonOciError {
   let index = @codec.decode_index(layout.index())
-  if index.manifests.length() == 0 {
-    raise @model.InvalidOci("image index contains no manifests")
+  if index.manifests.length() != 1 {
+    raise @model.InvalidArgument(
+      "filesystem query requires exactly one image or explicit manifest selection",
+    )
   }
-  let manifest = @codec.decode_manifest(layout.require_blob(index.manifests[0]))
+  rootfs_from_manifest(layout, index.manifests[0])
+}
+
+///|
+pub fn rootfs_from_manifest(
+  layout : @layout.MemoryLayout,
+  descriptor : @model.Descriptor,
+) -> Array[@model.RootfsEntry] raise @model.MoonOciError {
+  let manifest = require_root_manifest(layout, descriptor)
   let mut rootfs : Array[@model.RootfsEntry] = []
   for layer_index, descriptor in manifest.layers {
     let interpretation = interpret_layer_blob(
