@@ -8,6 +8,8 @@ MoonOCI 是一个原创的 MoonBit 库与命令行工具，用于在不依赖容
 
 ## 已实现功能
 
+0.2.0 另加入 [可恢复离线交付](docs/resumable-delivery.md)：分块计划、磁盘检查点复核、按字节／块数限制缺失任务批次、整包摘要验证及中断临时文件恢复。Windows 独立消费者已实际完成“增量包分块—跨进程续传—重建镜像—独立校验”链路；长驻宿主可复用已验证会话。此链路不需要本地 Linux 或虚拟机，容器运行验证仍由单独的 Linux CI 承担。
+
 - 确定性 USTAR/PAX 写入器，以及支持 USTAR、PAX、GNU longname/longlink 的安全读取器；
 - SHA-256 Digest 与内存 OCI Image Layout；
 - 未压缩 Layer 和确定性 gzip Layer；

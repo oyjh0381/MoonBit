@@ -35,6 +35,12 @@ subject binding, offline referrers, payload verification/export and required-typ
 gates. The Windows consumer has been executed against ORAS 1.3.6 for manifest/
 payload reads, discovery/filtering and multi-platform index subjects.
 
+[Restartable delivery](docs/resumable-delivery.md) adds bounded chunk plans,
+verified disk checkpoints, missing-work batches and whole-content publication.
+The Windows consumer resumes an actual delta delivery across separate processes,
+then independently verifies the reconstructed image. Long-lived Native hosts can
+reuse a prepared session rather than parsing a full plan per arrival.
+
 - deterministic USTAR/PAX writer and safety-focused USTAR/PAX/GNU reader;
 - SHA-256 Digest and content-addressed in-memory OCI Image Layout;
 - uncompressed and deterministic gzip Layers with correct compressed Layer Digest and uncompressed DiffID handling;

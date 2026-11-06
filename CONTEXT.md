@@ -1,5 +1,13 @@
 # MoonOCI
 
+**Prepared Transfer**: An immutable validated snapshot of a whole-content pin,
+size, chunk size and ordered chunk digests. Per-chunk success does not prove the
+whole content; final verification remains mandatory.
+
+**Transfer Session**: Caller-owned persisted metadata and verified chunk files,
+optionally held through an immutable prepared Native handle. Completion is
+rediscovered from actual files after restart, not a trusted completion bitmap.
+
 MoonOCI defines the domain language for creating, inspecting, and validating OCI image layouts without requiring a running container daemon or remote registry.
 
 ## Language

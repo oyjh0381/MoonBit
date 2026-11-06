@@ -6,7 +6,10 @@ The local 0.2.0 source additionally provides `distribution` for multi-platform
 composition, compact storage and pinned offline transfer/hydration, and `policy`
 for caller-owned release decisions. It is unreleased; the following command
 installs the earlier published version. Reproducible consumers are documented
-in `docs/offline-delivery.md` and `docs/runtime-validation.md`.
+in `docs/offline-delivery.md` and `docs/runtime-validation.md`. The `transfer`
+package adds bounded chunk plans, missing-work scheduling and whole-content
+verification; Native restart/recovery and host reuse are described in
+`docs/resumable-delivery.md`.
 
 Install the published module with:
 

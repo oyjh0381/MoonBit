@@ -119,6 +119,8 @@ def main():
     # Stored chunks are rechecked after restart, even if formerly accepted.
     (session / 'chunks' / '0').write_bytes(b'X' * len(chunks[0]))
     run('transfer-status', session, pin, status=5)
+    run('transfer-batch', session, pin, 0, chunk_bytes, status=2)
+    run('transfer-batch', session, pin, 1, 0, status=2)
     corrupt_output = directory / 'corrupt-output'
     run('transfer-finish', session, pin, corrupt_output, status=5)
     assert not corrupt_output.exists()

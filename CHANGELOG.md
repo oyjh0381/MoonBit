@@ -4,6 +4,12 @@ All notable changes to MoonOCI are documented here. The format follows Keep a Ch
 
 ## [Unreleased]
 
+- Add bounded pinned chunk plans, versioned metadata and mandatory whole-content verification.
+- Stream file planning/export and persist restartable sessions without trusting completion counters.
+- Recover verified pending chunks/complete partial outputs, retaining corrupt evidence without replacement.
+- Reuse prepared Native host sessions and schedule missing work under simultaneous byte/count budgets.
+- Execute a Windows delta-resume consumer and independently checked producer workloads; configure Linux/Windows CI.
+
 - Add OCI 1.1 artifact manifests, bounded payload inspection and nonmutating subject attachments.
 - Discover/filter offline referrers and parse/verify registry-style advertisement pages.
 - Verify mixed image/artifact stores and enforce caller-required attachments under work budgets.
