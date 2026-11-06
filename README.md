@@ -30,6 +30,11 @@ explicit image-only flattening, platform selection, trusted root pins and source
 output derivation records. An independent Python consumer constructs the nested
 documents and checks projection results against the original image content.
 
+[Supply-chain artifacts](docs/artifacts.md) support typed attachments, exact
+subject binding, offline referrers, payload verification/export and required-type
+gates. The Windows consumer has been executed against ORAS 1.3.6 for manifest/
+payload reads, discovery/filtering and multi-platform index subjects.
+
 - deterministic USTAR/PAX writer and safety-focused USTAR/PAX/GNU reader;
 - SHA-256 Digest and content-addressed in-memory OCI Image Layout;
 - uncompressed and deterministic gzip Layers with correct compressed Layer Digest and uncompressed DiffID handling;

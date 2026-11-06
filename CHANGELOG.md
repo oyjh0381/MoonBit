@@ -4,6 +4,12 @@ All notable changes to MoonOCI are documented here. The format follows Keep a Ch
 
 ## [Unreleased]
 
+- Add OCI 1.1 artifact manifests, bounded payload inspection and nonmutating subject attachments.
+- Discover/filter offline referrers and parse/verify registry-style advertisement pages.
+- Verify mixed image/artifact stores and enforce caller-required attachments under work budgets.
+- Preserve and advertise multi-platform index subjects for ORAS digest resolution.
+- Add bounded Native artifact commands and an actually executed Windows ORAS 1.3.6 consumer.
+
 - Traverse nested image indexes with metadata/depth/visit limits and explicit unknown-media observations.
 - Project/select complete image layouts and bind root pins to unsigned derivation receipts.
 - Add a Python-authored nested-index interoperability consumer with pin/corruption/depth rejection cases.

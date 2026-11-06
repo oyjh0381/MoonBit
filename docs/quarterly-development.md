@@ -21,7 +21,7 @@ integration examples, measured resource costs and maintenance documentation:
 | Content lifecycle | Indexed lookup, reachable/stored accounting, nonmutating compaction | Host retention/garbage-collection transactions and workload measurements |
 | Release governance | All-platform runtime metadata rules, quotas, structured decisions and gate CLI | Host policy integration and additional contract cases |
 | Change analysis | Final-file content/ownership provenance, structured file/config comparisons, pinned upgrade review and independent consumer | Larger workload evidence, host approval integration and additional platform cases |
-| Supply-chain attachments | Not implemented | OCI artifact/referrer models, provenance binding, interoperability fixtures |
+| Supply-chain attachments | OCI 1.1 artifacts, image/index subject binding, referrer pages/discovery, content checks, required-type gates and Windows ORAS consumer | Semantic document/signature adapters, retention and broader external fixtures |
 | Performance and robustness | Existing unit/property tests | Workload curves, decode limits, large graph tests, regression baselines |
 
 Record each completed coherent implementation or validated fix as it happens.

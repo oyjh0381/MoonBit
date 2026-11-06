@@ -8,6 +8,40 @@ permissions:
   contents: read
 
 jobs:
+  artifact-interop:
+    name: Artifact interoperability (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@v6
+      - uses: hustcer/setup-moonbit@v1.22
+        with:
+          version: '0.10.16+b1a0e846e'
+          core-version: '0.10.16+b1a0e846e'
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.11'
+      - run: moon update
+      - name: Build Native release (Linux)
+        if: runner.os == 'Linux'
+        run: moon build --target native --release --deny-warn
+      - name: Build Native release (Windows)
+        if: runner.os == 'Windows'
+        shell: cmd
+        run: |
+          call "%ProgramFiles%\Microsoft Visual Studio\2022\Enterprise\Common7\Tools\VsDevCmd.bat" -arch=amd64 -host_arch=amd64
+          moon build --target native --release --deny-warn
+      - run: python scripts/setup_oras.py
+      - name: ORAS consumer (Linux)
+        if: runner.os == 'Linux'
+        run: python scripts/artifact_chain.py --binary _build/native/release/build/cmd/moonoci/moonoci.exe --oras _build/tools/oras-1.3.6/linux_amd64/oras
+      - name: ORAS consumer (Windows)
+        if: runner.os == 'Windows'
+        run: python scripts/artifact_chain.py --binary _build/native/release/build/cmd/moonoci/moonoci.exe --oras _build/tools/oras-1.3.6/windows_amd64/oras.exe
+
   documentation:
     name: Documentation and public API
     runs-on: ubuntu-latest
