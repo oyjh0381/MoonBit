@@ -11,6 +11,8 @@ pub fn catalog(@layout.MemoryLayout, @model.Digest, limits? : CatalogLimits) -> 
 
 pub fn catalog_json(ContentCatalog) -> String
 
+pub fn retention_json(RetentionPlan) -> String
+
 // Errors
 
 // Types and methods
@@ -28,11 +30,26 @@ pub struct ContentCatalog {
   // private fields
 }
 pub fn ContentCatalog::metadata_count(Self) -> Int32
+pub fn ContentCatalog::retain(Self, Array[@model.Digest], policy? : RetentionPolicy) -> RetentionPlan raise @model.MoonOciError
 pub fn ContentCatalog::snapshot(Self) -> @layout.MemoryLayout
 pub fn ContentCatalog::source_index(Self) -> @model.Digest
 pub fn ContentCatalog::store_pin(Self) -> @model.Digest
 pub fn ContentCatalog::stored_blobs(Self) -> Int32
 pub fn ContentCatalog::stored_bytes(Self) -> Int64
+
+pub struct RetentionPlan {
+  // private fields
+}
+pub fn RetentionPlan::discarded_blobs(Self) -> Int32
+pub fn RetentionPlan::kept_blobs(Self) -> Int32
+pub fn RetentionPlan::materialize(Self) -> @layout.MemoryLayout
+pub fn RetentionPlan::reclaimable_bytes(Self) -> Int64
+
+pub(all) struct RetentionPolicy {
+  include_referrers : Bool
+  include_subjects : Bool
+}
+pub fn RetentionPolicy::default() -> Self
 
 // Type aliases
 
