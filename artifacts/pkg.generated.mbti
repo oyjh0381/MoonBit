@@ -18,7 +18,13 @@ pub let empty_media_type : String
 
 pub fn encode_manifest(ArtifactManifest) -> Bytes raise @model.MoonOciError
 
+pub fn export_artifact(@layout.MemoryLayout, @model.Descriptor, limits? : ArtifactLimits) -> @layout.MemoryLayout raise @model.MoonOciError
+
 pub fn inspect(@layout.MemoryLayout, @model.Descriptor, limits? : ArtifactLimits, require_subject? : Bool) -> ArtifactObservation raise @model.MoonOciError
+
+pub fn observation_json(ArtifactObservation) -> String
+
+pub fn payload_bytes(@layout.MemoryLayout, @model.Descriptor, Int32, limits? : ArtifactLimits) -> Bytes raise @model.MoonOciError
 
 pub fn referrers(@layout.MemoryLayout, @model.Digest, artifact_type? : String, limits? : @graph.WalkLimits) -> ReferrerDiscovery raise @model.MoonOciError
 
