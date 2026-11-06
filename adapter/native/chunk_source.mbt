@@ -1,8 +1,18 @@
 ///|
-async fn open_chunk_source(path : String) -> @fs.File {
-  if @fs.kind(path, follow_symlink=false) != Regular {
-    raise @model.IoFailure("transfer source must be a regular non-symlink file")
+async fn require_transfer_kind(path : String, expected : @fs.FileKind) -> Unit {
+  let actual = @fs.kind(path, follow_symlink=false) catch {
+    error => raise @model.IoFailure("cannot inspect transfer path: \{error}")
   }
+  if actual != expected {
+    raise @model.IoFailure(
+      "transfer path has unexpected kind or is a symlink: " + path,
+    )
+  }
+}
+
+///|
+async fn open_chunk_source(path : String) -> @fs.File {
+  require_transfer_kind(path, Regular)
   let file = @fs.open(path, mode=ReadOnly) catch {
     error => raise @model.IoFailure("cannot open transfer source: \{error}")
   }
@@ -19,10 +29,24 @@ async fn read_chunk_range(
   size : Int32,
   offset : Int64,
 ) -> Bytes {
-  file.read_exactly_at(size, position=offset) catch {
-    error =>
-      raise @model.IoFailure("cannot read complete transfer chunk: \{error}")
+  let buffer = FixedArray::make(size, b'\x00')
+  let mut received = 0
+  while received < size {
+    let count = file.read_at(
+      buffer,
+      position=offset + received.to_int64(),
+      offset=received,
+      len=size - received,
+    ) catch {
+      error =>
+        raise @model.IoFailure("cannot read complete transfer chunk: \{error}")
+    }
+    if count == 0 {
+      raise @model.IoFailure("unexpected end of transfer source")
+    }
+    received += count
   }
+  Bytes::from_array(buffer)
 }
 
 ///|
@@ -30,9 +54,7 @@ async fn load_chunk_plan(
   path : String,
   expected : @model.Digest,
 ) -> @transfer.PreparedTransfer {
-  if @fs.kind(path, follow_symlink=false) != Regular {
-    raise @model.IoFailure("transfer plan must be a regular non-symlink file")
-  }
+  require_transfer_kind(path, Regular)
   @transfer.decode_plan(
     read_bounded_file(path, @transfer.max_plan_bytes),
     expected,

@@ -31,13 +31,31 @@ pub async fn export_artifact_payload(String, @model.Digest, Int32, String) -> Un
 
 pub async fn export_transfer_chunk(String, String, @model.Digest, Int32, String) -> Unit
 
+pub async fn finish_transfer(String, @model.Digest, String) -> Unit
+
 pub async fn load_layout(String) -> @layout.MemoryLayout
+
+pub async fn receive_transfer_chunk(String, @model.Digest, Int32, String) -> Unit
+
+pub async fn start_transfer(String, @model.Digest, String) -> Unit
+
+pub async fn transfer_progress(String, @model.Digest) -> TransferProgress
+
+pub fn transfer_progress_json(TransferProgress) -> String
 
 pub async fn write_layout(String, @layout.MemoryLayout) -> Unit
 
 // Errors
 
 // Types and methods
+pub(all) struct TransferProgress {
+  digest : @model.Digest
+  size : Int64
+  received_chunks : Int32
+  received_bytes : Int64
+  missing : Array[Int32]
+}
+pub fn TransferProgress::complete(Self) -> Bool
 
 // Type aliases
 
