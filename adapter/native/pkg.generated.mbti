@@ -33,6 +33,8 @@ pub async fn export_transfer_chunk(String, String, @model.Digest, Int32, String)
 
 pub async fn finish_transfer(String, @model.Digest, String) -> Unit
 
+pub async fn load_bounded_layout(String, limits? : LayoutLoadLimits) -> @layout.MemoryLayout
+
 pub async fn load_layout(String) -> @layout.MemoryLayout
 
 pub async fn receive_transfer_chunk(String, @model.Digest, Int32, String) -> Unit
@@ -52,6 +54,15 @@ pub async fn write_layout(String, @layout.MemoryLayout) -> Unit
 // Errors
 
 // Types and methods
+pub(all) struct LayoutLoadLimits {
+  max_blobs : Int32
+  max_blob_bytes : Int32
+  max_total_bytes : Int64
+  max_index_bytes : Int32
+}
+pub fn LayoutLoadLimits::default() -> Self
+pub fn LayoutLoadLimits::validate(Self) -> Unit raise @model.MoonOciError
+
 pub(all) struct TransferProgress {
   digest : @model.Digest
   size : Int64
