@@ -32,6 +32,10 @@ pub fn referrers_json(ReferrerDiscovery) -> String raise @model.MoonOciError
 
 pub fn validate_media_type(String) -> Unit raise @model.MoonOciError
 
+pub fn verification_json(StoreVerification) -> String
+
+pub fn verify_store(@layout.MemoryLayout, artifact_limits? : ArtifactLimits, graph_limits? : @graph.WalkLimits, require_subject? : Bool, max_total_payload_bytes? : Int64) -> StoreVerification raise @model.MoonOciError
+
 // Errors
 
 // Types and methods
@@ -81,6 +85,21 @@ pub(all) struct ReferrerDiscovery {
   referrers : Array[Referrer]
   unrecognized : Array[@graph.SkippedDescriptor]
   complete : Bool
+}
+
+pub(all) struct StoreFinding {
+  code : String
+  digest : String?
+  message : String
+}
+
+pub(all) struct StoreVerification {
+  valid : Bool
+  complete : Bool
+  images_checked : Int32
+  artifacts_checked : Int32
+  artifact_payload_bytes : Int64
+  findings : Array[StoreFinding]
 }
 
 // Type aliases
