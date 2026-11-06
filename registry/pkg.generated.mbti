@@ -37,6 +37,23 @@ pub fn verify_manifest_response(Int32, Array[@model.KeyValue], Bytes, @model.Dig
 // Errors
 
 // Types and methods
+pub struct RegistryOrigin {
+  // private fields
+}
+pub fn RegistryOrigin::is_http(Self) -> Bool
+pub fn RegistryOrigin::parse(String, allow_http? : Bool) -> Self raise @model.MoonOciError
+pub fn RegistryOrigin::request_url(Self, String) -> RegistryUrl raise @model.MoonOciError
+pub fn RegistryOrigin::resolve(Self, String, allow_http? : Bool) -> RegistryUrl raise @model.MoonOciError
+pub fn RegistryOrigin::same_origin(Self, Self) -> Bool
+pub fn RegistryOrigin::url(Self) -> String
+
+pub struct RegistryUrl {
+  // private fields
+}
+pub fn RegistryUrl::origin(Self) -> RegistryOrigin
+pub fn RegistryUrl::parse(String, allow_http? : Bool) -> Self raise @model.MoonOciError
+pub fn RegistryUrl::path(Self) -> String
+pub fn RegistryUrl::url(Self) -> String
 
 // Type aliases
 
