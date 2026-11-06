@@ -1,0 +1,47 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "oyjh0381/moonoci/graph"
+
+import {
+  "oyjh0381/moonoci/layout",
+  "oyjh0381/moonoci/model",
+}
+
+// Values
+pub fn flatten_images(@layout.MemoryLayout, limits? : WalkLimits, allow_skipped? : Bool) -> @layout.MemoryLayout raise @model.MoonOciError
+
+pub fn walk_indexes(@layout.MemoryLayout, limits? : WalkLimits) -> IndexWalk raise @model.MoonOciError
+
+// Errors
+
+// Types and methods
+pub(all) struct ImageLeaf {
+  descriptor : @model.Descriptor
+  platform : @model.Platform
+  index_path : Array[Int32]
+  ancestor_indexes : Array[@model.Digest]
+}
+
+pub(all) struct IndexWalk {
+  images : Array[ImageLeaf]
+  skipped : Array[SkippedDescriptor]
+  visits : Int32
+  metadata_bytes : Int64
+  complete : Bool
+}
+
+pub(all) struct SkippedDescriptor {
+  descriptor : @model.Descriptor
+  index_path : Array[Int32]
+  reason : String
+}
+
+pub(all) struct WalkLimits {
+  max_depth : Int32
+  max_visits : Int32
+  max_metadata_bytes : Int64
+}
+pub fn WalkLimits::default() -> Self
+
+// Type aliases
+
+// Traits
