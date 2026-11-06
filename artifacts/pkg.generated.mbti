@@ -54,6 +54,7 @@ pub(all) struct ArtifactLimits {
   max_config_bytes : Int32
 }
 pub fn ArtifactLimits::default() -> Self
+pub fn ArtifactLimits::validate(Self) -> Unit raise @model.MoonOciError
 
 pub(all) struct ArtifactManifest {
   artifact_type : String

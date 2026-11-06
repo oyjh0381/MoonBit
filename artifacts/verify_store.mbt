@@ -26,7 +26,7 @@ pub fn verify_store(
   require_subject~ : Bool = false,
   max_total_payload_bytes~ : Int64 = 536870912L,
 ) -> StoreVerification raise @model.MoonOciError {
-  validate_limits(artifact_limits)
+  artifact_limits.validate()
   if max_total_payload_bytes < 1L {
     raise @model.InvalidArgument("store payload budget must be positive")
   }

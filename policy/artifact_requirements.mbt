@@ -21,11 +21,19 @@ pub fn evaluate_artifact_requirements(
   subject : @model.Digest,
   requirements : Array[ArtifactRequirement],
   limits~ : @artifacts.ArtifactLimits = @artifacts.ArtifactLimits::default(),
+  max_total_payload_bytes~ : Int64 = 536870912L,
 ) -> ArtifactRequirementDecision raise @model.MoonOciError {
+  limits.validate()
+  if max_total_payload_bytes < 1L {
+    raise @model.InvalidArgument(
+      "artifact requirement work budget must be positive",
+    )
+  }
   if requirements.length() > 32 {
     raise @model.InvalidArgument("at most 32 artifact requirements")
   }
   let seen : Map[String, Bool] = Map([])
+  let mut reserved = 0L
   for requirement in requirements {
     @artifacts.validate_media_type(requirement.artifact_type)
     if seen.contains(requirement.artifact_type) ||
@@ -75,6 +83,25 @@ pub fn evaluate_artifact_requirements(
     let mut count = 0
     for candidate in candidates {
       try {
+        if candidate.descriptor.size > limits.max_manifest_bytes.to_int64() {
+          raise @model.ResourceLimitExceeded(
+            "required artifact manifest quota exceeded",
+          )
+        }
+        let declared = @artifacts.decode_manifest(
+          source.require_blob(candidate.descriptor),
+        )
+        let mut needed = 0L
+        for payload in declared.payloads {
+          if payload.size < 0L ||
+            payload.size > max_total_payload_bytes - reserved - needed {
+            raise @model.ResourceLimitExceeded(
+              "artifact requirement work budget exceeded",
+            )
+          }
+          needed += payload.size
+        }
+        reserved += needed
         let observed = @artifacts.inspect(
           source,
           candidate.descriptor,

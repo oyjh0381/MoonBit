@@ -40,7 +40,9 @@ pub(all) struct ArtifactObservation {
 }
 
 ///|
-fn validate_limits(limits : ArtifactLimits) -> Unit raise @model.MoonOciError {
+pub fn ArtifactLimits::validate(
+  limits : ArtifactLimits,
+) -> Unit raise @model.MoonOciError {
   if limits.max_payloads < 1 ||
     limits.max_payloads > 100000 ||
     limits.max_payload_bytes < 1L ||
@@ -58,7 +60,7 @@ pub fn inspect(
   limits~ : ArtifactLimits = ArtifactLimits::default(),
   require_subject~ : Bool = false,
 ) -> ArtifactObservation raise @model.MoonOciError {
-  validate_limits(limits)
+  limits.validate()
   if descriptor.media_type != @model.media_type_manifest {
     raise @model.InvalidOci("artifact must use OCI image-manifest media type")
   }
@@ -149,7 +151,7 @@ pub fn attach(
   reference~ : String = "artifact",
   limits~ : ArtifactLimits = ArtifactLimits::default(),
 ) -> ArtifactBundle raise @model.MoonOciError {
-  validate_limits(limits)
+  limits.validate()
   if subject.media_type != @model.media_type_manifest &&
     subject.media_type != @model.media_type_index {
     raise @model.InvalidArgument(
@@ -204,7 +206,7 @@ fn assemble(
   reference : String,
   limits : ArtifactLimits,
 ) -> ArtifactBundle raise @model.MoonOciError {
-  validate_limits(limits)
+  limits.validate()
   validate_media_type(artifact_type)
   if reference.is_empty() || reference.contains_char('\u{0000}') {
     raise @model.InvalidArgument(
