@@ -74,6 +74,8 @@ pub struct PullSession {
   priv mut reserved : Int64
   priv mut visits : Int32
   priv mut accepted_bytes : Int64
+  priv mut cached_bytes : Int64
+  priv mut cached_requests : Int32
   priv mut root : @model.Descriptor?
 }
 
@@ -115,6 +117,8 @@ pub fn PullSession::new(
     reserved: 0L,
     visits: 1,
     accepted_bytes: 0L,
+    cached_bytes: 0L,
+    cached_requests: 0,
     root: None,
   }
 }

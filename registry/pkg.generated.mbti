@@ -27,6 +27,8 @@ pub fn manifest_path(String, String) -> String raise @model.MoonOciError
 
 pub fn parse_bearer_challenge(String) -> BearerChallenge raise @model.MoonOciError
 
+pub fn pull_statistics_json(PullSession) -> String
+
 pub fn referrers_path(String, @model.Digest, artifact_type? : String) -> String raise @model.MoonOciError
 
 pub fn single_header(Array[@model.KeyValue], String) -> String? raise @model.MoonOciError
@@ -74,9 +76,13 @@ pub struct PullSession {
   // private fields
 }
 pub fn PullSession::accept(Self, Int32, Array[@model.KeyValue], Bytes) -> Unit raise @model.MoonOciError
+pub fn PullSession::accept_cached(Self, Bytes) -> Unit raise @model.MoonOciError
 pub fn PullSession::accepted_bytes(Self) -> Int64
+pub fn PullSession::accepted_network_bytes(Self) -> Int64
 pub fn PullSession::accepted_requests(Self) -> Int32
 pub fn PullSession::body_limit(Self) -> Int32 raise @model.MoonOciError
+pub fn PullSession::cached_bytes(Self) -> Int64
+pub fn PullSession::cached_requests(Self) -> Int32
 pub fn PullSession::finish(Self) -> @layout.MemoryLayout raise @model.MoonOciError
 pub fn PullSession::new(String, String, @model.Digest, limits? : PullLimits, include_subjects? : Bool) -> Self raise @model.MoonOciError
 pub fn PullSession::next(Self) -> FetchRequest?
