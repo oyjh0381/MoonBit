@@ -11,12 +11,18 @@ pub struct MemoryLayout {
   marker : Bytes
   mut index : Bytes
   blobs : Array[BlobRecord]
+  lookup : Map[String, Int32]
 } derive(Debug, Eq)
 
 ///|
 /// Construct an empty OCI Image Layout with the v1 marker.
 pub fn MemoryLayout::new() -> MemoryLayout {
-  { marker: b"{\"imageLayoutVersion\":\"1.0.0\"}", index: b"", blobs: [], }
+  {
+    marker: b"{\"imageLayoutVersion\":\"1.0.0\"}",
+    index: b"",
+    blobs: [],
+    lookup: Map([]),
+  }
 }
 
 ///|
@@ -28,11 +34,18 @@ pub fn MemoryLayout::from_untrusted_parts(
   blobs : Array[(@model.Descriptor, Bytes)],
 ) -> MemoryLayout {
   let records : Array[BlobRecord] = []
+  let lookup : Map[String, Int32] = Map([])
   for pair in blobs {
     let (descriptor, data) = pair
+    let key = descriptor.digest.to_string()
+    // Keep the first-record lookup behavior for untrusted duplicate input.
+    // The complete record sequence is retained for strict inventory rejection.
+    if !lookup.contains(key) {
+      lookup[key] = records.length()
+    }
     records.push({ descriptor, data, })
   }
-  { marker, index, blobs: records, }
+  { marker, index, blobs: records, lookup, }
 }
 
 ///|
@@ -81,8 +94,10 @@ pub fn MemoryLayout::put_blob(
     annotations,
     platform,
   }
-  for blob in self.blobs {
-    if blob.descriptor.digest == descriptor.digest {
+  let key = descriptor.digest.to_string()
+  match self.lookup.get(key) {
+    Some(index) => {
+      let blob = self.blobs[index]
       if blob.data != data {
         raise @model.DigestMismatch(
           "different content produced an existing digest",
@@ -90,7 +105,9 @@ pub fn MemoryLayout::put_blob(
       }
       return descriptor
     }
+    None => ()
   }
+  self.lookup[key] = self.blobs.length()
   self.blobs.push({ descriptor, data, })
   descriptor
 }
@@ -107,12 +124,10 @@ pub fn MemoryLayout::get_blob(
   self : MemoryLayout,
   digest : @model.Digest,
 ) -> Bytes? {
-  for blob in self.blobs {
-    if blob.descriptor.digest == digest {
-      return Some(blob.data)
-    }
+  match self.lookup.get(digest.to_string()) {
+    Some(index) => Some(self.blobs[index].data)
+    None => None
   }
-  None
 }
 
 ///|
