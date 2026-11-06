@@ -1,0 +1,14 @@
+import {
+  "oyjh0381/moonoci/model",
+  "oyjh0381/moonoci/layout",
+  "oyjh0381/moonoci/digest",
+  "oyjh0381/moonoci/codec",
+  "moonbitlang/core/encoding/utf8",
+}
+
+import {
+  "oyjh0381/moonoci/lifecycle",
+  "oyjh0381/moonoci/builder",
+  "oyjh0381/moonoci/archive",
+  "oyjh0381/moonoci/artifacts",
+} for "test"
