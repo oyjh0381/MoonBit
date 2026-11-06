@@ -1,0 +1,53 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "oyjh0381/moonoci/transfer"
+
+import {
+  "oyjh0381/moonoci/model",
+}
+
+// Values
+pub fn plan_bytes(Bytes, chunk_bytes? : Int32, limits? : ChunkLimits) -> PreparedTransfer raise @model.MoonOciError
+
+pub fn prepare(ChunkPlan, @model.Digest, limits? : ChunkLimits) -> PreparedTransfer raise @model.MoonOciError
+
+// Errors
+
+// Types and methods
+pub(all) struct ChunkLimits {
+  max_chunks : Int32
+  max_chunk_bytes : Int32
+  max_blob_bytes : Int64
+}
+pub fn ChunkLimits::default() -> Self
+pub fn ChunkLimits::validate(Self) -> Unit raise @model.MoonOciError
+
+pub(all) struct ChunkPlan {
+  digest : @model.Digest
+  size : Int64
+  chunk_bytes : Int32
+  chunks : Array[@model.Digest]
+}
+
+pub(all) struct ChunkSpec {
+  index : Int32
+  offset : Int64
+  size : Int32
+  digest : @model.Digest
+}
+
+pub struct PreparedTransfer {
+  digest : @model.Digest
+  size : Int64
+  chunk_bytes : Int32
+  chunks : Array[@model.Digest]
+}
+pub fn PreparedTransfer::chunk(Self, Int32) -> ChunkSpec raise @model.MoonOciError
+pub fn PreparedTransfer::chunk_bytes(Self) -> Int32
+pub fn PreparedTransfer::chunk_count(Self) -> Int32
+pub fn PreparedTransfer::digest(Self) -> @model.Digest
+pub fn PreparedTransfer::size(Self) -> Int64
+pub fn PreparedTransfer::verify_chunk(Self, Int32, Bytes) -> Unit raise @model.MoonOciError
+
+// Type aliases
+
+// Traits

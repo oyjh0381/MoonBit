@@ -1,0 +1,8 @@
+import {
+  "oyjh0381/moonoci/model",
+  "oyjh0381/moonoci/digest",
+}
+
+import {
+  "oyjh0381/moonoci/transfer",
+} for "test"
