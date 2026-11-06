@@ -75,6 +75,7 @@ pub fn verify_store(
   let seen : Map[String, Bool] = Map([])
   let mut artifacts_checked = 0
   let mut total = 0L
+  let mut reserved = 0L
   for item in walk.skipped {
     if item.reason != "non-image-config" ||
       seen.contains(item.descriptor.digest.to_string()) {
@@ -86,13 +87,16 @@ pub fn verify_store(
       let mut declared = 0L
       for payload in manifest.payloads {
         if payload.size < 0L ||
-          payload.size > max_total_payload_bytes - total - declared {
+          payload.size > max_total_payload_bytes - reserved - declared {
           raise @model.ResourceLimitExceeded(
             "store artifact payload budget exceeded",
           )
         }
         declared += payload.size
       }
+      // Reserve work before hashing: failures must not reset the aggregate
+      // budget and permit unbounded retries across distinct corrupt artifacts.
+      reserved += declared
       let observed = inspect(
         source,
         item.descriptor,
