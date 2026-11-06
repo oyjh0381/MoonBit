@@ -1,5 +1,6 @@
 import {
   "oyjh0381/moonoci/artifacts",
+  "oyjh0381/moonoci/lifecycle",
   "oyjh0381/moonoci/graph",
   "oyjh0381/moonoci/review",
   "oyjh0381/moonoci/policy",

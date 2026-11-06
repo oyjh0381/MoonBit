@@ -1,5 +1,6 @@
 import {
   "oyjh0381/moonoci/artifacts",
+  "oyjh0381/moonoci/lifecycle",
   "oyjh0381/moonoci/distribution",
   "oyjh0381/moonoci/transfer",
   "oyjh0381/moonoci/digest",

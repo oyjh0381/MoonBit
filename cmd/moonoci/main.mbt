@@ -11,6 +11,52 @@ async fn main {
       return
     }
     match args[1] {
+      "content-catalog" => {
+        require_arity(
+          args, 4, "usage: moonoci content-catalog INPUT EXPECTED_INDEX_PIN",
+        )
+        let expected = @model.Digest::parse(args[3])
+        let catalog = @lifecycle.catalog(
+          @native.load_bounded_layout(args[2]),
+          expected,
+        )
+        @stdio.stdout.write(@lifecycle.catalog_json(catalog) + "\n")
+      }
+      "retain-plan" => {
+        if args.length() < 6 {
+          raise @model.InvalidArgument(
+            "usage: moonoci retain-plan INPUT EXPECTED_INDEX_PIN MODE ROOT [ROOT...]",
+          )
+        }
+        let catalog = @lifecycle.catalog(
+          @native.load_bounded_layout(args[2]),
+          @model.Digest::parse(args[3]),
+        )
+        let roots = args[5:]
+          .to_owned()
+          .map(value => @model.Digest::parse(value))
+        let plan = catalog.retain(roots, policy=retention_policy(args[4]))
+        @stdio.stdout.write(@lifecycle.retention_json(plan) + "\n")
+      }
+      "retain-export" => {
+        if args.length() < 8 {
+          raise @model.InvalidArgument(
+            "usage: moonoci retain-export INPUT EXPECTED_INDEX_PIN PLAN_PIN MODE OUTPUT ROOT [ROOT...]",
+          )
+        }
+        let roots = args[7:]
+          .to_owned()
+          .map(value => @model.Digest::parse(value))
+        let plan = @native.export_retained_layout(
+          args[2],
+          @model.Digest::parse(args[3]),
+          roots,
+          @model.Digest::parse(args[4]),
+          args[6],
+          policy=retention_policy(args[5]),
+        )
+        @stdio.stdout.write(@lifecycle.retention_json(plan) + "\n")
+      }
       "transfer-batch" => {
         require_arity(
           args, 6, "usage: moonoci transfer-batch SESSION EXPECTED_PIN MAX_CHUNKS MAX_BYTES",
@@ -503,6 +549,10 @@ async fn print_usage() -> Unit {
       #|MoonOCI — deterministic OCI Image Layout builder and validator
       #|
       #|Usage:
+      #|  moonoci content-catalog INPUT EXPECTED_INDEX_PIN
+      #|  moonoci retain-plan INPUT EXPECTED_INDEX_PIN MODE ROOT [ROOT...]
+      #|  moonoci retain-export INPUT EXPECTED_INDEX_PIN PLAN_PIN MODE OUTPUT ROOT [ROOT...]
+      #|  Retention MODE: closure | referrers | complete
       #|  moonoci transfer-batch SESSION EXPECTED_PIN MAX_CHUNKS MAX_BYTES
       #|  moonoci transfer-recover-chunk SESSION EXPECTED_PIN INDEX
       #|  moonoci transfer-recover-output SESSION EXPECTED_PIN OUTPUT_FILE
@@ -562,6 +612,21 @@ fn require_arity(
 fn integer_argument(value : String) -> Int32 raise @model.MoonOciError {
   @string.parse_int(value) catch {
     _ => raise @model.InvalidArgument("chunk size/index must be an integer")
+  }
+}
+
+///|
+fn retention_policy(
+  mode : String,
+) -> @lifecycle.RetentionPolicy raise @model.MoonOciError {
+  match mode {
+    "closure" => { include_referrers: false, include_subjects: false, }
+    "referrers" => @lifecycle.RetentionPolicy::default()
+    "complete" => { include_referrers: true, include_subjects: true, }
+    _ =>
+      raise @model.InvalidArgument(
+        "retention mode must be closure, referrers or complete",
+      )
   }
 }
 

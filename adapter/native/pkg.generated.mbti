@@ -5,6 +5,7 @@ import {
   "oyjh0381/moonoci/archive",
   "oyjh0381/moonoci/builder",
   "oyjh0381/moonoci/layout",
+  "oyjh0381/moonoci/lifecycle",
   "oyjh0381/moonoci/model",
   "oyjh0381/moonoci/spec",
   "oyjh0381/moonoci/transfer",
@@ -28,6 +29,8 @@ pub async fn create_chunk_plan(String, Int32, String, limits? : @transfer.ChunkL
 pub async fn create_delta_file(String, String, String) -> Unit
 
 pub async fn export_artifact_payload(String, @model.Digest, Int32, String) -> Unit
+
+pub async fn export_retained_layout(String, @model.Digest, Array[@model.Digest], @model.Digest, String, policy? : @lifecycle.RetentionPolicy) -> @lifecycle.RetentionPlan
 
 pub async fn export_transfer_chunk(String, String, @model.Digest, Int32, String) -> Unit
 
