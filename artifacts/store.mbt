@@ -149,10 +149,37 @@ pub fn attach(
   reference~ : String = "artifact",
   limits~ : ArtifactLimits = ArtifactLimits::default(),
 ) -> ArtifactBundle raise @model.MoonOciError {
+  validate_limits(limits)
   if subject.media_type != @model.media_type_manifest &&
     subject.media_type != @model.media_type_index {
     raise @model.InvalidArgument(
       "artifact subject must describe a manifest or index",
+    )
+  }
+  if subject.size > limits.max_manifest_bytes.to_int64() {
+    raise @model.ResourceLimitExceeded(
+      "artifact subject metadata quota exceeded",
+    )
+  }
+  // A layout root lives as index.json rather than a blob. Preserve the exact
+  // pre-attachment index as content before binding the new artifact to it.
+  if subject.media_type == @model.media_type_index &&
+    subject.size == source.index().length().to_int64() &&
+    @digest.sha256(source.index()) == subject.digest {
+    let promoted = @layout.MemoryLayout::from_untrusted_parts(
+      source.marker(),
+      source.index(),
+      source.blob_records().map(b => (b.descriptor(), b.data())),
+    )
+    ignore(promoted.put_blob(@model.media_type_index, source.index()))
+    return assemble(
+      promoted,
+      Some(subject),
+      artifact_type,
+      payloads,
+      annotations,
+      reference,
+      limits,
     )
   }
   ignore(source.require_blob(subject))

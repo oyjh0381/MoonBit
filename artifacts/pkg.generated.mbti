@@ -30,6 +30,8 @@ pub fn referrers(@layout.MemoryLayout, @model.Digest, artifact_type? : String, l
 
 pub fn referrers_json(ReferrerDiscovery) -> String raise @model.MoonOciError
 
+pub fn resolve_subject(@layout.MemoryLayout, @model.Digest, limits? : @graph.WalkLimits) -> @model.Descriptor raise @model.MoonOciError
+
 pub fn validate_media_type(String) -> Unit raise @model.MoonOciError
 
 pub fn verification_json(StoreVerification) -> String
