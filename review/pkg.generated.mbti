@@ -1,0 +1,42 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "oyjh0381/moonoci/review"
+
+import {
+  "oyjh0381/moonoci/builder",
+  "oyjh0381/moonoci/layout",
+  "oyjh0381/moonoci/model",
+}
+
+// Values
+pub fn compare_files(@layout.MemoryLayout, @model.Descriptor, @layout.MemoryLayout, @model.Descriptor, include_provenance? : Bool) -> FileComparison raise @model.MoonOciError
+
+pub fn files_json(FileComparison) -> String
+
+// Errors
+
+// Types and methods
+pub(all) struct FileChange {
+  path : String
+  kind : String
+  before : @builder.FileEvidence?
+  after : @builder.FileEvidence?
+  content_changed : Bool
+  metadata_changed : Bool
+  link_changed : Bool
+  type_changed : Bool
+  source_changed : Bool
+}
+
+pub(all) struct FileComparison {
+  base_manifest : @model.Digest
+  target_manifest : @model.Digest
+  changes : Array[FileChange]
+  added : Int32
+  removed : Int32
+  modified : Int32
+  provenance_only : Int32
+}
+
+// Type aliases
+
+// Traits
