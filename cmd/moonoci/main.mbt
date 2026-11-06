@@ -11,6 +11,59 @@ async fn main {
       return
     }
     match args[1] {
+      "chunk-plan" => {
+        require_arity(
+          args, 5, "usage: moonoci chunk-plan SOURCE CHUNK_BYTES OUTPUT_PLAN",
+        )
+        let chunk_bytes = integer_argument(args[3])
+        let plan = @native.create_chunk_plan(args[2], chunk_bytes, args[4])
+        @stdio.stdout.write(plan.digest().to_string() + "\n")
+      }
+      "chunk-export" => {
+        require_arity(
+          args, 7, "usage: moonoci chunk-export SOURCE PLAN EXPECTED_PIN INDEX OUTPUT_CHUNK",
+        )
+        @native.export_transfer_chunk(
+          args[2],
+          args[3],
+          @model.Digest::parse(args[4]),
+          integer_argument(args[5]),
+          args[6],
+        )
+      }
+      "transfer-start" => {
+        require_arity(
+          args, 5, "usage: moonoci transfer-start PLAN EXPECTED_PIN SESSION",
+        )
+        @native.start_transfer(args[2], @model.Digest::parse(args[3]), args[4])
+      }
+      "transfer-put" => {
+        require_arity(
+          args, 6, "usage: moonoci transfer-put SESSION EXPECTED_PIN INDEX CHUNK_FILE",
+        )
+        @native.receive_transfer_chunk(
+          args[2],
+          @model.Digest::parse(args[3]),
+          integer_argument(args[4]),
+          args[5],
+        )
+      }
+      "transfer-status" => {
+        require_arity(
+          args, 4, "usage: moonoci transfer-status SESSION EXPECTED_PIN",
+        )
+        let progress = @native.transfer_progress(
+          args[2],
+          @model.Digest::parse(args[3]),
+        )
+        @stdio.stdout.write(@native.transfer_progress_json(progress) + "\n")
+      }
+      "transfer-finish" => {
+        require_arity(
+          args, 5, "usage: moonoci transfer-finish SESSION EXPECTED_PIN OUTPUT_FILE",
+        )
+        @native.finish_transfer(args[2], @model.Digest::parse(args[3]), args[4])
+      }
       "artifact-gate" => {
         if args.length() < 5 {
           raise @model.InvalidArgument(
@@ -414,6 +467,12 @@ async fn print_usage() -> Unit {
       #|MoonOCI — deterministic OCI Image Layout builder and validator
       #|
       #|Usage:
+      #|  moonoci chunk-plan SOURCE CHUNK_BYTES OUTPUT_PLAN
+      #|  moonoci chunk-export SOURCE PLAN EXPECTED_PIN INDEX OUTPUT_CHUNK
+      #|  moonoci transfer-start PLAN EXPECTED_PIN SESSION
+      #|  moonoci transfer-put SESSION EXPECTED_PIN INDEX CHUNK_FILE
+      #|  moonoci transfer-status SESSION EXPECTED_PIN
+      #|  moonoci transfer-finish SESSION EXPECTED_PIN OUTPUT_FILE
       #|  moonoci artifact-gate INPUT SUBJECT REQUIRED_TYPE [REQUIRED_TYPE...]
       #|  moonoci artifact-attach INPUT SUBJECT TYPE PAYLOAD_MEDIA FILE REF OUTPUT
       #|  moonoci artifact-inspect INPUT DIGEST
@@ -457,6 +516,13 @@ fn require_arity(
 ) -> Unit raise @model.MoonOciError {
   if args.length() != expected {
     raise @model.InvalidArgument(usage)
+  }
+}
+
+///|
+fn integer_argument(value : String) -> Int32 raise @model.MoonOciError {
+  @string.parse_int(value) catch {
+    _ => raise @model.InvalidArgument("chunk size/index must be an integer")
   }
 }
 
