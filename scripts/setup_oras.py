@@ -49,7 +49,8 @@ def main():
                         raise ValueError('ORAS archive exceeds download bound')
                     output.write(chunk)
         os.replace(temporary, archive)
-    data = archive.read_bytes()
+    with archive.open('rb') as stream:
+        data = stream.read(16 * 1024 * 1024 + 1)
     if len(data) > 16 * 1024 * 1024 or hashlib.sha256(data).hexdigest() != expected:
         raise ValueError('official ORAS archive checksum mismatch')
     binary_name = 'oras.exe' if key.startswith('windows') else 'oras'
