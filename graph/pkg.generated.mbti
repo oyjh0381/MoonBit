@@ -31,7 +31,13 @@ pub(all) struct ImageLeaf {
   ancestor_indexes : Array[@model.Digest]
 }
 
+pub(all) struct IndexNode {
+  descriptor : @model.Descriptor
+  index_path : Array[Int32]
+}
+
 pub(all) struct IndexWalk {
+  indexes : Array[IndexNode]
   images : Array[ImageLeaf]
   skipped : Array[SkippedDescriptor]
   visits : Int32

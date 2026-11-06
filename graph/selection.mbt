@@ -33,6 +33,12 @@ pub fn select_image(
 
 ///|
 pub fn render_json(walk : IndexWalk) -> String {
+  let indexes : Array[Json] = walk.indexes.map(node => {
+    "digest": Json::string(node.descriptor.digest.to_string()),
+    "index_path": Json::array(
+      node.index_path.map(i => Json::number(i.to_double())),
+    ),
+  })
   let images : Array[Json] = walk.images.map(image => {
     "digest": Json::string(image.descriptor.digest.to_string()),
     "index_path": Json::array(
@@ -62,6 +68,7 @@ pub fn render_json(walk : IndexWalk) -> String {
   })
   let result : Json = {
     "schema": "moonoci.index-tree.v1",
+    "indexes": Json::array(indexes),
     "complete": Json::boolean(walk.complete),
     "visits": Json::number(walk.visits.to_double()),
     "metadata_bytes": Json::string(walk.metadata_bytes.to_string()),

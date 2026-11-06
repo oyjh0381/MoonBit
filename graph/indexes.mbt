@@ -27,6 +27,7 @@ pub(all) struct SkippedDescriptor {
 
 ///|
 pub(all) struct IndexWalk {
+  indexes : Array[IndexNode]
   images : Array[ImageLeaf]
   skipped : Array[SkippedDescriptor]
   visits : Int32
@@ -35,7 +36,14 @@ pub(all) struct IndexWalk {
 }
 
 ///|
+pub(all) struct IndexNode {
+  descriptor : @model.Descriptor
+  index_path : Array[Int32]
+}
+
+///|
 priv struct WalkState {
+  indexes : Array[IndexNode]
   limits : WalkLimits
   source : @layout.MemoryLayout
   images : Array[ImageLeaf]
@@ -66,6 +74,7 @@ pub fn walk_indexes(
   let root = @codec.decode_index(source.index())
   require_index(root)
   let state : WalkState = {
+    indexes: [],
     limits,
     source,
     images: [],
@@ -78,6 +87,7 @@ pub fn walk_indexes(
     walk_descriptor(state, descriptor, [i], [], [])
   }
   {
+    indexes: state.indexes,
     images: state.images,
     skipped: state.skipped,
     visits: state.visits,
@@ -139,6 +149,7 @@ fn walk_descriptor(
     }
     let index = @codec.decode_index(metadata(state, descriptor))
     require_index(index)
+    state.indexes.push({ descriptor, index_path: path.copy(), })
     let next = ancestors.copy()
     next.push(descriptor.digest)
     let platforms = inherited_platforms.copy()
