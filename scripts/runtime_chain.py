@@ -1,0 +1,86 @@
+"""Linux end-to-end consumer: MoonOCI packages its own verifier and runs it.
+Requires moon, cc, ldd, skopeo, podman. No remote registry or base image needed.
+"""
+import hashlib
+import json
+from pathlib import Path
+import platform
+import re
+import shutil
+import subprocess
+import tempfile
+
+ROOT = Path(__file__).resolve().parents[1]
+
+
+def run(*arguments):
+    result = subprocess.run(list(map(str, arguments)), cwd=ROOT, check=True, capture_output=True, text=True, timeout=240)
+    return result.stdout.strip()
+
+
+def main():
+    if platform.system() != 'Linux':
+        raise SystemExit('Run this chain on a Linux runner; independent_layout.py runs on Windows too.')
+    for tool in ('moon', 'ldd', 'skopeo', 'podman'):
+        if not shutil.which(tool):
+            raise SystemExit('Required tool missing: ' + tool)
+    run('moon', 'build', '--target', 'native', '--release', '--deny-warn')
+    binaries = [p for p in (ROOT / '_build/native/release/build').rglob('moonoci.exe') if p.is_file()]
+    if not binaries:
+        raise RuntimeError('Native MoonOCI executable missing')
+    binary = max(binaries, key=lambda p: p.stat().st_mtime_ns)
+    workspace = Path(tempfile.mkdtemp(prefix='runtime-', dir=ROOT / '_build'))
+    rootfs = workspace / 'rootfs'
+    (rootfs / 'app').mkdir(parents=True)
+    shutil.copy2(binary, rootfs / 'app/moonoci')
+    # Only inspect our locally compiled executable; copy loader/shared libraries
+    # under their original absolute paths so no shell or base distribution is needed.
+    dependencies = run('ldd', binary)
+    if 'not found' in dependencies:
+        raise RuntimeError('Native executable has unresolved shared libraries')
+    for dependency in set(re.findall(r'(/[^\s()]+)', dependencies)):
+        path = Path(dependency)
+        destination = rootfs / path.relative_to('/')
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copyfile(path.resolve(strict=True), destination)
+    arch = {'x86_64': 'amd64', 'aarch64': 'arm64'}[platform.machine()]
+    fixture_spec = dict(schemaVersion=1, ref='fixture', platform=dict(os='linux', architecture=arch),
+                        layers=[dict(source=str(ROOT / 'examples/native-build/rootfs'), compression='gzip')],
+                        output=dict(layout=str(rootfs / 'fixture')))
+    fixture_path = workspace / 'fixture.json'
+    fixture_path.write_text(json.dumps(fixture_spec))
+    run(binary, 'build', fixture_path)
+    spec = dict(schemaVersion=1, ref='selfcheck', platform=dict(os='linux', architecture=arch),
+                layers=[dict(source=str(rootfs), compression='gzip', metadata=dict(mode=493))],
+                config=dict(user='65532:65532', entrypoint=['/app/moonoci'], cmd=['verify','/fixture']),
+                output=dict(layout=str(workspace / 'image')))
+    spec_path = workspace / 'image.json'
+    spec_path.write_text(json.dumps(spec))
+    run(binary, 'build', spec_path)
+    run(binary, 'verify', workspace / 'image')
+    independent = json.loads(run('python3', ROOT / 'scripts/independent_layout.py', workspace / 'image'))
+    image = workspace / 'image'
+    original = (image / 'index.json').read_bytes()
+    spec['output']['layout'] = str(workspace / 'rebuild')
+    spec_path.write_text(json.dumps(spec))
+    run(binary, 'build', spec_path)
+    assert original == (workspace / 'rebuild/index.json').read_bytes()
+    inspected = json.loads(run('skopeo', 'inspect', 'oci:' + str(image) + ':selfcheck'))
+    archive = workspace / 'image.tar'
+    run(binary, 'archive', image, archive)
+    tag = 'localhost/moonoci-selfcheck:' + hashlib.sha256(original).hexdigest()[:16]
+    run('skopeo', 'copy', 'oci:' + str(image) + ':selfcheck', 'containers-storage:' + tag)
+    output = run('podman', 'run', '--rm', '--network=none', '--read-only', '--cap-drop=ALL',
+                 '--security-opt=no-new-privileges', tag)
+    assert output.startswith('valid: manifests=1')
+    assert inspected['Digest'] == independent['images'][0]['manifest']
+    report = dict(schema='moonoci.runtime.v1', linux=platform.platform(), architecture=arch,
+                  manifest=independent['images'][0]['manifest'], skopeo_digest=inspected['Digest'],
+                  runtime_output=output, reproducible=True, image_archive_bytes=archive.stat().st_size,
+                  tools={tool: run(tool, '--version') for tool in ('skopeo','podman')})
+    (workspace / 'runtime-report.json').write_text(json.dumps(report, indent=2))
+    print(json.dumps(report, indent=2))
+
+
+if __name__ == '__main__':
+    main()

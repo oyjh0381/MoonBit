@@ -14,6 +14,9 @@ jobs:
     steps:
       - uses: actions/checkout@v6
       - uses: hustcer/setup-moonbit@v1.22
+        with:
+          version: '0.10.16+b1a0e846e'
+          core-version: '0.10.16+b1a0e846e'
       - name: Resolve dependencies
         run: moon update
       - name: Generate documentation
@@ -33,6 +36,9 @@ jobs:
     steps:
       - uses: actions/checkout@v6
       - uses: hustcer/setup-moonbit@v1.22
+        with:
+          version: '0.10.16+b1a0e846e'
+          core-version: '0.10.16+b1a0e846e'
       - name: Resolve dependencies
         run: moon update
       - name: Formatting
@@ -53,6 +59,9 @@ jobs:
     steps:
       - uses: actions/checkout@v6
       - uses: hustcer/setup-moonbit@v1.22
+        with:
+          version: '0.10.16+b1a0e846e'
+          core-version: '0.10.16+b1a0e846e'
       - name: Install Native and OCI tools
         run: |
           sudo apt-get update
@@ -80,6 +89,9 @@ jobs:
     steps:
       - uses: actions/checkout@v6
       - uses: hustcer/setup-moonbit@v1.22
+        with:
+          version: '0.10.16+b1a0e846e'
+          core-version: '0.10.16+b1a0e846e'
       - run: moon update
       - name: Native tests and build
         shell: cmd
@@ -93,3 +105,24 @@ jobs:
           call "%ProgramFiles%\Microsoft Visual Studio\2022\Enterprise\Common7\Tools\VsDevCmd.bat" -arch=amd64 -host_arch=amd64
           moon run cmd/moonoci --target native -- version
           moon run cmd/moonoci --target native -- verify _build\missing-layout && exit /b 1 || exit /b 0
+
+  runtime-consumer:
+    name: Self-hosted verifier image (Linux)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: hustcer/setup-moonbit@v1.22
+        with:
+          version: '0.10.16+b1a0e846e'
+          core-version: '0.10.16+b1a0e846e'
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.11'
+      - run: sudo apt-get update && sudo apt-get install -y build-essential skopeo podman
+      - run: moon update
+      - run: python3 scripts/runtime_chain.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: moonoci-runtime-evidence
+          path: _build/runtime-*/runtime-report.json
