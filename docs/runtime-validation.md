@@ -25,12 +25,9 @@ python3 scripts/runtime_chain.py
 ```
 
 Prerequisites: Linux, MoonBit 0.10.16, a C compiler, Python 3, ldd, Skopeo and
-Podman. The CI `runtime-consumer` job provides this environment remotely.
-
-The hosted CI invocation uses `--rootful` to run Podman through sudo. Runtime
-storage uses a short OS temporary directory, the vfs driver, file events and
-disabled container cgroups. The verifier runs with a 60-second container limit.
-This avoids dependencies on a runner's user container store and systemd session.
+access to a Docker daemon. The CI `runtime-consumer` job provides this
+environment remotely. The verifier has a 60-second execution limit and uses
+unique local image and container names so cleanup affects only this run.
 
 1. Compile the real Native MoonOCI CLI.
 2. Build a fixture layout with MoonOCI.
@@ -38,8 +35,8 @@ This avoids dependencies on a runner's user container store and systemd session.
    OCI image. No base image or registry download is required by this chain.
 4. Independently inspect the image with Python and Skopeo; verify rebuilding
    gives the same index and Skopeo sees the same manifest digest.
-5. Export an OCI archive, copy the layout to local container storage and run
-   MoonOCI inside Podman to verify the embedded fixture.
+5. Export an OCI archive. Separately use Skopeo to convert the inspected layout
+   to a Docker archive, load it locally and run MoonOCI to verify the fixture.
 6. Require the expected successful verifier output. The container runs without
    network, with a read-only rootfs, dropped capabilities and a non-root user.
 
@@ -48,11 +45,9 @@ uploads it as an artifact. Dependencies and source inputs must stay quiescent
 while building. This is reproducibility under the same declared binary/library
 inputs, not a claim of cross-toolchain reproducible executable compilation.
 
-This consumer is a self-hosted integration using the real product, not an
-external adoption claim. At initial implementation the Windows test and local
-Python observation passed; the Linux runtime script has not yet been executed.
-After an authorized push, inspect the actual CI result before claiming runtime
-interoperability. No local VM is required.
+This consumer exercises the real product without claiming external adoption.
+Consult the `runtime-consumer` job and its uploaded report for the result at a
+specific revision. No local VM is required.
 
 ## Distribution APIs
 

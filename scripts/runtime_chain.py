@@ -1,8 +1,7 @@
 """Linux end-to-end consumer: MoonOCI packages its own verifier and runs it.
-Requires moon, cc, ldd, skopeo, podman. No remote registry or base image needed.
+Requires moon, cc, ldd, skopeo, Docker. No remote registry or base image needed.
 """
 import hashlib
-import argparse
 import json
 from pathlib import Path
 import platform
@@ -10,13 +9,14 @@ import re
 import shutil
 import subprocess
 import tempfile
+import uuid
 
 ROOT = Path(__file__).resolve().parents[1]
 
 
-def run(*arguments):
+def run(*arguments, timeout=240):
     try:
-        result = subprocess.run(list(map(str, arguments)), cwd=ROOT, capture_output=True, text=True, timeout=240)
+        result = subprocess.run(list(map(str, arguments)), cwd=ROOT, capture_output=True, text=True, timeout=timeout)
     except subprocess.TimeoutExpired as error:
         raise RuntimeError((arguments, 'timeout', error.stdout, error.stderr)) from error
     if result.returncode:
@@ -25,14 +25,12 @@ def run(*arguments):
 
 
 def main():
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--rootful', action='store_true', help='run isolated Podman storage through sudo')
-    args = parser.parse_args()
     if platform.system() != 'Linux':
         raise SystemExit('Run this chain on a Linux runner; independent_layout.py runs on Windows too.')
-    for tool in ('moon', 'ldd', 'skopeo', 'podman'):
+    for tool in ('moon', 'ldd', 'skopeo', 'docker'):
         if not shutil.which(tool):
             raise SystemExit('Required tool missing: ' + tool)
+    docker_version = run('docker', 'version', '--format', '{{.Server.Version}}', timeout=30)
     run('moon', 'build', '--target', 'native', '--release', '--deny-warn')
     binaries = [p for p in (ROOT / '_build/native/release/build').rglob('moonoci.exe') if p.is_file()]
     if not binaries:
@@ -77,50 +75,28 @@ def main():
     inspected = json.loads(run('skopeo', 'inspect', 'oci:' + str(image) + ':selfcheck'))
     archive = workspace / 'image.tar'
     run(binary, 'archive', image, archive)
-    tag = 'localhost/moonoci-selfcheck:' + hashlib.sha256(original).hexdigest()[:16]
-    runtime_archive = workspace / 'runtime.oci.tar'
-    run('skopeo', 'copy', 'oci:' + str(image) + ':selfcheck', 'oci-archive:' + str(runtime_archive) + ':' + tag)
-    # containers/storage limits runroot to 50 characters. Hosted checkout paths
-    # are longer, so runtime state gets its own short OS temporary directory.
-    runtime_state = Path(tempfile.mkdtemp(prefix='moci-'))
-    podman = (['sudo'] if args.rootful else []) + [
-        'podman', '--root', str(runtime_state / 'store'),
-        '--runroot', str(runtime_state / 'run'), '--storage-driver', 'vfs',
-        '--events-backend', 'file', '--cgroup-manager', 'cgroupfs',
-    ]
-    run(*podman, 'load', '--input', runtime_archive)
-    # Keep an init process at PID 1 so the async CLI has ordinary process
-    # shutdown semantics inside the container.
-    probe = run(*podman, 'run', '--init', '-d', '--pull=never', '--timeout=15',
-                '--cgroups=disabled', '--log-driver=k8s-file', '--network=none',
-                '--read-only', '--cap-drop=ALL', '--security-opt=no-new-privileges',
-                tag, 'version')
-    pid = run(*podman, 'inspect', '--format', '{{.State.Pid}}', probe)
-    top = run(*podman, 'top', probe, 'hpid', 'comm')
-    print('runtime-probe-top', top, flush=True)
-    print('runtime-probe-state', run(*podman, 'inspect', '--format', '{{json .State}}', probe), flush=True)
-    processes = [line.split()[0] for line in top.splitlines()[1:]]
-    print('runtime-probe-threads', run('sudo', 'ps', '-T', '-p', ','.join(processes), '-o', 'pid,tid,stat,wchan,comm'), flush=True)
-    trace = workspace / 'startup.strace'
-    attach = [argument for process in processes for argument in ['-p', process]]
-    subprocess.run(['sudo', 'timeout', '-s', 'INT', '3', 'strace', '-f', '-tt', *attach, '-o', str(trace)], capture_output=True, timeout=10)
-    if trace.exists():
-        print('runtime-probe-strace', trace.read_text()[-16000:], flush=True)
-    print('runtime-probe-stdout', run(*podman, 'logs', probe), flush=True)
-    run(*podman, 'rm', '-f', probe)
-    startup = run(*podman, 'run', '--init', '--rm', '--pull=never', '--timeout=15',
-                  '--cgroups=disabled', '--network=none', '--read-only', '--cap-drop=ALL',
-                  '--security-opt=no-new-privileges', tag, 'version')
-    assert startup.startswith('moonoci 0.2.0')
-    output = run(*podman, '--log-level=debug', 'run', '--init', '--rm', '--pull=never',
-                 '--timeout=60', '--cgroups=disabled', '--network=none', '--read-only', '--cap-drop=ALL',
-                 '--security-opt=no-new-privileges', tag)
+    name = 'moonoci-selfcheck-' + uuid.uuid4().hex
+    tag = 'localhost/' + name + ':' + hashlib.sha256(original).hexdigest()[:16]
+    runtime_archive = workspace / 'runtime.docker.tar'
+    # Skopeo translates the verified OCI image into Docker's archive format;
+    # compare OCI digests before that translation, which may change the manifest.
+    run('skopeo', 'copy', 'oci:' + str(image) + ':selfcheck',
+        'docker-archive:' + str(runtime_archive) + ':' + tag)
+    run('docker', 'image', 'load', '--input', runtime_archive)
+    try:
+        output = run('docker', 'run', '--name', name, '--init', '--pull=never',
+                     '--network=none', '--read-only', '--cap-drop=ALL',
+                     '--security-opt=no-new-privileges', tag, timeout=60)
+    finally:
+        # A timed-out client does not necessarily stop the server-side process.
+        for cleanup in [('container', 'rm', '-f', name), ('image', 'rm', tag)]:
+            subprocess.run(['docker', *cleanup], capture_output=True, timeout=30)
     assert output.startswith('valid: manifests=1')
     assert inspected['Digest'] == independent['images'][0]['manifest']
     report = dict(schema='moonoci.runtime.v1', linux=platform.platform(), architecture=arch,
                   manifest=independent['images'][0]['manifest'], skopeo_digest=inspected['Digest'],
                   runtime_output=output, reproducible=True, image_archive_bytes=archive.stat().st_size,
-                  tools={tool: run(tool, '--version') for tool in ('skopeo','podman')})
+                  tools=dict(skopeo=run('skopeo', '--version'), docker=docker_version))
     (workspace / 'runtime-report.json').write_text(json.dumps(report, indent=2))
     print(json.dumps(report, indent=2))
 

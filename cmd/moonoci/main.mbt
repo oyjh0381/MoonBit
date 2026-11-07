@@ -559,7 +559,7 @@ async fn main {
         @stdio.stdout.write("wrote " + args[3] + "\n")
       }
       "version" | "--version" | "-V" =>
-        @stdio.stdout.write("moonoci 0.2.0 (unreleased)\n")
+        @stdio.stdout.write("moonoci 0.2.0\n")
       "help" | "--help" | "-h" => print_usage()
       command => raise @model.InvalidArgument("unknown command: " + command)
     }

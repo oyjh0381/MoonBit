@@ -189,9 +189,9 @@ jobs:
       - uses: actions/setup-python@v6
         with:
           python-version: '3.11'
-      - run: sudo apt-get update && sudo apt-get install -y build-essential skopeo podman strace
+      - run: sudo apt-get update && sudo apt-get install -y build-essential skopeo
       - run: moon update
-      - run: python3 scripts/runtime_chain.py --rootful
+      - run: python3 scripts/runtime_chain.py
       - run: python3 scripts/offline_chain.py --binary _build/native/release/build/cmd/moonoci/moonoci.exe
       - run: python3 scripts/independent_cases.py
       - run: python3 scripts/upgrade_chain.py --binary _build/native/release/build/cmd/moonoci/moonoci.exe
