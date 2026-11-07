@@ -89,20 +89,13 @@ def main():
         '--events-backend', 'file', '--cgroup-manager', 'cgroupfs',
     ]
     run(*podman, 'load', '--input', runtime_archive)
-    # Temporary bounded probes distinguish startup from fixture verification
-    # and journald from a direct file-backed log transport on hosted runners.
-    for log_driver in ['journald', 'k8s-file']:
-        for command in ['version', 'verify']:
-            probe = [*podman, 'run', '--rm', '--pull=never', '--timeout=10',
-                     '--cgroups=disabled', '--log-driver=' + log_driver,
-                     '--network=none', '--read-only', '--cap-drop=ALL',
-                     '--security-opt=no-new-privileges', tag, command]
-            if command == 'verify':
-                probe.append('/fixture')
-            result = subprocess.run(probe, cwd=ROOT, capture_output=True, text=True, timeout=30)
-            print(json.dumps(dict(probe='runtime-startup', log_driver=log_driver, command=command,
-                                  status=result.returncode, stdout=result.stdout, stderr=result.stderr)), flush=True)
-    output = run(*podman, '--log-level=debug', 'run', '--rm', '--pull=never',
+    # Keep an init process at PID 1 so the async CLI has ordinary process
+    # shutdown semantics inside the container.
+    startup = run(*podman, 'run', '--init', '--rm', '--pull=never', '--timeout=15',
+                  '--cgroups=disabled', '--network=none', '--read-only', '--cap-drop=ALL',
+                  '--security-opt=no-new-privileges', tag, 'version')
+    assert startup.startswith('moonoci 0.2.0')
+    output = run(*podman, '--log-level=debug', 'run', '--init', '--rm', '--pull=never',
                  '--timeout=60', '--cgroups=disabled', '--network=none', '--read-only', '--cap-drop=ALL',
                  '--security-opt=no-new-privileges', tag)
     assert output.startswith('valid: manifests=1')
