@@ -1,5 +1,6 @@
 ///|
 async test "pending recovery promotes verified content and preserves corrupt files" {
+  ensure_test_build_root()
   let root = "_build/native-chunk-recovery"
   if @fs.exists(root) {
     @fs.rmdir(root, recursive=true)

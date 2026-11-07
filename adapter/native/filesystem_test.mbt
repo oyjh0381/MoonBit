@@ -1,5 +1,6 @@
 ///|
 async test "Native adapter collects sorted normalized files and exclusions" {
+  ensure_test_build_root()
   let root = "_build/moonoci_native_collect"
   if @fs.exists(root) {
     @fs.rmdir(root, recursive=true)
@@ -29,6 +30,7 @@ async test "Native adapter collects sorted normalized files and exclusions" {
 
 ///|
 async test "Native build writes a complete OCI Image Layout" {
+  ensure_test_build_root()
   let root = "_build/moonoci_native_build"
   let output = "_build/moonoci_native_layout"
   let staging = output + ".moonoci-staging"

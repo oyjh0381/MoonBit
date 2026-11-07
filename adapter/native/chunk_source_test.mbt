@@ -1,5 +1,6 @@
 ///|
 async test "Native chunk producer bounds reads and detects changed source before export" {
+  ensure_test_build_root()
   let root = "_build/native-chunk-source"
   if @fs.exists(root) {
     @fs.rmdir(root, recursive=true)

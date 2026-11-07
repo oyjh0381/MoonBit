@@ -1,5 +1,6 @@
 ///|
 async test "Native session restarts from verified files and publishes only complete pinned bytes" {
+  ensure_test_build_root()
   let root = "_build/native-chunk-session"
   if @fs.exists(root) {
     @fs.rmdir(root, recursive=true)

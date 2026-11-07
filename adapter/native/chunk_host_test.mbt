@@ -1,5 +1,6 @@
 ///|
 async test "long-lived host reuses its snapshot but revalidates actual cache content" {
+  ensure_test_build_root()
   let root = "_build/native-chunk-host"
   if @fs.exists(root) {
     @fs.rmdir(root, recursive=true)

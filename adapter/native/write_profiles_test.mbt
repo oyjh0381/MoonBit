@@ -1,5 +1,6 @@
 ///|
 async test "data-synchronous and explicit buffered publication preserve every content byte" {
+  ensure_test_build_root()
   let root = "_build/native-write-profiles"
   if @fs.exists(root) {
     @fs.rmdir(root, recursive=true)
