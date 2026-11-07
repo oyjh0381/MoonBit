@@ -14,6 +14,7 @@ async fn main {
       "registry-pull" => registry_pull_command(args)
       "registry-referrers" => registry_referrers_command(args)
       "registry-bundle" => registry_bundle_command(args)
+      "registry-admit" => registry_bundle_command(args, admission=true)
       "content-catalog" => {
         require_arity(
           args, 4, "usage: moonoci content-catalog INPUT EXPECTED_INDEX_PIN",
@@ -553,6 +554,8 @@ async fn print_usage() -> Unit {
       #|MoonOCI — deterministic OCI Image Layout builder and validator
       #|
       #|Usage:
+      #|  moonoci registry-admit ORIGIN REPOSITORY REFERENCE EXPECTED_ROOT SUBJECT OUTPUT
+      #|    --require-artifact TYPE [--require-artifact TYPE...] [TRANSPORT/PULL OPTIONS]
       #|  moonoci registry-bundle ORIGIN REPOSITORY REFERENCE EXPECTED_ROOT SUBJECT OUTPUT [OPTIONS]
       #|  moonoci registry-referrers ORIGIN REPOSITORY SUBJECT [OPTIONS]
       #|    --artifact-type TYPE --max-pages N --max-entries N (plus transport options below)

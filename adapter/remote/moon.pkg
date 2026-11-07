@@ -5,6 +5,7 @@ import {
   "oyjh0381/moonoci/digest",
   "oyjh0381/moonoci/artifacts",
   "oyjh0381/moonoci/codec",
+  "oyjh0381/moonoci/policy",
   "moonbitlang/core/encoding/utf8",
   "moonbitlang/async",
   "moonbitlang/async/http",

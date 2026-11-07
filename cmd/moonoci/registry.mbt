@@ -5,6 +5,7 @@ priv struct RegistryArguments {
   buffered : Bool
   artifact_type : String?
   discovery_limits : @registry.DiscoveryLimits
+  requirements : Array[@policy.ArtifactRequirement]
 }
 
 ///|
@@ -13,6 +14,7 @@ fn parse_registry_options(
   start : Int32,
   discovery~ : Bool = false,
   output_options~ : Bool = true,
+  admission~ : Bool = false,
 ) -> RegistryArguments raise @model.MoonOciError {
   let mut options = @remote.RegistryOptions::default()
   let realms : Array[String] = []
@@ -21,6 +23,7 @@ fn parse_registry_options(
   let mut buffered = false
   let mut artifact_type = None
   let mut discovery_limits = @registry.DiscoveryLimits::default()
+  let requirements : Array[@policy.ArtifactRequirement] = []
   let mut index = start
   while index < args.length() {
     match args[index] {
@@ -47,7 +50,13 @@ fn parse_registry_options(
       | "--max-objects"
       | "--max-visits"
       | "--max-depth"
+      | "--require-artifact"
       | "--total-timeout-ms" as flag => {
+        if flag == "--require-artifact" && !admission {
+          raise @model.InvalidArgument(
+            "required artifacts are only accepted by registry-admit",
+          )
+        }
         if (
             !output_options &&
             [
@@ -71,6 +80,12 @@ fn parse_registry_options(
         }
         index += 1
         match flag {
+          "--require-artifact" =>
+            requirements.push({
+              artifact_type: args[index],
+              minimum: 1,
+              maximum: 128,
+            })
           "--max-page-bytes" =>
             discovery_limits = {
               ..discovery_limits,
@@ -216,7 +231,20 @@ fn parse_registry_options(
   }
   options.validate()
   discovery_limits.validate()
-  { options, cache_path, buffered, artifact_type, discovery_limits, }
+  @policy.validate_artifact_requirements(requirements)
+  if admission && requirements.is_empty() {
+    raise @model.InvalidArgument(
+      "registry-admit requires --require-artifact TYPE",
+    )
+  }
+  {
+    options,
+    cache_path,
+    buffered,
+    artifact_type,
+    discovery_limits,
+    requirements,
+  }
 }
 
 ///|
@@ -299,7 +327,10 @@ async fn registry_referrers_command(args : Array[String]) -> Unit {
 }
 
 ///|
-async fn registry_bundle_command(args : Array[String]) -> Unit {
+async fn registry_bundle_command(
+  args : Array[String],
+  admission~ : Bool = false,
+) -> Unit {
   if args.length() < 8 {
     raise @model.InvalidArgument(
       "usage: moonoci registry-bundle ORIGIN REPOSITORY REFERENCE EXPECTED_ROOT SUBJECT OUTPUT [OPTIONS]",
@@ -309,7 +340,7 @@ async fn registry_bundle_command(args : Array[String]) -> Unit {
   let subject = @model.Digest::parse(args[6])
   @registry.validate_repository(args[3])
   @registry.validate_reference(args[4])
-  let parsed = parse_registry_options(args, 8, discovery=true)
+  let parsed = parse_registry_options(args, 8, discovery=true, admission~)
   if @fs.exists(args[7]) || @fs.exists(args[7] + ".moonoci-staging") {
     raise @model.IoFailure(
       "registry bundle output or staging destination already exists",
@@ -320,6 +351,35 @@ async fn registry_bundle_command(args : Array[String]) -> Unit {
     Some(path) => Some(@native.load_bounded_layout(path))
   }
   let bearer_token = @env.get_env_var("MOONOCI_REGISTRY_TOKEN")
+  if admission {
+    if parsed.artifact_type is Some(_) {
+      raise @model.InvalidArgument(
+        "registry-admit discovers all types; artifact filter is not accepted",
+      )
+    }
+    let result = @remote.admit_registry_release(
+      args[2],
+      args[3],
+      args[4],
+      expected,
+      subject,
+      parsed.requirements,
+      options=parsed.options,
+      discovery_limits=parsed.discovery_limits,
+      cache?,
+      bearer_token?,
+    )
+    match result.layout {
+      Some(layout) =>
+        @native.write_layout(args[7], layout, buffered=parsed.buffered)
+      None => {
+        @stdio.stdout.write(result.statistics + "\n")
+        process_exit(5)
+      }
+    }
+    @stdio.stdout.write(result.statistics + "\n")
+    return
+  }
   let result = @remote.pull_with_referrers(
     args[2],
     args[3],

@@ -14,6 +14,27 @@ pub(all) struct ArtifactRequirementDecision {
 }
 
 ///|
+/// Validate configuration before a host performs network or filesystem work.
+pub fn validate_artifact_requirements(
+  requirements : Array[ArtifactRequirement],
+) -> Unit raise @model.MoonOciError {
+  if requirements.length() > 32 {
+    raise @model.InvalidArgument("at most 32 artifact requirements")
+  }
+  let seen : Map[String, Bool] = Map([])
+  for requirement in requirements {
+    @artifacts.validate_media_type(requirement.artifact_type)
+    if seen.contains(requirement.artifact_type) ||
+      requirement.minimum < 1 ||
+      requirement.maximum < requirement.minimum ||
+      requirement.maximum > 128 {
+      raise @model.InvalidArgument("invalid or duplicate artifact requirement")
+    }
+    seen[requirement.artifact_type] = true
+  }
+}
+
+///|
 /// Require verified, locally subject-bound attachments of caller-selected types.
 /// Presence and content identity do not prove document semantics or signer trust.
 pub fn evaluate_artifact_requirements(
@@ -29,21 +50,8 @@ pub fn evaluate_artifact_requirements(
       "artifact requirement work budget must be positive",
     )
   }
-  if requirements.length() > 32 {
-    raise @model.InvalidArgument("at most 32 artifact requirements")
-  }
-  let seen : Map[String, Bool] = Map([])
+  validate_artifact_requirements(requirements)
   let mut reserved = 0L
-  for requirement in requirements {
-    @artifacts.validate_media_type(requirement.artifact_type)
-    if seen.contains(requirement.artifact_type) ||
-      requirement.minimum < 1 ||
-      requirement.maximum < requirement.minimum ||
-      requirement.maximum > 128 {
-      raise @model.InvalidArgument("invalid or duplicate artifact requirement")
-    }
-    seen[requirement.artifact_type] = true
-  }
   let findings : Array[PolicyFinding] = []
   let verified : Array[@model.Digest] = []
   let discovery = @artifacts.referrers(source, subject) catch {

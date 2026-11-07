@@ -326,6 +326,25 @@ def main():
             pull(registry_origin, directory / ('bad-quota-' + flag[2:]), flag, value, status=2)
         assert len(state['requests']) == before
 
+        admission_args = ['registry-admit', registry_origin, REPOSITORY, 'images', image_root_pin,
+                          images[0]['digest']]
+        admitted_path = directory / 'admitted-release'
+        admitted = json.loads(run(*admission_args, admitted_path, '--allow-http', '--buffered',
+                                  '--require-artifact', 'application/spdx+json'))
+        assert admitted['eligible_for_publication'] and admitted['decision']['allowed']
+        assert json.loads(run('verify-store', admitted_path))['valid']
+        denied_path = directory / 'denied-release'
+        denied = json.loads(run(*admission_args, denied_path, '--allow-http', '--buffered',
+                                '--require-artifact', 'application/spdx+json',
+                                '--require-artifact', 'application/vnd.missing-proof', status=5))
+        assert not denied['eligible_for_publication'] and not denied['decision']['allowed']
+        assert not denied_path.exists() and not Path(str(denied_path) + '.moonoci-staging').exists()
+        before = len(state['requests'])
+        run(*admission_args, directory / 'no-requirement', '--allow-http', status=2)
+        run(*admission_args, directory / 'duplicate-requirement', '--allow-http',
+            '--require-artifact', 'application/json', '--require-artifact', 'application/json', status=2)
+        assert len(state['requests']) == before
+
         # A complete cache works even while the peer refuses all HTTP traffic.
         state['mode'] = 'forbid-all'
         before = len(state['requests'])
@@ -402,6 +421,7 @@ def main():
         paginated_referrers=True, local_type_filter=True, foreign_and_looping_pages_refused=True,
         verified_referrer_bundle=True, bundle_cache_content_requests=0, forged_advertisements_refused=True,
         operator_resource_profiles=True, invalid_quotas_refused_before_http=True,
+        admission_before_publication=True, missing_required_attachment_blocks_output=True,
         independent_image_observation=True, oras_registry_copy_verified=oras_verified,
         methods=sorted({request[0] for request in state['requests']}), source_writes=0)
     (directory / 'report.json').write_bytes(encode(report))

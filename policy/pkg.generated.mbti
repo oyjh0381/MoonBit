@@ -16,6 +16,8 @@ pub fn evaluate_artifact_requirements(@layout.MemoryLayout, @model.Digest, Array
 
 pub fn render_json(PolicyDecision) -> String
 
+pub fn validate_artifact_requirements(Array[ArtifactRequirement]) -> Unit raise @model.MoonOciError
+
 // Errors
 
 // Types and methods

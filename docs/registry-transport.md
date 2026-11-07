@@ -161,3 +161,27 @@ The native fixture tightens each content/graph/HTTP/auth/listing quota separatel
 and requires refusal with no output/staging directory. It also checks that
 invalid limits and Int64 overflow cause no HTTP contact. These are enforcement
 checks, not measurements of hard process RSS or total socket traffic.
+
+## Admission before publication
+
+```text
+moonoci registry-admit https://registry.example.org team/app release \
+  sha256:<trusted-root> sha256:<subject> approved-release \
+  --require-artifact application/spdx+json \
+  --require-artifact application/vnd.in-toto+json
+```
+
+`admit_registry_release` requires an explicit nonempty set of caller-owned
+artifact requirements. It validates that configuration before contacting the
+network, acquires the verified candidate, and evaluates the existing artifact
+policy. The result contains a decision and an optional layout: rejected
+candidates return no layout. The CLI prints the structured decision and exits 5
+without creating output/staging on rejection. Successful candidates are written
+using the same no-overwrite publication rules as ordinary pulls.
+
+The CLI requires at least one `--require-artifact TYPE` (each means 1..128 verified
+attachments); duplicate types are errors. It discovers all types, so
+`--artifact-type` filtering is not accepted for admission. Library hosts may set
+different bounded minimum/maximum counts through `ArtifactRequirement`. This
+policy establishes typed attachment presence/content/association only; external
+document validators and signer-trust policy remain separate host integrations.

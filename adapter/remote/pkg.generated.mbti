@@ -5,10 +5,13 @@ import {
   "oyjh0381/moonoci/artifacts",
   "oyjh0381/moonoci/layout",
   "oyjh0381/moonoci/model",
+  "oyjh0381/moonoci/policy",
   "oyjh0381/moonoci/registry",
 }
 
 // Values
+pub async fn admit_registry_release(String, String, String, @model.Digest, @model.Digest, Array[@policy.ArtifactRequirement], options? : RegistryOptions, discovery_limits? : @registry.DiscoveryLimits, cache? : @layout.MemoryLayout, bearer_token? : String) -> RegistryAdmissionResult
+
 pub async fn discover_referrers(String, String, @model.Digest, artifact_type? : String, options? : RegistryOptions, limits? : @registry.DiscoveryLimits, bearer_token? : String) -> RegistryDiscoveryResult
 
 pub async fn pull_registry(String, String, String, @model.Digest, options? : RegistryOptions, cache? : @layout.MemoryLayout, bearer_token? : String) -> RegistryPullResult
@@ -18,6 +21,11 @@ pub async fn pull_with_referrers(String, String, String, @model.Digest, @model.D
 // Errors
 
 // Types and methods
+pub(all) struct RegistryAdmissionResult {
+  layout : @layout.MemoryLayout?
+  statistics : String
+}
+
 pub(all) struct RegistryBundleResult {
   layout : @layout.MemoryLayout
   statistics : String
