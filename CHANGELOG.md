@@ -50,7 +50,7 @@ All notable changes to MoonOCI are documented here. The format follows Keep a Ch
 - Account reachable/stored/reclaimable bytes and compact copies without mutating source layouts.
 - Index content-addressed lookups while preserving physical record order and duplicate-input diagnostics.
 - Evaluate caller-owned release policies for every image branch, with structured decisions and CLI gating.
-- Add a cross-platform independently observed offline consumer and a Linux self-hosted runtime CI chain; remote runtime results are pending.
+- Add a cross-platform offline consumer and a hosted Linux runtime check that executes the MoonOCI verifier in its own generated image.
 
 ## [0.1.4] - 2026-08-13
 
