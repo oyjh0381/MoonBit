@@ -73,7 +73,7 @@ pub fn PullSession::accepted_network_bytes(self : PullSession) -> Int64 {
 }
 
 ///|
-pub fn pull_statistics_json(session : PullSession) -> String {
+pub fn pull_statistics(session : PullSession) -> Json {
   let value : Json = {
     "schema": Json::string("moonoci.registry-pull-statistics.v1"),
     "accepted_requests": Json::number(session.accepted_requests().to_double()),
@@ -87,5 +87,10 @@ pub fn pull_statistics_json(session : PullSession) -> String {
     "reserved_unique_bytes": Json::string(session.reserved_bytes().to_string()),
     "complete": Json::boolean(session.next() is None),
   }
-  value.stringify()
+  value
+}
+
+///|
+pub fn pull_statistics_json(session : PullSession) -> String {
+  pull_statistics(session).stringify()
 }

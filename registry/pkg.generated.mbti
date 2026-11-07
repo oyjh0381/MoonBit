@@ -27,6 +27,8 @@ pub fn manifest_path(String, String) -> String raise @model.MoonOciError
 
 pub fn parse_bearer_challenge(String) -> BearerChallenge raise @model.MoonOciError
 
+pub fn pull_statistics(PullSession) -> Json
+
 pub fn pull_statistics_json(PullSession) -> String
 
 pub fn referrers_path(String, @model.Digest, artifact_type? : String) -> String raise @model.MoonOciError

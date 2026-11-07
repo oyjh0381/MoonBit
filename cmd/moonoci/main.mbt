@@ -11,6 +11,7 @@ async fn main {
       return
     }
     match args[1] {
+      "registry-pull" => registry_pull_command(args)
       "content-catalog" => {
         require_arity(
           args, 4, "usage: moonoci content-catalog INPUT EXPECTED_INDEX_PIN",
@@ -550,6 +551,10 @@ async fn print_usage() -> Unit {
       #|MoonOCI — deterministic OCI Image Layout builder and validator
       #|
       #|Usage:
+      #|  moonoci registry-pull ORIGIN REPOSITORY REFERENCE EXPECTED_ROOT OUTPUT [OPTIONS]
+      #|    --allow-http --cache PATH --allow-realm ORIGIN --allow-blob-origin ORIGIN
+      #|    --timeout-ms N --total-timeout-ms N --buffered
+      #|    Optional Bearer input: MOONOCI_REGISTRY_TOKEN environment variable
       #|  moonoci content-catalog INPUT EXPECTED_INDEX_PIN
       #|  moonoci retain-plan INPUT EXPECTED_INDEX_PIN MODE ROOT [ROOT...]
       #|  moonoci retain-export INPUT EXPECTED_INDEX_PIN PLAN_PIN MODE OUTPUT ROOT [ROOT...]

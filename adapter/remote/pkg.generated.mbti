@@ -1,0 +1,38 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "oyjh0381/moonoci/adapter/remote"
+
+import {
+  "oyjh0381/moonoci/layout",
+  "oyjh0381/moonoci/model",
+  "oyjh0381/moonoci/registry",
+}
+
+// Values
+pub async fn pull_registry(String, String, String, @model.Digest, options? : RegistryOptions, cache? : @layout.MemoryLayout, bearer_token? : String) -> RegistryPullResult
+
+// Errors
+
+// Types and methods
+pub(all) struct RegistryOptions {
+  allow_http : Bool
+  request_timeout_ms : Int32
+  total_timeout_ms : Int32
+  max_http_requests : Int32
+  max_redirects : Int32
+  max_auth_requests : Int32
+  allowed_realms : Array[@registry.RegistryOrigin]
+  allowed_blob_origins : Array[@registry.RegistryOrigin]
+  pull_limits : @registry.PullLimits
+}
+pub fn RegistryOptions::default() -> Self
+pub fn RegistryOptions::validate(Self) -> Unit raise @model.MoonOciError
+
+pub(all) struct RegistryPullResult {
+  layout : @layout.MemoryLayout
+  source_root : @model.Digest
+  statistics : String
+}
+
+// Type aliases
+
+// Traits

@@ -8,10 +8,13 @@ import {
   "oyjh0381/moonoci/transfer",
   "oyjh0381/moonoci/model",
   "oyjh0381/moonoci/adapter/native",
+  "oyjh0381/moonoci/adapter/remote",
+  "oyjh0381/moonoci/registry",
   "oyjh0381/moonoci/builder",
   "oyjh0381/moonoci/codec",
   "moonbitlang/async",
   "moonbitlang/async/stdio",
+  "moonbitlang/async/fs",
   "moonbitlang/core/env",
   "moonbitlang/core/string",
 }
