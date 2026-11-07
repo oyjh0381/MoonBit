@@ -41,12 +41,9 @@ pub(all) struct PolicyDecision {
 }
 
 ///|
-/// Invalid configuration raises; invalid images produce a failed decision.
-/// Every platform branch is checked. Source bytes and descriptors are untouched.
-pub fn evaluate(
-  source : @layout.MemoryLayout,
-  policy~ : ReleasePolicy = ReleasePolicy::recommended(),
-) -> PolicyDecision raise @model.MoonOciError {
+pub fn ReleasePolicy::validate(
+  policy : ReleasePolicy,
+) -> Unit raise @model.MoonOciError {
   if policy.max_manifests < 1 ||
     policy.max_manifests > 4096 ||
     policy.max_layers_per_image < 1 ||
@@ -60,6 +57,16 @@ pub fn evaluate(
       raise @model.InvalidArgument("invalid policy metadata key")
     }
   }
+}
+
+///|
+/// Invalid configuration raises; invalid images produce a failed decision.
+/// Every platform branch is checked. Source bytes and descriptors are untouched.
+pub fn evaluate(
+  source : @layout.MemoryLayout,
+  policy~ : ReleasePolicy = ReleasePolicy::recommended(),
+) -> PolicyDecision raise @model.MoonOciError {
+  policy.validate()
   let findings : Array[PolicyFinding] = []
   let add = fn(code : String, path : String, message : String) {
     findings.push({ code, path, message, })

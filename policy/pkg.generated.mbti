@@ -3,6 +3,7 @@ package "oyjh0381/moonoci/policy"
 
 import {
   "oyjh0381/moonoci/artifacts",
+  "oyjh0381/moonoci/graph",
   "oyjh0381/moonoci/layout",
   "oyjh0381/moonoci/model",
 }
@@ -13,6 +14,10 @@ pub fn artifact_requirements_json(ArtifactRequirementDecision) -> String
 pub fn evaluate(@layout.MemoryLayout, policy? : ReleasePolicy) -> PolicyDecision raise @model.MoonOciError
 
 pub fn evaluate_artifact_requirements(@layout.MemoryLayout, @model.Digest, Array[ArtifactRequirement], limits? : @artifacts.ArtifactLimits, max_total_payload_bytes? : Int64) -> ArtifactRequirementDecision raise @model.MoonOciError
+
+pub fn evaluate_mixed(@layout.MemoryLayout, policy? : ReleasePolicy, graph_limits? : @graph.WalkLimits, max_total_payload_bytes? : Int64) -> MixedReleaseDecision raise @model.MoonOciError
+
+pub fn mixed_release_json(MixedReleaseDecision) -> String raise @model.MoonOciError
 
 pub fn render_json(PolicyDecision) -> String
 
@@ -32,6 +37,13 @@ pub(all) struct ArtifactRequirementDecision {
   subject : @model.Digest
   verified_artifacts : Array[@model.Digest]
   findings : Array[PolicyFinding]
+}
+
+pub(all) struct MixedReleaseDecision {
+  allowed : Bool
+  source_index : @model.Digest
+  images : PolicyDecision
+  store : @artifacts.StoreVerification
 }
 
 pub(all) struct PolicyDecision {
@@ -58,6 +70,7 @@ pub(all) struct ReleasePolicy {
   forbidden_env_names : Array[String]
 }
 pub fn ReleasePolicy::recommended() -> Self
+pub fn ReleasePolicy::validate(Self) -> Unit raise @model.MoonOciError
 
 // Type aliases
 

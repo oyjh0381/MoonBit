@@ -36,6 +36,8 @@ jobs:
           moon build --target native --release --deny-warn
       - name: Restartable delivery consumer
         run: python scripts/resume_chain.py --binary _build/native/release/build/cmd/moonoci/moonoci.exe
+      - name: Mixed release policy consumer
+        run: python scripts/policy_chain.py --binary _build/native/release/build/cmd/moonoci/moonoci.exe
       - name: Independently checked transfer workload
         run: python scripts/transfer_benchmark.py --binary _build/native/release/build/cmd/moonoci/moonoci.exe --size-mib 16 --runs 1
       - run: python scripts/setup_oras.py

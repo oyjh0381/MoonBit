@@ -12,6 +12,16 @@ async fn main {
     }
     match args[1] {
       "registry-pull" => registry_pull_command(args)
+      "gate-store" => {
+        require_arity(args, 3, "usage: moonoci gate-store INPUT")
+        let decision = @policy.evaluate_mixed(
+          @native.load_bounded_layout(args[2]),
+        )
+        @stdio.stdout.write(@policy.mixed_release_json(decision) + "\n")
+        if !decision.allowed {
+          process_exit(5)
+        }
+      }
       "registry-referrers" => registry_referrers_command(args)
       "registry-bundle" => registry_bundle_command(args)
       "registry-admit" => registry_bundle_command(args, admission=true)
@@ -554,6 +564,7 @@ async fn print_usage() -> Unit {
       #|MoonOCI — deterministic OCI Image Layout builder and validator
       #|
       #|Usage:
+      #|  moonoci gate-store INPUT (all image branches plus whole supported store)
       #|  moonoci registry-admit ORIGIN REPOSITORY REFERENCE EXPECTED_ROOT SUBJECT OUTPUT
       #|    --require-artifact TYPE [--require-artifact TYPE...] [TRANSPORT/PULL OPTIONS]
       #|  moonoci registry-bundle ORIGIN REPOSITORY REFERENCE EXPECTED_ROOT SUBJECT OUTPUT [OPTIONS]
