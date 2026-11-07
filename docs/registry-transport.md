@@ -64,6 +64,21 @@ transport and layout consumption; Podman runtime execution remains a distinct
 Linux verification step. A public Docker Hub attempt timed out locally and is
 not counted as a passing public-registry or public-TLS result.
 
+An independent public-image path uses ORAS 1.3.6 to fetch the pinned
+linux/amd64 Alpine manifest from Docker Hub. MoonOCI verifies and projects the
+downloaded layout. CPython independently checks the OCI descriptor hashes,
+DiffID and every final inventory entry, including link metadata.
+
+```text
+python scripts/public_image_chain.py --binary <moonoci> --oras <oras-1.3.6>
+python scripts/public_image_chain.py --binary <moonoci> --layout <downloaded-layout>
+```
+
+The initial ORAS fetch succeeded locally. A later fetch hit a TLS handshake
+timeout, so the comparison can be replayed from the downloaded bytes and
+reports that mode separately. This evidence covers public registry acquisition
+with ORAS and offline MoonOCI consumption. The Linux runtime job remains separate.
+
 ## Referrer discovery profile
 
 ```text
