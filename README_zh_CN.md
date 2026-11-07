@@ -8,6 +8,12 @@ MoonOCI 是一个原创的 MoonBit 库与命令行工具，用于在不依赖容
 
 ## 已实现功能
 
+Windows 上已跑通两条独立消费链路。MoonOCI 可经 HTTP/TLS 读取固定摘要的布局，
+分页发现附件，验证附件实际 subject 和原始 in-toto Statement 的内部摘要，再按多平台
+策略放行离线布局。ORAS 已从 Docker Hub 下载固定摘要的 Alpine，MoonOCI 与 CPython
+逐条对照 517 项文件清单。复现方法和公网连接限制见
+[Registry 消费](docs/registry-transport.md)与[证明绑定](docs/statement-verification.md)。
+
 [混合内容生命周期](docs/content-lifecycle.md) 新增物理内容目录、镜像与附件保留闭包、扩展字段保留及审阅 pin；物理源内容变更后拒绝旧计划，Native 导出还会执行支持范围内的镜像／附件语义验证。Windows 上已用 CPython 与 ORAS 独立验证，不删除源布局。已验证状态的内部容器现通过显式 `priv` 字段隔离，见 [接口封装修复](docs/api-encapsulation.md)。
 
 0.2.0 另加入 [可恢复离线交付](docs/resumable-delivery.md)：分块计划、磁盘检查点复核、按字节／块数限制缺失任务批次、整包摘要验证及中断临时文件恢复。Windows 独立消费者已实际完成“增量包分块—跨进程续传—重建镜像—独立校验”链路；长驻宿主可复用已验证会话。此链路不需要本地 Linux 或虚拟机，容器运行验证仍由单独的 Linux CI 承担。

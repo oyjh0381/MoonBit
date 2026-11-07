@@ -61,5 +61,6 @@ externally supplied index digest, whose authenticity the caller must establish.
 
 CLI: `merge OUTPUT INPUT INPUT...`, `select INPUT OUTPUT OS ARCH`, `delta BASE
 TARGET`. Variant/version selection is available through the library API.
-Nested indexes, remote registry transport and authenticated signatures are not
-implemented by these additions.
+See the [nested index profile](nested-indexes.md), [Registry transport and
+public-image consumer](registry-transport.md), and [Statement binding
+profile](statement-verification.md) for the current source capabilities.

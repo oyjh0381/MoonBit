@@ -28,6 +28,14 @@ MoonOCI targets OCI Image Format Specification 1.1.1.
 
 ## Validation matrix
 
-Portable checks run on Wasm, Wasm-GC, JavaScript, and Native compilation targets. Executable tests run on Wasm-GC and Native; Native tests create real Layer Source trees, materialize layouts, reload them, verify them, and export deterministic tar archives. CI additionally builds a sample layout and uses Skopeo on Linux when available to provide independent OCI parsing.
+The unreleased 0.2.0 source adds nested index projection, mixed artifact stores,
+bounded read-only Registry pulls and versioned admission rules. Exact
+in-toto Statement subject/predicate binding is an optional check separate from
+signer trust. The Windows Native consumer compares 517 final inventory entries
+from a public Alpine manifest independently acquired by ORAS. See the
+[Registry transport profile](registry-transport.md) and
+[Statement verification profile](statement-verification.md).
+
+Portable checks and tests run on Wasm, Wasm-GC, JavaScript and Native. Native tests create real Layer Source trees, materialize layouts, reload them, verify them and export deterministic tar archives. The Linux CI workflow also configures Skopeo and Podman consumers. Linux runtime results require an executed runner.
 
 Passing MoonOCI verification means the implemented graph and Layer invariants hold. It does not prove that an arbitrary container runtime can execute the image's application payload.
