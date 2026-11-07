@@ -10,6 +10,28 @@ pub fn read_tar(
   max_entries~ : Int32 = default_max_entries,
   max_path_bytes~ : Int32 = @pathing.max_path_bytes,
 ) -> Array[TarEntry] raise @model.MoonOciError {
+  read_tar_impl(data, max_entries, max_path_bytes, layer=false)
+}
+
+///|
+/// Read an OCI filesystem changeset for in-memory interpretation. Directory
+/// names may have a trailing slash. Symlink targets are opaque container
+/// metadata and must never be resolved on the host filesystem.
+pub fn read_layer_tar(
+  data : Bytes,
+  max_entries~ : Int32 = default_max_entries,
+  max_path_bytes~ : Int32 = @pathing.max_path_bytes,
+) -> Array[TarEntry] raise @model.MoonOciError {
+  read_tar_impl(data, max_entries, max_path_bytes, layer=true)
+}
+
+///|
+fn read_tar_impl(
+  data : Bytes,
+  max_entries : Int32,
+  max_path_bytes : Int32,
+  layer~ : Bool,
+) -> Array[TarEntry] raise @model.MoonOciError {
   if max_entries <= 0 || max_path_bytes <= 0 {
     raise @model.InvalidArgument("tar limits must be positive")
   }
@@ -77,6 +99,11 @@ pub fn read_tar(
       )
     } else {
       let raw_path = pending_path.unwrap_or(header_path)
+      let raw_path = if layer && typeflag == b'5' && raw_path.has_suffix("/") {
+        raw_path[0:raw_path.length() - 1].to_owned()
+      } else {
+        raw_path
+      }
       let path = @pathing.normalize_archive_path(raw_path)
       if @utf8.encode(path).length() > max_path_bytes {
         raise @model.ResourceLimitExceeded("tar path exceeds configured limit")
@@ -106,12 +133,19 @@ pub fn read_tar(
         if raw_link == "" {
           raise @model.InvalidTar("symlink entry has an empty target")
         }
-        if @utf8.encode(raw_link).length() > max_path_bytes {
+        let target_bytes = @utf8.encode(raw_link).length()
+        if target_bytes > max_path_bytes ||
+          target_bytes > @pathing.max_path_bytes {
           raise @model.ResourceLimitExceeded(
             "symlink target exceeds configured limit",
           )
         }
-        @pathing.validate_symlink_target(raw_link)
+        if raw_link.contains_char('\u{0000}') {
+          raise @model.InvalidPath("symlink target must not contain NUL")
+        }
+        if !layer {
+          @pathing.validate_symlink_target(raw_link)
+        }
         Some(raw_link)
       } else {
         None

@@ -7,6 +7,8 @@ import {
 }
 
 // Values
+pub fn read_layer_tar(Bytes, max_entries? : Int32, max_path_bytes? : Int32) -> Array[TarEntry] raise @model.MoonOciError
+
 pub fn read_tar(Bytes, max_entries? : Int32, max_path_bytes? : Int32) -> Array[TarEntry] raise @model.MoonOciError
 
 pub fn write_tar(Array[TarEntry]) -> Bytes raise @model.MoonOciError

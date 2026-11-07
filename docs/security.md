@@ -4,7 +4,7 @@ MoonOCI processes untrusted Build Specifications, tar Layers, OCI JSON, and cont
 
 ## Path policy
 
-Archive paths must be relative UTF-8 paths using `/`. Empty paths, absolute paths, drive letters, UNC forms, NUL, backslashes, empty segments, and `.`/`..` segments are rejected. Paths and symbolic-link targets are limited to 4096 UTF-8 bytes. Symbolic-link targets must be forward-slash relative paths without `..` segments or Windows drive qualifiers. Native traversal requests non-following metadata and rejects every symbolic link it observes because a portable read-link API is unavailable.
+Archive entry paths must be relative UTF-8 paths using `/`. Empty paths, absolute paths, drive letters, UNC forms, NUL, backslashes, empty segments, and `.`/`..` segments are rejected. OCI layer interpretation accepts one conventional trailing slash on directories before duplicate and path checks. Paths and symbolic-link targets are limited to 4096 UTF-8 bytes. The writer and general tar reader require safe relative link targets. OCI layer interpretation preserves targets as opaque container metadata and never resolves them on the host. Root filesystem transitions reject writes beneath symlink parents. Native source traversal rejects symbolic links it observes.
 
 Native source traversal cannot make the metadata check and subsequent file read one atomic operation with the current filesystem API. A concurrently modified, untrusted source directory could therefore create a time-of-check/time-of-use race. Native builds require a trusted, quiescent Layer Source tree; portable in-memory entry construction has no host-filesystem race.
 
