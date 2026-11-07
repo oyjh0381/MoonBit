@@ -96,9 +96,11 @@ def main():
                 '--read-only', '--cap-drop=ALL', '--security-opt=no-new-privileges',
                 tag, 'version')
     pid = run(*podman, 'inspect', '--format', '{{.State.Pid}}', probe)
-    children = run('ps', '--ppid', pid, '-o', 'pid=').split()
-    processes = [pid] + children
-    print('runtime-probe-threads', run('ps', '-T', '-p', ','.join(processes), '-o', 'pid,tid,stat,wchan,comm'), flush=True)
+    top = run(*podman, 'top', probe, 'hpid', 'comm')
+    print('runtime-probe-top', top, flush=True)
+    print('runtime-probe-state', run(*podman, 'inspect', '--format', '{{json .State}}', probe), flush=True)
+    processes = [line.split()[0] for line in top.splitlines()[1:]]
+    print('runtime-probe-threads', run('sudo', 'ps', '-T', '-p', ','.join(processes), '-o', 'pid,tid,stat,wchan,comm'), flush=True)
     trace = workspace / 'startup.strace'
     attach = [argument for process in processes for argument in ['-p', process]]
     subprocess.run(['sudo', 'timeout', '-s', 'INT', '3', 'strace', '-f', '-tt', *attach, '-o', str(trace)], capture_output=True, timeout=10)
