@@ -6,6 +6,7 @@ priv struct RegistryArguments {
   artifact_type : String?
   discovery_limits : @registry.DiscoveryLimits
   requirements : Array[@policy.ArtifactRequirement]
+  release_policy_path : String?
 }
 
 ///|
@@ -24,6 +25,7 @@ fn parse_registry_options(
   let mut artifact_type = None
   let mut discovery_limits = @registry.DiscoveryLimits::default()
   let requirements : Array[@policy.ArtifactRequirement] = []
+  let mut release_policy_path = None
   let mut index = start
   while index < args.length() {
     match args[index] {
@@ -51,8 +53,10 @@ fn parse_registry_options(
       | "--max-visits"
       | "--max-depth"
       | "--require-artifact"
+      | "--release-policy"
       | "--total-timeout-ms" as flag => {
-        if flag == "--require-artifact" && !admission {
+        if ["--require-artifact", "--release-policy"].contains(flag) &&
+          !admission {
           raise @model.InvalidArgument(
             "required artifacts are only accepted by registry-admit",
           )
@@ -80,6 +84,12 @@ fn parse_registry_options(
         }
         index += 1
         match flag {
+          "--release-policy" => {
+            if release_policy_path is Some(_) {
+              raise @model.InvalidArgument("duplicate release policy file")
+            }
+            release_policy_path = Some(args[index])
+          }
           "--require-artifact" =>
             requirements.push({
               artifact_type: args[index],
@@ -244,6 +254,7 @@ fn parse_registry_options(
     artifact_type,
     discovery_limits,
     requirements,
+    release_policy_path,
   }
 }
 
@@ -341,6 +352,15 @@ async fn registry_bundle_command(
   @registry.validate_repository(args[3])
   @registry.validate_reference(args[4])
   let parsed = parse_registry_options(args, 8, discovery=true, admission~)
+  if admission && parsed.artifact_type is Some(_) {
+    raise @model.InvalidArgument(
+      "registry-admit discovers all types; artifact filter is not accepted",
+    )
+  }
+  let release_policy = match parsed.release_policy_path {
+    None => None
+    Some(path) => Some(@native.load_release_policy(path))
+  }
   if @fs.exists(args[7]) || @fs.exists(args[7] + ".moonoci-staging") {
     raise @model.IoFailure(
       "registry bundle output or staging destination already exists",
@@ -352,11 +372,6 @@ async fn registry_bundle_command(
   }
   let bearer_token = @env.get_env_var("MOONOCI_REGISTRY_TOKEN")
   if admission {
-    if parsed.artifact_type is Some(_) {
-      raise @model.InvalidArgument(
-        "registry-admit discovers all types; artifact filter is not accepted",
-      )
-    }
     let result = @remote.admit_registry_release(
       args[2],
       args[3],
@@ -364,6 +379,7 @@ async fn registry_bundle_command(
       expected,
       subject,
       parsed.requirements,
+      release_policy?,
       options=parsed.options,
       discovery_limits=parsed.discovery_limits,
       cache?,

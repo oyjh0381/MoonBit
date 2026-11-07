@@ -346,6 +346,30 @@ def main():
         assert len(state['requests']) == before
 
         # A complete cache works even while the peer refuses all HTTP traffic.
+        for name, rules, status in [
+            ('recommended', {}, 5),
+            ('explicit-dev', {'requireNumericNonroot': False, 'requireCommand': False}, 0),
+            ('amd64-only', {'requireNumericNonroot': False, 'requireCommand': False,
+                            'allowedPlatforms': [{'os': 'linux', 'architecture': 'amd64'}]}, 5),
+        ]:
+            policy = directory / (name + '.policy.json')
+            policy.write_bytes(encode({'schemaVersion': 1, **rules}))
+            output = directory / ('policy-admission-' + name)
+            decision = json.loads(run(*admission_args, output, '--allow-http', '--buffered',
+                                      '--require-artifact', 'application/spdx+json', '--release-policy', policy, status=status))
+            assert decision['decision']['allowed']
+            assert decision['release_decision']['images']['manifests_checked'] == 2
+            assert decision['eligible_for_publication'] == (status == 0)
+            if status:
+                assert not output.exists() and not Path(str(output) + '.moonoci-staging').exists()
+        invalid_policy = directory / 'invalid-admission.policy.json'
+        invalid_policy.write_bytes(b'{"schemaVersion":1,"mistypedRule":true}')
+        before = len(state['requests'])
+        run(*admission_args, directory / 'invalid-admission', '--allow-http', '--require-artifact', 'application/json',
+            '--release-policy', invalid_policy, status=2)
+        assert len(state['requests']) == before
+
+        # A complete cache works even while the peer refuses all HTTP traffic.
         state['mode'] = 'forbid-all'
         before = len(state['requests'])
         cached = pull(registry_origin, directory / 'cached', '--cache', result)
@@ -422,6 +446,7 @@ def main():
         verified_referrer_bundle=True, bundle_cache_content_requests=0, forged_advertisements_refused=True,
         operator_resource_profiles=True, invalid_quotas_refused_before_http=True,
         admission_before_publication=True, missing_required_attachment_blocks_output=True,
+        composed_all_platform_policy=True, bad_policy_refused_before_http=True,
         independent_image_observation=True, oras_registry_copy_verified=oras_verified,
         methods=sorted({request[0] for request in state['requests']}), source_writes=0)
     (directory / 'report.json').write_bytes(encode(report))

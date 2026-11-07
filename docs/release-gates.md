@@ -53,3 +53,17 @@ use unsigned decimal integer tokens; fractions and exponent notation are refused
 Unknown fields, duplicate JSON names, duplicate list entries, wrong types,
 unsupported versions and overflowing integers are errors rather than silently
 ignored rules. Metadata name lists are limited to 64 and platforms to 256.
+
+## Registry admission integration
+
+Add `--release-policy POLICY_JSON` to `registry-admit` to compose the required
+attachment decision with all-platform mixed release policy before publication.
+The library option is `admit_registry_release(..., release_policy=policy)`.
+Either decision can block; JSON reports keep artifact and release results
+separate. An absent option means attachment-only admission and is explicitly
+represented by a null `release_decision`. Invalid policy documents are refused
+before HTTP. Caller-owned policy arrays are copied before asynchronous work.
+
+The Registry fixture exercises recommended-policy rejection, an explicit custom
+policy pass, and a platform allowlist rejecting a secondary platform even when
+required attachments pass. Every rejected candidate leaves no output directory.

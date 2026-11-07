@@ -14,6 +14,7 @@ pub async fn admit_registry_release(
   expected : @model.Digest,
   subject : @model.Digest,
   requirements : Array[@policy.ArtifactRequirement],
+  release_policy? : @policy.ReleasePolicy,
   options~ : RegistryOptions = RegistryOptions::default(),
   discovery_limits~ : @registry.DiscoveryLimits = @registry.DiscoveryLimits::default(),
   cache? : @layout.MemoryLayout,
@@ -26,6 +27,15 @@ pub async fn admit_registry_release(
   }
   @policy.validate_artifact_requirements(requirements)
   let requirements = requirements.copy()
+  let release_policy = release_policy.map(policy => {
+    policy.validate()
+    {
+      ..policy,
+      allowed_platforms: policy.allowed_platforms.map(values => values.copy()),
+      required_labels: policy.required_labels.copy(),
+      forbidden_env_names: policy.forbidden_env_names.copy(),
+    }
+  })
   let candidate = pull_with_referrers(
     origin,
     repository,
@@ -43,9 +53,33 @@ pub async fn admit_registry_release(
     requirements,
     max_total_payload_bytes=options.pull_limits.max_total_bytes,
   )
+  let release = release_policy.map(policy => {
+    @policy.evaluate_mixed(
+      candidate.layout,
+      policy~,
+      graph_limits={
+        max_depth: options.pull_limits.max_depth,
+        max_visits: options.pull_limits.max_visits,
+        max_metadata_bytes: options.pull_limits.max_total_bytes,
+      },
+      max_total_payload_bytes=options.pull_limits.max_total_bytes,
+    )
+  })
+  let allowed = decision.allowed &&
+    (match release {
+      None => true
+      Some(release) => release.allowed
+    })
   let report : Json = {
     "schema": Json::string("moonoci.registry-admission.v1"),
-    "eligible_for_publication": Json::boolean(decision.allowed),
+    "eligible_for_publication": Json::boolean(allowed),
+    "release_decision": match release {
+      None => Json::null()
+      Some(release) =>
+        @codec.parse_json_document(
+          @utf8.encode(@policy.mixed_release_json(release)),
+        )
+    },
     "acquisition": @codec.parse_json_document(
       @utf8.encode(candidate.statistics),
     ),
@@ -54,7 +88,7 @@ pub async fn admit_registry_release(
     ),
   }
   {
-    layout: if decision.allowed {
+    layout: if allowed {
       Some(candidate.layout)
     } else {
       None

@@ -10,7 +10,7 @@ import {
 }
 
 // Values
-pub async fn admit_registry_release(String, String, String, @model.Digest, @model.Digest, Array[@policy.ArtifactRequirement], options? : RegistryOptions, discovery_limits? : @registry.DiscoveryLimits, cache? : @layout.MemoryLayout, bearer_token? : String) -> RegistryAdmissionResult
+pub async fn admit_registry_release(String, String, String, @model.Digest, @model.Digest, Array[@policy.ArtifactRequirement], release_policy? : @policy.ReleasePolicy, options? : RegistryOptions, discovery_limits? : @registry.DiscoveryLimits, cache? : @layout.MemoryLayout, bearer_token? : String) -> RegistryAdmissionResult
 
 pub async fn discover_referrers(String, String, @model.Digest, artifact_type? : String, options? : RegistryOptions, limits? : @registry.DiscoveryLimits, bearer_token? : String) -> RegistryDiscoveryResult
 
