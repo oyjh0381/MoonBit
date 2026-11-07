@@ -142,25 +142,37 @@ fn apply_rootfs_transitions(
   opaque_paths.sort_by((a, b) => @pathing.compare_utf8(a, b))
   removed_paths.sort_by((a, b) => @pathing.compare_utf8(a, b))
   additions.sort_by((a, b) => @pathing.compare_utf8(a.path, b.path))
-  let mut result = current
+  let root = RootfsNode::empty()
+  for entry in current {
+    root.ensure_path(entry.path).entry = Some(entry)
+  }
   for path in opaque_paths {
-    result = if path == "" { [] } else { filter_children(result, path, true) }
+    if path.is_empty() {
+      root.children.clear()
+    } else if root.find_path(path) is Some(node) {
+      node.children.clear()
+    }
   }
   for path in removed_paths {
-    result = filter_children(result, path, false)
+    match path.rev_find("/") {
+      None => root.children.remove(path)
+      Some(slash) =>
+        if root.find_path(path[:slash].to_owned()) is Some(parent) {
+          parent.children.remove(path[slash + 1:].to_owned())
+        }
+    }
   }
   for entry in additions {
-    validate_parent_chain(result, entry.path)
-    result = match entry.kind {
-      Directory => filter_exact(result, entry.path)
-      Regular | Symlink => filter_children(result, entry.path, false)
+    let node = root.ensure_path(entry.path)
+    if entry.kind != Directory {
+      node.children.clear()
     }
     let kind = match entry.kind {
       Regular => "file"
       Directory => "directory"
       Symlink => "symlink"
     }
-    result.push({
+    node.entry = Some({
       path: entry.path,
       kind,
       mode: entry.mode,
@@ -169,50 +181,64 @@ fn apply_rootfs_transitions(
       layer_index,
     })
   }
+  let result : Array[@model.RootfsEntry] = []
+  let pending = [root]
+  while pending.pop() is Some(node) {
+    if node.entry is Some(entry) {
+      result.push(entry)
+    }
+    for _, child in node.children {
+      pending.push(child)
+    }
+  }
   result.sort_by((a, b) => @pathing.compare_utf8(a.path, b.path))
   result
 }
 
 ///|
-fn filter_exact(
-  entries : Array[@model.RootfsEntry],
-  path : String,
-) -> Array[@model.RootfsEntry] {
-  entries.filter(entry => entry.path != path)
+priv struct RootfsNode {
+  mut entry : @model.RootfsEntry?
+  children : Map[String, RootfsNode]
 }
 
 ///|
-fn filter_children(
-  entries : Array[@model.RootfsEntry],
-  path : String,
-  keep_parent : Bool,
-) -> Array[@model.RootfsEntry] {
-  let result : Array[@model.RootfsEntry] = []
-  let prefix = path + "/"
-  for entry in entries {
-    let remove = entry.path.has_prefix(prefix) ||
-      (!keep_parent && entry.path == path)
-    if !remove {
-      result.push(entry)
+fn RootfsNode::empty() -> RootfsNode {
+  { entry: None, children: Map([]), }
+}
+
+///|
+fn RootfsNode::find_path(self : RootfsNode, path : String) -> RootfsNode? {
+  let mut node = self
+  for segment in path.split("/") {
+    match node.children.get(segment.to_owned()) {
+      Some(child) => node = child
+      None => return None
     }
   }
-  result
+  Some(node)
 }
 
 ///|
-fn validate_parent_chain(
-  entries : Array[@model.RootfsEntry],
+fn RootfsNode::ensure_path(
+  self : RootfsNode,
   path : String,
-) -> Unit raise @model.MoonOciError {
-  let segments = path.split("/").map(part => part.to_owned()).collect()
-  for end in 1..<segments.length() {
-    let parent = segments[0:end].to_owned().join("/")
-    for existing in entries {
-      if existing.path == parent && existing.kind != "directory" {
-        raise @model.InvalidOci(
-          "cannot add child beneath non-directory path: " + parent,
-        )
+) -> RootfsNode raise @model.MoonOciError {
+  let mut node = self
+  for segment in path.split("/") {
+    if node.entry is Some(parent) && parent.kind != "directory" {
+      raise @model.InvalidOci(
+        "cannot add child beneath non-directory path: " + parent.path,
+      )
+    }
+    let key = segment.to_owned()
+    node = match node.children.get(key) {
+      Some(child) => child
+      None => {
+        let child = RootfsNode::empty()
+        node.children[key] = child
+        child
       }
     }
   }
+  node
 }
