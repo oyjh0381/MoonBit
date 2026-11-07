@@ -15,7 +15,10 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 def run(*arguments):
-    result = subprocess.run(list(map(str, arguments)), cwd=ROOT, capture_output=True, text=True, timeout=240)
+    try:
+        result = subprocess.run(list(map(str, arguments)), cwd=ROOT, capture_output=True, text=True, timeout=240)
+    except subprocess.TimeoutExpired as error:
+        raise RuntimeError((arguments, 'timeout', error.stdout, error.stderr)) from error
     if result.returncode:
         raise RuntimeError((arguments, result.returncode, result.stdout, result.stderr))
     return result.stdout.strip()
@@ -83,9 +86,11 @@ def main():
     podman = (['sudo'] if args.rootful else []) + [
         'podman', '--root', str(runtime_state / 'store'),
         '--runroot', str(runtime_state / 'run'), '--storage-driver', 'vfs',
+        '--events-backend', 'file', '--cgroup-manager', 'cgroupfs',
     ]
     run(*podman, 'load', '--input', runtime_archive)
-    output = run(*podman, 'run', '--rm', '--network=none', '--read-only', '--cap-drop=ALL',
+    output = run(*podman, '--log-level=debug', 'run', '--rm', '--pull=never',
+                 '--timeout=60', '--cgroups=disabled', '--network=none', '--read-only', '--cap-drop=ALL',
                  '--security-opt=no-new-privileges', tag)
     assert output.startswith('valid: manifests=1')
     assert inspected['Digest'] == independent['images'][0]['manifest']
