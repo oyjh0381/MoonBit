@@ -27,6 +27,11 @@ python3 scripts/runtime_chain.py
 Prerequisites: Linux, MoonBit 0.10.16, a C compiler, Python 3, ldd, Skopeo and
 Podman. The CI `runtime-consumer` job provides this environment remotely.
 
+The hosted CI invocation uses `--rootful` to run Podman through sudo. Runtime
+storage uses a short OS temporary directory, the vfs driver, file events and
+disabled container cgroups. The verifier runs with a 60-second container limit.
+This avoids dependencies on a runner's user container store and systemd session.
+
 1. Compile the real Native MoonOCI CLI.
 2. Build a fixture layout with MoonOCI.
 3. Package the CLI, its resolved loader/shared libraries and fixture into a new

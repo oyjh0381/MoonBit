@@ -2,7 +2,14 @@
 
 All notable changes to MoonOCI are documented here. The format follows Keep a Changelog and versions follow Semantic Versioning.
 
-## [Unreleased]
+## [0.2.0] - 2026-11-07
+
+- Add digest-pinned Registry pulls, private CA and explicit CONNECT proxy support, isolated Bearer authentication and configurable resource budgets.
+- Discover bounded referrer pages and assemble verified immediate attachments into standalone offline bundles.
+- Compose versioned all-platform release policy, required attachments and exact in-toto Statement binding before publication.
+- Consume a pinned public Alpine image through ORAS and independently compare all 517 final file entries.
+- Interpret conventional OCI directory suffixes and opaque container link targets, and index root filesystem transitions by path segments.
+- Verify extracted release archives from independent MoonBit workspace consumers.
 
 - Preserve data-synchronous default layout publication and add explicit buffered retained-copy export for reconstructible caches.
 - Prevalidate physical digests/sizes/unique paths before materializing any Blob path; create staged files exclusively.

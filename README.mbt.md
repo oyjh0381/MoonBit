@@ -2,10 +2,9 @@
 
 This module README documents the minimal portable build path. The same request is used in `examples/single-layer`.
 
-The local 0.2.0 source additionally provides `distribution` for multi-platform
+Version 0.2.0 additionally provides `distribution` for multi-platform
 composition, compact storage and pinned offline transfer/hydration, and `policy`
-for caller-owned release decisions. It is unreleased; the following command
-installs the earlier published version. Reproducible consumers are documented
+for caller-owned release decisions. Reproducible consumers are documented
 in `docs/offline-delivery.md` and `docs/runtime-validation.md`. The `transfer`
 package adds bounded chunk plans, missing-work scheduling and whole-content
 verification; Native restart/recovery and host reuse are described in
@@ -14,7 +13,7 @@ verification; Native restart/recovery and host reuse are described in
 Install the published module with:
 
 ```text
-moon add oyjh0381/moonoci@0.1.4
+moon add oyjh0381/moonoci@0.2.0
 ```
 
 ```mbt check

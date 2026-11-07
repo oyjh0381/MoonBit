@@ -6,14 +6,12 @@ It provides a portable core for Wasm, Wasm-GC, JavaScript, and Native targets, p
 
 ## Features
 
-Current local development adds verified multi-platform composition, exact
+Version 0.2.0 adds verified multi-platform composition, exact
 platform selection, standalone slicing, offline transfer planning and external
 index pins. See [runtime validation without a local VM](docs/runtime-validation.md)
-and the [development programme](docs/quarterly-development.md). These additions
-are not yet published; Linux container execution awaits its CI run.
+and the [development programme](docs/quarterly-development.md).
 
-Source version **0.2.0 is unreleased**; the published installation command below
-still installs 0.1.4. The current source also provides deterministic delta
+Version **0.2.0** also provides deterministic delta
 archives, pinned offline hydration, reachability/storage accounting, compaction,
 indexed blob lookups and a caller-owned release-policy gate. See
 [offline delivery](docs/offline-delivery.md) for the reproducible Windows/Linux
@@ -76,7 +74,7 @@ MoonOCI v0.1 builds one platform image per invocation and writes OCI Image Spec 
 Add the published library to a MoonBit project:
 
 ```text
-moon add oyjh0381/moonoci@0.1.4
+moon add oyjh0381/moonoci@0.2.0
 ```
 
 The reusable packages include `oyjh0381/moonoci/archive`, `builder`, `codec`, `digest`, `layout`, `model`, `pathing`, and `spec`. The Native CLI is built and run from this source repository.
