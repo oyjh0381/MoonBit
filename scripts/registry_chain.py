@@ -103,7 +103,7 @@ def main():
     first_manifest = json.loads(blobs[images[0]['digest']])
     layer_pin = first_manifest['layers'][0]['digest']
     state = dict(mode='normal', require_auth=True, reject_auth=False, redirect=False, realm=None,
-                 omit_digest=False, requests=[], mirror_requests=[], token_requests=0, bad_scope=False, auth_leak=False)
+                 omit_digest=False, requests=[], mirror_requests=[], token_requests=0, bad_scope=False, auth_leak=False, transient=0)
 
     class Base(BaseHTTPRequestHandler):
         protocol_version = 'HTTP/1.1'
@@ -127,7 +127,7 @@ def main():
             if self.command != 'HEAD':
                 try:
                     self.wfile.write(data)
-                except (BrokenPipeError, ConnectionResetError):
+                except (BrokenPipeError, ConnectionResetError, ConnectionAbortedError):
                     pass
 
         def token(self):
@@ -176,6 +176,10 @@ def main():
                 self.send(200, b'{}')
                 return
             if path.startswith(f'/v2/{REPOSITORY}/manifests/'):
+                if state['transient']:
+                    state['transient'] -= 1
+                    self.send(503, extra={'Retry-After': '0'})
+                    return
                 reference = path.rsplit('/', 1)[1]
                 digest = root_pin if reference == 'release' else reference
                 if digest not in metadata:
@@ -272,6 +276,12 @@ def main():
         state.update(require_auth=False, reject_auth=False, omit_digest=True)
         pull(registry_origin, directory / 'no-digest-header')
         state['omit_digest'] = False
+        state['transient'] = 2
+        recovered = pull(registry_origin, directory / 'transient-recovered')
+        assert recovered['retries'] == 2 and state['transient'] == 0
+        state['transient'] = 1
+        pull(registry_origin, directory / 'retry-disabled', '--retries', '0', status=3)
+        state['transient'] = 0
         pull(registry_origin, directory / 'wrong-pin', expected='sha256:' + '0' * 64, status=5)
         before = len(state['requests'])
         run('registry-pull', registry_origin, REPOSITORY, 'release', root_pin, directory / 'http-refused', status=2)
@@ -296,7 +306,7 @@ def main():
         cache_http_requests=cached['http_requests'], authenticated_pull=True, pull_only_scope=True,
         redirect_and_realm_allowlists=True, no_cross_origin_authorization=True, corrupt_cache_refused=True,
         malformed_and_interrupted_responses_refused=True, request_timeouts_verified=True,
-        auth_loop_bounded=True, optional_digest_header=True, artifact_gate_consumed=True,
+        auth_loop_bounded=True, optional_digest_header=True, bounded_transient_retries=True, artifact_gate_consumed=True,
         independent_image_observation=True, oras_registry_copy_verified=oras_verified,
         methods=sorted({request[0] for request in state['requests']}), source_writes=0)
     (directory / 'report.json').write_bytes(encode(report))

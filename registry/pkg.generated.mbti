@@ -33,6 +33,8 @@ pub fn pull_statistics_json(PullSession) -> String
 
 pub fn referrers_path(String, @model.Digest, artifact_type? : String) -> String raise @model.MoonOciError
 
+pub fn retry_delay(Int32, Array[@model.KeyValue], Int32, max_retries? : Int32, max_delay_ms? : Int32) -> Int32? raise @model.MoonOciError
+
 pub fn single_header(Array[@model.KeyValue], String) -> String? raise @model.MoonOciError
 
 pub fn tags_path(String, count? : Int32, last? : String) -> String raise @model.MoonOciError

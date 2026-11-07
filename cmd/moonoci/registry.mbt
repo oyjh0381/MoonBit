@@ -22,6 +22,8 @@ async fn registry_pull_command(args : Array[String]) -> Unit {
       | "--allow-realm"
       | "--allow-blob-origin"
       | "--timeout-ms"
+      | "--retries"
+      | "--max-retry-delay-ms"
       | "--total-timeout-ms" as flag => {
         if index + 1 == args.length() {
           raise @model.InvalidArgument("registry option requires a value")
@@ -45,6 +47,13 @@ async fn registry_pull_command(args : Array[String]) -> Unit {
             options = {
               ..options,
               total_timeout_ms: integer_argument(args[index]),
+            }
+          "--retries" =>
+            options = { ..options, max_retries: integer_argument(args[index]), }
+          "--max-retry-delay-ms" =>
+            options = {
+              ..options,
+              max_retry_delay_ms: integer_argument(args[index]),
             }
           _ => abort("unreachable registry option")
         }

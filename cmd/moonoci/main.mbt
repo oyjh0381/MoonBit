@@ -554,6 +554,7 @@ async fn print_usage() -> Unit {
       #|  moonoci registry-pull ORIGIN REPOSITORY REFERENCE EXPECTED_ROOT OUTPUT [OPTIONS]
       #|    --allow-http --cache PATH --allow-realm ORIGIN --allow-blob-origin ORIGIN
       #|    --timeout-ms N --total-timeout-ms N --buffered
+      #|    --retries N --max-retry-delay-ms N
       #|    Optional Bearer input: MOONOCI_REGISTRY_TOKEN environment variable
       #|  moonoci content-catalog INPUT EXPECTED_INDEX_PIN
       #|  moonoci retain-plan INPUT EXPECTED_INDEX_PIN MODE ROOT [ROOT...]

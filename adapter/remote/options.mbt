@@ -6,6 +6,8 @@ pub(all) struct RegistryOptions {
   max_http_requests : Int32
   max_redirects : Int32
   max_auth_requests : Int32
+  max_retries : Int32
+  max_retry_delay_ms : Int32
   allowed_realms : Array[@registry.RegistryOrigin]
   allowed_blob_origins : Array[@registry.RegistryOrigin]
   pull_limits : @registry.PullLimits
@@ -20,6 +22,8 @@ pub fn RegistryOptions::default() -> RegistryOptions {
     max_http_requests: 16384,
     max_redirects: 3,
     max_auth_requests: 2,
+    max_retries: 2,
+    max_retry_delay_ms: 5000,
     allowed_realms: [],
     allowed_blob_origins: [],
     pull_limits: @registry.PullLimits::default(),
@@ -41,6 +45,10 @@ pub fn RegistryOptions::validate(
     self.max_redirects > 8 ||
     self.max_auth_requests < 0 ||
     self.max_auth_requests > 8 ||
+    self.max_retries < 0 ||
+    self.max_retries > 8 ||
+    self.max_retry_delay_ms < 0 ||
+    self.max_retry_delay_ms > 60000 ||
     self.allowed_realms.length() > 16 ||
     self.allowed_blob_origins.length() > 16 {
     raise @model.InvalidArgument("invalid native registry transport options")
@@ -68,4 +76,5 @@ priv struct RegistryTransport {
   mut authorization : String?
   mut requests : Int32
   mut auth_requests : Int32
+  mut retries : Int32
 }

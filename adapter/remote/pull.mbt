@@ -14,6 +14,7 @@ async fn pull_impl(
     authorization,
     requests: 0,
     auth_requests: 0,
+    retries: 0,
   }
   let cached_index = cache.map(cache => {
     (cache.index(), @digest.sha256(cache.index()))
@@ -43,6 +44,7 @@ async fn pull_impl(
     "core": @registry.pull_statistics(session),
     "http_requests": Json::number(transport.requests.to_double()),
     "auth_requests": Json::number(transport.auth_requests.to_double()),
+    "retries": Json::number(transport.retries.to_double()),
     "source_root": Json::string(expected.to_string()),
     "output_index": Json::string(@digest.sha256(layout.index()).to_string()),
   }

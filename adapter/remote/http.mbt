@@ -65,7 +65,7 @@ async fn fetch_entity(
 }
 
 ///|
-async fn RegistryTransport::fetch(
+async fn RegistryTransport::fetch_once(
   self : RegistryTransport,
   url : @registry.RegistryUrl,
   headers : Map[String, String],
@@ -79,12 +79,60 @@ async fn RegistryTransport::fetch(
   }
   self.requests += 1
   @async.with_timeout(self.options.request_timeout_ms, () => {
-    fetch_entity(url, headers, max_bytes, expected_size)
+    fetch_entity(url, Map(headers.iter().collect()), max_bytes, expected_size)
   }) catch {
     @async.TimeoutError =>
       raise @model.IoFailure("registry HTTP request timed out")
     error => raise error
   }
+}
+
+///|
+async fn RegistryTransport::fetch(
+  self : RegistryTransport,
+  url : @registry.RegistryUrl,
+  headers : Map[String, String],
+  max_bytes : Int32,
+  expected_size : Int64?,
+) -> HttpEntity {
+  let mut attempt = 0
+  while true {
+    let result = Some(self.fetch_once(url, headers, max_bytes, expected_size)) catch {
+      @model.IoFailure(_) if attempt < self.options.max_retries => None
+      error => raise error
+    }
+    let (status, response_headers) = match result {
+      Some(response) => (response.status, response.headers)
+      None => (0, [])
+    }
+    let delay = @registry.retry_delay(
+      status,
+      response_headers,
+      attempt,
+      max_retries=self.options.max_retries,
+      max_delay_ms=self.options.max_retry_delay_ms,
+    )
+    match delay {
+      None =>
+        match result {
+          Some(response) => return response
+          None => raise @model.IoFailure("registry read retries exhausted")
+        }
+      Some(delay) => {
+        if self.requests == self.options.max_http_requests {
+          raise @model.ResourceLimitExceeded(
+            "registry HTTP quota exhausted before retry",
+          )
+        }
+        attempt += 1
+        self.retries += 1
+        if delay > 0 {
+          @async.sleep(delay)
+        }
+      }
+    }
+  }
+  abort("unreachable registry retry state")
 }
 
 ///|

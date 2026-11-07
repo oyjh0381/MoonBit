@@ -20,6 +20,8 @@ pub(all) struct RegistryOptions {
   max_http_requests : Int32
   max_redirects : Int32
   max_auth_requests : Int32
+  max_retries : Int32
+  max_retry_delay_ms : Int32
   allowed_realms : Array[@registry.RegistryOrigin]
   allowed_blob_origins : Array[@registry.RegistryOrigin]
   pull_limits : @registry.PullLimits
