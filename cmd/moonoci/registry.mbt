@@ -7,6 +7,7 @@ priv struct RegistryArguments {
   discovery_limits : @registry.DiscoveryLimits
   requirements : Array[@policy.ArtifactRequirement]
   release_policy_path : String?
+  statement : @remote.StatementRequirement?
 }
 
 ///|
@@ -26,6 +27,8 @@ fn parse_registry_options(
   let mut discovery_limits = @registry.DiscoveryLimits::default()
   let requirements : Array[@policy.ArtifactRequirement] = []
   let mut release_policy_path = None
+  let mut statement_pin = None
+  let mut predicate_type = None
   let mut index = start
   while index < args.length() {
     match args[index] {
@@ -54,9 +57,13 @@ fn parse_registry_options(
       | "--max-visits"
       | "--max-depth"
       | "--require-artifact"
+      | "--statement-digest"
+      | "--statement-predicate"
       | "--release-policy"
       | "--total-timeout-ms" as flag => {
-        if ["--require-artifact", "--release-policy"].contains(flag) &&
+        if [
+            "--require-artifact", "--release-policy", "--statement-digest", "--statement-predicate",
+          ].contains(flag) &&
           !admission {
           raise @model.InvalidArgument(
             "required artifacts are only accepted by registry-admit",
@@ -85,6 +92,19 @@ fn parse_registry_options(
         }
         index += 1
         match flag {
+          "--statement-digest" => {
+            if statement_pin is Some(_) {
+              raise @model.InvalidArgument("duplicate Statement digest")
+            }
+            statement_pin = Some(@model.Digest::parse(args[index]))
+          }
+          "--statement-predicate" => {
+            if predicate_type is Some(_) {
+              raise @model.InvalidArgument("duplicate Statement predicate type")
+            }
+            @artifacts.validate_statement_predicate_type(args[index])
+            predicate_type = Some(args[index])
+          }
           "--proxy-origin" => {
             if options.proxy_origin is Some(_) {
               raise @model.InvalidArgument("duplicate registry proxy origin")
@@ -254,6 +274,16 @@ fn parse_registry_options(
       "registry-admit requires --require-artifact TYPE",
     )
   }
+  let statement : @remote.StatementRequirement? = match
+    (statement_pin, predicate_type) {
+    (None, None) => None
+    (Some(attachment), Some(predicate_type)) =>
+      Some({ attachment, predicate_type, })
+    _ =>
+      raise @model.InvalidArgument(
+        "Statement digest and predicate type must be supplied together",
+      )
+  }
   {
     options,
     cache_path,
@@ -262,6 +292,7 @@ fn parse_registry_options(
     discovery_limits,
     requirements,
     release_policy_path,
+    statement,
   }
 }
 
@@ -387,6 +418,7 @@ async fn registry_bundle_command(
       subject,
       parsed.requirements,
       release_policy?,
+      statement?=parsed.statement,
       options=parsed.options,
       discovery_limits=parsed.discovery_limits,
       cache?,

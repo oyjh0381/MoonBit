@@ -29,3 +29,11 @@ moonoci statement-verify INPUT ATTACHMENT_DIGEST SUBJECT_DIGEST PREDICATE_TYPE
 The structured result identifies the raw payload digest and records
 `signatures_verified: false`. The policy fixture independently hashes a
 Statement and rejects a valid OCI attachment with the wrong inner digest.
+
+Pass both `--statement-digest DIGEST` and `--statement-predicate TYPE` to
+`registry-admit` to require a particular artifact manifest alongside the
+existing required attachment types. Obtain this extra digest from a trusted
+release channel. The Registry listing supplies discovery only. A different
+attachment, a different predicate or a different inner subject blocks output.
+The structured `statement_decision` reports the requested digest and the
+binding or failure code independently of the attachment presence decision.

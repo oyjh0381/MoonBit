@@ -596,6 +596,7 @@ async fn print_usage() -> Unit {
       #|  moonoci registry-admit ORIGIN REPOSITORY REFERENCE EXPECTED_ROOT SUBJECT OUTPUT
       #|    --require-artifact TYPE [--require-artifact TYPE...] [TRANSPORT/PULL OPTIONS]
       #|    --release-policy POLICY_JSON (optional all-platform configuration gate)
+      #|    --statement-digest DIGEST --statement-predicate TYPE (optional exact Statement requirement)
       #|  moonoci registry-bundle ORIGIN REPOSITORY REFERENCE EXPECTED_ROOT SUBJECT OUTPUT [OPTIONS]
       #|  moonoci registry-referrers ORIGIN REPOSITORY SUBJECT [OPTIONS]
       #|    --artifact-type TYPE --max-pages N --max-entries N (plus transport options below)

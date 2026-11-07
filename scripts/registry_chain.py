@@ -112,9 +112,30 @@ def main():
     advertisement.pop('annotations', None)
     if attachment_body.get('annotations'):
         advertisement['annotations'] = attachment_body['annotations']
+    statement_media = 'application/vnd.in-toto+json'
+    statement_type = 'https://example.org/moonoci/provenance/v1'
+    statement_ads = {}
+    statement_blobs = {}
+    statement_metadata = {}
+    for label, statement_subject in [('match', images[0]['digest']), ('wrong', images[1]['digest'])]:
+        raw_statement = encode({
+            '_type': 'https://in-toto.io/Statement/v1', 'predicateType': statement_type,
+            'subject': [{'digest': {'sha256': statement_subject.split(':', 1)[1]}}],
+        })
+        statement_blobs[pin(raw_statement)] = raw_statement
+        statement_blobs[pin(b'{}')] = b'{}'
+        raw_manifest = encode({
+            'schemaVersion': 2, 'mediaType': MANIFEST, 'artifactType': statement_media,
+            'subject': {k: images[0][k] for k in ('mediaType', 'size', 'digest')},
+            'config': {'mediaType': 'application/vnd.oci.empty.v1+json', 'size': 2, 'digest': pin(b'{}')},
+            'layers': [{'mediaType': statement_media, 'size': len(raw_statement), 'digest': pin(raw_statement)}],
+        })
+        statement_metadata[pin(raw_manifest)] = (MANIFEST, raw_manifest)
+        statement_ads[label] = {'mediaType': MANIFEST, 'size': len(raw_manifest),
+                                'digest': pin(raw_manifest), 'artifactType': statement_media}
     state = dict(mode='normal', require_auth=True, reject_auth=False, redirect=False, realm=None,
                  omit_digest=False, requests=[], mirror_requests=[], token_requests=0, bad_scope=False, auth_leak=False, transient=0,
-                 listing_mode='normal')
+                 listing_mode='normal', statement=None)
 
     class Base(BaseHTTPRequestHandler):
         protocol_version = 'HTTP/1.1'
@@ -197,6 +218,9 @@ def main():
                 if state['listing_mode'] == 'wrong-annotations':
                     advertised['annotations'] = {'forged': 'yes'}
                 listing = encode(dict(schemaVersion=2, mediaType=INDEX, manifests=[] if next_page else [advertised]))
+                if next_page and state['statement']:
+                    listing = encode(dict(schemaVersion=2, mediaType=INDEX,
+                                          manifests=[statement_ads[state['statement']]]))
                 link = registry_origin + path + '?last=one'
                 if state['listing_mode'] == 'foreign':
                     link = mirror_origin + path + '?last=one'
@@ -212,10 +236,11 @@ def main():
                     return
                 reference = path.rsplit('/', 1)[1]
                 digest = root_pin if reference == 'release' else image_root_pin if reference == 'images' else reference
-                if digest not in metadata:
+                entity = metadata.get(digest) or statement_metadata.get(digest)
+                if entity is None:
                     self.send(404)
                     return
-                media, body = metadata[digest]
+                media, body = entity
                 if state['mode'] == 'slow':
                     time.sleep(0.4)
                 if state['mode'] == 'wrong-media':
@@ -227,12 +252,13 @@ def main():
                 self.send(200, body, media, digest, extra=extra, length=length)
             elif path.startswith(f'/v2/{REPOSITORY}/blobs/'):
                 digest = path.rsplit('/', 1)[1]
-                if digest not in blobs:
+                entity = blobs.get(digest, statement_blobs.get(digest))
+                if entity is None:
                     self.send(404)
                 elif state['redirect'] and digest == layer_pin:
                     self.send(307, extra={'Location': mirror_origin + '/blob/' + digest})
                 else:
-                    body = blobs[digest]
+                    body = entity
                     if state['mode'] == 'corrupt' and digest == layer_pin:
                         body = bytes([body[0] ^ 1]) + body[1:]
                     if state['mode'] == 'corrupt-attachment' and digest == attachment_payload_pin:
@@ -325,6 +351,25 @@ def main():
                             ('--max-blob-bytes', '0'), ('--max-http-requests', '-1')]:
             pull(registry_origin, directory / ('bad-quota-' + flag[2:]), flag, value, status=2)
         assert len(state['requests']) == before
+
+        for label, predicate, status in [('match', statement_type, 0),
+                                         ('match', 'urn:wrong:predicate', 5),
+                                         ('wrong', statement_type, 5)]:
+            state['statement'] = label
+            attachment_pin = statement_ads[label]['digest']
+            output = directory / ('statement-admission-' + label + '-' + str(status))
+            decision = json.loads(run('registry-admit', registry_origin, REPOSITORY, 'images',
+                                      image_root_pin, images[0]['digest'], output, '--allow-http', '--buffered',
+                                      '--require-artifact', 'application/spdx+json',
+                                      '--statement-digest', attachment_pin, '--statement-predicate', predicate,
+                                      status=status))
+            assert decision['decision']['allowed']
+            assert decision['statement_decision']['allowed'] == (status == 0)
+            assert output.exists() == (status == 0)
+            if not status:
+                assert decision['statement_decision']['binding']['subject'] == images[0]['digest']
+            assert not Path(str(output) + '.moonoci-staging').exists()
+        state['statement'] = None
 
         admission_args = ['registry-admit', registry_origin, REPOSITORY, 'images', image_root_pin,
                           images[0]['digest']]
@@ -447,6 +492,7 @@ def main():
         operator_resource_profiles=True, invalid_quotas_refused_before_http=True,
         admission_before_publication=True, missing_required_attachment_blocks_output=True,
         composed_all_platform_policy=True, bad_policy_refused_before_http=True,
+        pinned_statement_admission=True, wrong_inner_subject_and_predicate_block_output=True,
         independent_image_observation=True, oras_registry_copy_verified=oras_verified,
         methods=sorted({request[0] for request in state['requests']}), source_writes=0)
     (directory / 'report.json').write_bytes(encode(report))
