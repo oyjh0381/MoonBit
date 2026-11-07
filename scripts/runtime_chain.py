@@ -77,9 +77,12 @@ def main():
     tag = 'localhost/moonoci-selfcheck:' + hashlib.sha256(original).hexdigest()[:16]
     runtime_archive = workspace / 'runtime.oci.tar'
     run('skopeo', 'copy', 'oci:' + str(image) + ':selfcheck', 'oci-archive:' + str(runtime_archive) + ':' + tag)
+    # containers/storage limits runroot to 50 characters. Hosted checkout paths
+    # are longer, so runtime state gets its own short OS temporary directory.
+    runtime_state = Path(tempfile.mkdtemp(prefix='moci-'))
     podman = (['sudo'] if args.rootful else []) + [
-        'podman', '--root', str(workspace / 'podman-storage'),
-        '--runroot', str(workspace / 'podman-runroot'), '--storage-driver', 'vfs',
+        'podman', '--root', str(runtime_state / 'store'),
+        '--runroot', str(runtime_state / 'run'), '--storage-driver', 'vfs',
     ]
     run(*podman, 'load', '--input', runtime_archive)
     output = run(*podman, 'run', '--rm', '--network=none', '--read-only', '--cap-drop=ALL',
