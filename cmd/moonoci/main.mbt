@@ -13,9 +13,19 @@ async fn main {
     match args[1] {
       "registry-pull" => registry_pull_command(args)
       "gate-store" => {
-        require_arity(args, 3, "usage: moonoci gate-store INPUT")
+        if args.length() != 3 && args.length() != 4 {
+          raise @model.InvalidArgument(
+            "usage: moonoci gate-store INPUT [POLICY_JSON]",
+          )
+        }
+        let policy = if args.length() == 4 {
+          @native.load_release_policy(args[3])
+        } else {
+          @policy.ReleasePolicy::recommended()
+        }
         let decision = @policy.evaluate_mixed(
           @native.load_bounded_layout(args[2]),
+          policy~,
         )
         @stdio.stdout.write(@policy.mixed_release_json(decision) + "\n")
         if !decision.allowed {
@@ -564,7 +574,7 @@ async fn print_usage() -> Unit {
       #|MoonOCI — deterministic OCI Image Layout builder and validator
       #|
       #|Usage:
-      #|  moonoci gate-store INPUT (all image branches plus whole supported store)
+      #|  moonoci gate-store INPUT [POLICY_JSON] (all image branches plus whole supported store)
       #|  moonoci registry-admit ORIGIN REPOSITORY REFERENCE EXPECTED_ROOT SUBJECT OUTPUT
       #|    --require-artifact TYPE [--require-artifact TYPE...] [TRANSPORT/PULL OPTIONS]
       #|  moonoci registry-bundle ORIGIN REPOSITORY REFERENCE EXPECTED_ROOT SUBJECT OUTPUT [OPTIONS]

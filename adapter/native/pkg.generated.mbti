@@ -7,6 +7,7 @@ import {
   "oyjh0381/moonoci/layout",
   "oyjh0381/moonoci/lifecycle",
   "oyjh0381/moonoci/model",
+  "oyjh0381/moonoci/policy",
   "oyjh0381/moonoci/spec",
   "oyjh0381/moonoci/transfer",
 }
@@ -39,6 +40,8 @@ pub async fn finish_transfer(String, @model.Digest, String) -> Unit
 pub async fn load_bounded_layout(String, limits? : LayoutLoadLimits) -> @layout.MemoryLayout
 
 pub async fn load_layout(String) -> @layout.MemoryLayout
+
+pub async fn load_release_policy(String) -> @policy.ReleasePolicy
 
 pub async fn receive_transfer_chunk(String, @model.Digest, Int32, String) -> Unit
 

@@ -11,6 +11,8 @@ import {
 // Values
 pub fn artifact_requirements_json(ArtifactRequirementDecision) -> String
 
+pub fn decode_release_policy(Bytes) -> ReleasePolicy raise @model.MoonOciError
+
 pub fn evaluate(@layout.MemoryLayout, policy? : ReleasePolicy) -> PolicyDecision raise @model.MoonOciError
 
 pub fn evaluate_artifact_requirements(@layout.MemoryLayout, @model.Digest, Array[ArtifactRequirement], limits? : @artifacts.ArtifactLimits, max_total_payload_bytes? : Int64) -> ArtifactRequirementDecision raise @model.MoonOciError

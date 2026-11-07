@@ -27,7 +27,7 @@ def main():
     (source / 'app').write_bytes(b'policy fixture')
     for name, arch, user in [('amd64', 'amd64', '65532'), ('arm64', 'arm64', '65532'), ('root-arm64', 'arm64', '0')]:
         spec = dict(schemaVersion=1, ref=name, platform=dict(os='linux', architecture=arch),
-                    config=dict(user=user, cmd=['/app']), layers=[dict(source=str(source))],
+                    config=dict(user=user, cmd=['/app'], env={'DEMO_TOKEN': 'fixture-value-not-for-findings'}), layers=[dict(source=str(source))],
                     output=dict(layout=str(directory / name)))
         path = directory / (name + '.json')
         path.write_text(json.dumps(spec), 'utf-8')
@@ -58,6 +58,26 @@ def main():
     report = dict(schema='moonoci.mixed-policy-consumer.v1', all_platforms_checked=True,
                   valid_attachments_retained=True, bad_secondary_platform_blocks=True,
                   artifact_only_blocks=True, source_unchanged=True, container_runtime_executed=False)
+    for name, rules, source_name, status, expected_code in [
+        ('no-root-check', {'requireNumericNonroot': False}, 'bad-attached', 0, None),
+        ('only-amd64', {'allowedPlatforms': [{'os': 'linux', 'architecture': 'amd64'}]}, 'good-attached', 5, 'platform-not-allowed'),
+        ('required-team', {'requiredLabels': ['team']}, 'good-attached', 5, 'required-label'),
+        ('forbidden-token', {'forbiddenEnvNames': ['DEMO_TOKEN']}, 'good-attached', 5, 'forbidden-environment'),
+    ]:
+        path = directory / (name + '.policy.json')
+        path.write_text(json.dumps({'schemaVersion': 1, **rules}), 'utf-8')
+        raw = run('gate-store', directory / source_name, path, status=status)
+        assert 'fixture-value-not-for-findings' not in raw
+        decision = json.loads(raw)
+        assert decision['allowed'] == (status == 0)
+        if expected_code:
+            assert any(item['code'] == expected_code for item in decision['images']['findings'])
+    invalid = directory / 'invalid.policy.json'
+    invalid.write_bytes(b'{"schemaVersion":1,"typo":false}')
+    run('gate-store', directory / 'good-attached', invalid, status=2)
+    invalid.write_bytes(b' ' * 65537)
+    run('gate-store', directory / 'good-attached', invalid, status=5)
+    report.update(versioned_policy_files=True, environment_values_not_echoed=True, oversized_policy_refused=True)
     (directory / 'report.json').write_text(json.dumps(report, indent=2), 'utf-8')
     print(json.dumps(report, indent=2))
 

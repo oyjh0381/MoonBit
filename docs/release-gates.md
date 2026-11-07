@@ -25,3 +25,31 @@ the second platform with a root-user image and checks rejection, then checks tha
 an artifact-only export cannot masquerade as a runnable image release. This is
 executable on Windows without Docker/Linux and is configured in Linux CI too;
 it does not claim that any container was run.
+
+## Versioned policy files
+
+`moonoci gate-store INPUT POLICY_JSON` reads a caller-owned file bounded to
+64 KiB and applies `decode_release_policy`. Example:
+
+```json
+{
+  "schemaVersion": 1,
+  "maxManifests": 16,
+  "maxLayersPerImage": 128,
+  "maxReachableBytes": "536870912",
+  "allowedPlatforms": [{"os": "linux", "architecture": "amd64"}],
+  "requireNumericNonroot": true,
+  "requireCommand": true,
+  "requiredLabels": ["org.opencontainers.image.source"],
+  "forbiddenEnvNames": ["BUILD_TOKEN"]
+}
+```
+
+Missing fields use recommended defaults. `allowedPlatforms` omitted means
+unrestricted; an explicit empty array allows no platforms. Optional platform
+fields are `variant` and `osVersion`, matched exactly. Byte budgets use decimal
+strings to preserve Int64 values beyond JavaScript's safe integer range. Counts
+use unsigned decimal integer tokens; fractions and exponent notation are refused.
+Unknown fields, duplicate JSON names, duplicate list entries, wrong types,
+unsupported versions and overflowing integers are errors rather than silently
+ignored rules. Metadata name lists are limited to 64 and platforms to 256.
