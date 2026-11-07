@@ -2,6 +2,7 @@
 package "oyjh0381/moonoci/registry"
 
 import {
+  "oyjh0381/moonoci/artifacts",
   "oyjh0381/moonoci/layout",
   "oyjh0381/moonoci/model",
 }
@@ -31,6 +32,8 @@ pub fn pull_statistics(PullSession) -> Json
 
 pub fn pull_statistics_json(PullSession) -> String
 
+pub fn referrer_next_path(RegistryOrigin, String, @model.Digest, Array[@model.KeyValue], artifact_type? : String) -> String? raise @model.MoonOciError
+
 pub fn referrers_path(String, @model.Digest, artifact_type? : String) -> String raise @model.MoonOciError
 
 pub fn retry_delay(Int32, Array[@model.KeyValue], Int32, max_retries? : Int32, max_delay_ms? : Int32) -> Int32? raise @model.MoonOciError
@@ -55,6 +58,15 @@ pub struct BearerChallenge {
 }
 pub fn BearerChallenge::realm(Self) -> String
 pub fn BearerChallenge::token_request(Self, RegistryOrigin, String, allowed_realms? : Array[RegistryOrigin], allow_http? : Bool) -> RegistryUrl raise @model.MoonOciError
+
+pub(all) struct DiscoveryLimits {
+  max_pages : Int32
+  max_entries : Int32
+  max_page_bytes : Int32
+  max_total_bytes : Int64
+}
+pub fn DiscoveryLimits::default() -> Self
+pub fn DiscoveryLimits::validate(Self) -> Unit raise @model.MoonOciError
 
 pub(all) struct FetchRequest {
   path : String
@@ -93,6 +105,17 @@ pub fn PullSession::new(String, String, @model.Digest, limits? : PullLimits, inc
 pub fn PullSession::next(Self) -> FetchRequest?
 pub fn PullSession::planned_requests(Self) -> Int32
 pub fn PullSession::reserved_bytes(Self) -> Int64
+
+pub struct ReferrerSession {
+  // private fields
+}
+pub fn ReferrerSession::accept(Self, Int32, Array[@model.KeyValue], Bytes) -> Unit raise @model.MoonOciError
+pub fn ReferrerSession::advertisements(Self) -> Array[@artifacts.ReferrerAdvertisement] raise @model.MoonOciError
+pub fn ReferrerSession::body_limit(Self) -> Int32 raise @model.MoonOciError
+pub fn ReferrerSession::new(RegistryOrigin, String, @model.Digest, artifact_type? : String, limits? : DiscoveryLimits) -> Self raise @model.MoonOciError
+pub fn ReferrerSession::next_path(Self) -> String?
+pub fn ReferrerSession::pages(Self) -> Int32
+pub fn ReferrerSession::received_bytes(Self) -> Int64
 
 pub struct RegistryOrigin {
   // private fields

@@ -63,3 +63,24 @@ must be run on a remote runner before claiming Linux results. These tests verify
 transport and layout consumption; Podman runtime execution remains a distinct
 Linux verification step. A public Docker Hub attempt timed out locally and is
 not counted as a passing public-registry or public-TLS result.
+
+## Referrer discovery profile
+
+`ReferrerSession` walks bounded OCI referrers pages. Each acceptance validates
+headers, body length, OCI index shape, optional digest header, advertisements and
+the next link before committing any state. Identical overlapping advertisements
+are deduplicated; conflicting metadata for one digest is refused. All advertised
+entries count toward the budget, including entries excluded by local filtering.
+
+Link targets must be absolute or root-relative, remain on the same origin and
+exact subject endpoint, and use only `last`, `n` and `artifactType` query names.
+A missing type filter is restored; changing it is refused. Duplicate parameters,
+contextual anchors, multiple next links, repeated URLs and unfinished pagination
+at the configured page quota are errors. This intentionally bounded profile does
+not support relative targets or arbitrary pagination extension parameters.
+
+A completed session only proves exhaustion of the received Link chain. The
+registry can omit attachments or change between pages. Listings are discovery
+metadata, not signed evidence or a proof of repository completeness. Advertised
+manifests must subsequently be fetched by digest and checked for actual subject,
+type and annotations before a host relies on them.
