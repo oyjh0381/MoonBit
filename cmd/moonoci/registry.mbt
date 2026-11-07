@@ -36,11 +36,31 @@ fn parse_registry_options(
       | "--artifact-type"
       | "--max-pages"
       | "--max-entries"
+      | "--max-page-bytes"
+      | "--max-listing-bytes"
+      | "--max-http-requests"
+      | "--max-auth-requests"
+      | "--max-redirects"
+      | "--max-content-bytes"
+      | "--max-blob-bytes"
+      | "--max-metadata-bytes"
+      | "--max-objects"
+      | "--max-visits"
+      | "--max-depth"
       | "--total-timeout-ms" as flag => {
-        if (!output_options && flag == "--cache") ||
+        if (
+            !output_options &&
+            [
+              "--cache", "--max-content-bytes", "--max-blob-bytes", "--max-metadata-bytes",
+              "--max-objects", "--max-visits", "--max-depth",
+            ].contains(flag)
+          ) ||
           (
             !discovery &&
-            ["--artifact-type", "--max-pages", "--max-entries"].contains(flag)
+            [
+              "--artifact-type", "--max-pages", "--max-entries", "--max-page-bytes",
+              "--max-listing-bytes",
+            ].contains(flag)
           ) {
           raise @model.InvalidArgument(
             "option is not supported by this registry command",
@@ -51,6 +71,79 @@ fn parse_registry_options(
         }
         index += 1
         match flag {
+          "--max-page-bytes" =>
+            discovery_limits = {
+              ..discovery_limits,
+              max_page_bytes: integer_argument(args[index]),
+            }
+          "--max-listing-bytes" =>
+            discovery_limits = {
+              ..discovery_limits,
+              max_total_bytes: registry_byte_argument(args[index]),
+            }
+          "--max-http-requests" =>
+            options = {
+              ..options,
+              max_http_requests: integer_argument(args[index]),
+            }
+          "--max-auth-requests" =>
+            options = {
+              ..options,
+              max_auth_requests: integer_argument(args[index]),
+            }
+          "--max-redirects" =>
+            options = {
+              ..options,
+              max_redirects: integer_argument(args[index]),
+            }
+          "--max-content-bytes" =>
+            options = {
+              ..options,
+              pull_limits: {
+                ..options.pull_limits,
+                max_total_bytes: registry_byte_argument(args[index]),
+              },
+            }
+          "--max-blob-bytes" =>
+            options = {
+              ..options,
+              pull_limits: {
+                ..options.pull_limits,
+                max_blob_bytes: integer_argument(args[index]),
+              },
+            }
+          "--max-metadata-bytes" =>
+            options = {
+              ..options,
+              pull_limits: {
+                ..options.pull_limits,
+                max_metadata_bytes: integer_argument(args[index]),
+              },
+            }
+          "--max-objects" =>
+            options = {
+              ..options,
+              pull_limits: {
+                ..options.pull_limits,
+                max_objects: integer_argument(args[index]),
+              },
+            }
+          "--max-visits" =>
+            options = {
+              ..options,
+              pull_limits: {
+                ..options.pull_limits,
+                max_visits: integer_argument(args[index]),
+              },
+            }
+          "--max-depth" =>
+            options = {
+              ..options,
+              pull_limits: {
+                ..options.pull_limits,
+                max_depth: integer_argument(args[index]),
+              },
+            }
           "--artifact-type" => {
             if artifact_type is Some(_) {
               raise @model.InvalidArgument("duplicate artifact type filter")
@@ -124,6 +217,18 @@ fn parse_registry_options(
   options.validate()
   discovery_limits.validate()
   { options, cache_path, buffered, artifact_type, discovery_limits, }
+}
+
+///|
+fn registry_byte_argument(value : String) -> Int64 raise @model.MoonOciError {
+  if value.is_empty() || !value.to_array().all(ch => ch >= '0' && ch <= '9') {
+    raise @model.InvalidArgument(
+      "registry byte budget must be non-negative decimal",
+    )
+  }
+  @string.parse_int64(value) catch {
+    _ => raise @model.InvalidArgument("registry byte budget overflows Int64")
+  }
 }
 
 ///|

@@ -312,6 +312,20 @@ def main():
         state['mode'] = 'normal'
         assert (multi / 'index.json').read_bytes() == image_root_body
 
+        for flag in ('--max-content-bytes', '--max-blob-bytes', '--max-metadata-bytes',
+                     '--max-objects', '--max-visits', '--max-depth', '--max-http-requests'):
+            pull(registry_origin, directory / ('quota-' + flag[2:]), flag, '1', status=5)
+        pull(registry_origin, directory / 'quota-auth', '--max-auth-requests', '0', status=5)
+        run('registry-referrers', registry_origin, REPOSITORY, images[0]['digest'],
+            '--allow-http', '--max-page-bytes', '1', status=5)
+        run('registry-referrers', registry_origin, REPOSITORY, images[0]['digest'],
+            '--allow-http', '--max-listing-bytes', '1', status=5)
+        before = len(state['requests'])
+        for flag, value in [('--max-content-bytes', '9223372036854775808'), ('--max-objects', '0'),
+                            ('--max-blob-bytes', '0'), ('--max-http-requests', '-1')]:
+            pull(registry_origin, directory / ('bad-quota-' + flag[2:]), flag, value, status=2)
+        assert len(state['requests']) == before
+
         # A complete cache works even while the peer refuses all HTTP traffic.
         state['mode'] = 'forbid-all'
         before = len(state['requests'])
@@ -387,6 +401,7 @@ def main():
         auth_loop_bounded=True, optional_digest_header=True, bounded_transient_retries=True, artifact_gate_consumed=True,
         paginated_referrers=True, local_type_filter=True, foreign_and_looping_pages_refused=True,
         verified_referrer_bundle=True, bundle_cache_content_requests=0, forged_advertisements_refused=True,
+        operator_resource_profiles=True, invalid_quotas_refused_before_http=True,
         independent_image_observation=True, oras_registry_copy_verified=oras_verified,
         methods=sorted({request[0] for request in state['requests']}), source_writes=0)
     (directory / 'report.json').write_bytes(encode(report))

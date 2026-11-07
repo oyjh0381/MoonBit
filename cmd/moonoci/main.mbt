@@ -561,6 +561,10 @@ async fn print_usage() -> Unit {
       #|    --timeout-ms N --total-timeout-ms N --buffered
       #|    --retries N --max-retry-delay-ms N
       #|    --ca-file PEM_FILE (custom trust roots; certificate/name checks remain enabled)
+      #|    --max-http-requests N --max-auth-requests N --max-redirects N
+      #|    Pull/bundle: --max-content-bytes N --max-blob-bytes N --max-metadata-bytes N
+      #|                 --max-objects N --max-visits N --max-depth N
+      #|    Discovery/bundle: --max-page-bytes N --max-listing-bytes N
       #|    Optional Bearer input: MOONOCI_REGISTRY_TOKEN environment variable
       #|  moonoci content-catalog INPUT EXPECTED_INDEX_PIN
       #|  moonoci retain-plan INPUT EXPECTED_INDEX_PIN MODE ROOT [ROOT...]

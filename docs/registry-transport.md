@@ -140,3 +140,24 @@ The source pin in a bundle receipt identifies the verified local base index. A
 manifest-root pull receives a generated OCI layout wrapper; the transport report
 separately records the original trusted manifest digest. New nested wrappers
 change the output index digest without changing original subjects or payloads.
+
+## Operator budgets
+
+All commands accept `--max-http-requests`, `--max-auth-requests` and
+`--max-redirects`, alongside time/retry controls. Pull and bundle additionally
+accept `--max-content-bytes`, `--max-blob-bytes`, `--max-metadata-bytes`,
+`--max-objects`, `--max-visits` and `--max-depth`. Discovery and bundle accept
+`--max-pages`, `--max-entries`, `--max-page-bytes` and `--max-listing-bytes`.
+Byte values are decimal bytes, not MiB abbreviations. Invalid, overflowing or
+out-of-profile values fail before any HTTP request.
+
+Defaults: 4096 content objects, 16384 graph visits, depth 32, 16 MiB metadata,
+64 MiB blobs, 512 MiB content; discovery 64 pages, 4096 advertisements, 1 MiB per
+page and 16 MiB total listing bytes. Hard supported limits remain enforced by
+`PullLimits.validate`, `DiscoveryLimits.validate` and `RegistryOptions.validate`;
+increasing a caller budget cannot disable semantic decoder limits.
+
+The native fixture tightens each content/graph/HTTP/auth/listing quota separately
+and requires refusal with no output/staging directory. It also checks that
+invalid limits and Int64 overflow cause no HTTP contact. These are enforcement
+checks, not measurements of hard process RSS or total socket traffic.
