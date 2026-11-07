@@ -185,3 +185,24 @@ attachments); duplicate types are errors. It discovers all types, so
 different bounded minimum/maximum counts through `ArtifactRequirement`. This
 policy establishes typed attachment presence/content/association only; external
 document validators and signer-trust policy remain separate host integrations.
+
+## Explicit CONNECT proxies
+
+`RegistryOptions.proxy_origin` / `--proxy-origin http://proxy.example:3128`
+selects a caller-approved HTTP or HTTPS CONNECT proxy. Ambient proxy environment
+variables are not imported. Origins must exclude userinfo, paths, queries and
+fragments. Proxy authentication is not implemented. The option itself explicitly
+permits the proxy transport scheme; registry HTTP still requires `--allow-http`.
+
+The Registry, token endpoint and allowed blob origin retain their own end-to-end
+TLS hostname/chain checks inside the tunnel. Custom roots apply to both an HTTPS
+proxy and the target. Registry Authorization is not placed on CONNECT requests.
+The HTTP request counter/budget counts logical Registry/token GET attempts;
+each may additionally require one CONNECT. Proxy setup is included in request
+timeouts; all handles close on refusal/cancellation. An HTTP target inside a
+tunnel is plaintext and visible to the chosen proxy.
+
+The local TLS fixture executes both HTTP and HTTPS proxy paths, checks that
+Registry Authorization reaches the target but not CONNECT headers, retains
+default certificate distrust, and refuses a 407 proxy response without output.
+It binds only loopback and forwards only to the fixture's exact authority.

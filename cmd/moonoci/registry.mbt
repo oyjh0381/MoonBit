@@ -33,6 +33,7 @@ fn parse_registry_options(
       "--buffered" if output_options => buffered = true
       "--cache"
       | "--ca-file"
+      | "--proxy-origin"
       | "--allow-realm"
       | "--allow-blob-origin"
       | "--timeout-ms"
@@ -84,6 +85,12 @@ fn parse_registry_options(
         }
         index += 1
         match flag {
+          "--proxy-origin" => {
+            if options.proxy_origin is Some(_) {
+              raise @model.InvalidArgument("duplicate registry proxy origin")
+            }
+            options = { ..options, proxy_origin: Some(args[index]), }
+          }
           "--release-policy" => {
             if release_policy_path is Some(_) {
               raise @model.InvalidArgument("duplicate release policy file")

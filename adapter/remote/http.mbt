@@ -5,12 +5,25 @@ async fn fetch_entity(
   max_bytes : Int32,
   expected_size : Int64?,
   ca_file : String?,
+  proxy_origin : String?,
 ) -> HttpEntity {
   let trust : @tls.TrustedRoot = match ca_file {
     None => SystemRoot
     Some(path) => CustomPemFile(path)
   }
-  let client = @http.Client(url.origin().url(), headers~, trust~) catch {
+  let proxy = match proxy_origin {
+    None => None
+    Some(origin) =>
+      Some(@http.Client(origin, trust~)) catch {
+        error if @async.is_cancellation_error(error) => raise error
+        _ =>
+          raise @model.IoFailure(
+            "registry proxy connection or TLS setup failed",
+          )
+      }
+  }
+  defer (if proxy is Some(proxy) { proxy.close() })
+  let client = @http.Client(url.origin().url(), headers~, trust~, proxy?) catch {
     error if @async.is_cancellation_error(error) => raise error
     _ => raise @model.IoFailure("registry connection or TLS setup failed")
   }
@@ -89,6 +102,7 @@ async fn RegistryTransport::fetch_once(
       max_bytes,
       expected_size,
       self.options.ca_file,
+      self.options.proxy_origin,
     )
   }) catch {
     @async.TimeoutError =>

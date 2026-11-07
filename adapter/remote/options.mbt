@@ -2,6 +2,7 @@
 pub(all) struct RegistryOptions {
   allow_http : Bool
   ca_file : String?
+  proxy_origin : String?
   request_timeout_ms : Int32
   total_timeout_ms : Int32
   max_http_requests : Int32
@@ -19,6 +20,7 @@ pub fn RegistryOptions::default() -> RegistryOptions {
   {
     allow_http: false,
     ca_file: None,
+    proxy_origin: None,
     request_timeout_ms: 30000,
     total_timeout_ms: 300000,
     max_http_requests: 16384,
@@ -37,6 +39,9 @@ pub fn RegistryOptions::validate(
   self : RegistryOptions,
 ) -> Unit raise @model.MoonOciError {
   self.pull_limits.validate()
+  if self.proxy_origin is Some(origin) {
+    ignore(@registry.RegistryOrigin::parse(origin, allow_http=true))
+  }
   if self.ca_file is Some(path) {
     if path.is_empty() || path.length() > 4096 || path.contains_char('\u{0000}') {
       raise @model.InvalidArgument("invalid registry CA file path")
@@ -90,6 +95,9 @@ fn RegistryTransport::new(
   options.validate()
   let options = {
     ..options,
+    proxy_origin: options.proxy_origin.map(value => {
+      @registry.RegistryOrigin::parse(value, allow_http=true).url()
+    }),
     allowed_realms: options.allowed_realms.copy(),
     allowed_blob_origins: options.allowed_blob_origins.copy(),
   }

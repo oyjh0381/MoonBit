@@ -11,6 +11,9 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import ipaddress
 import json
 import os
+import select
+import socket
+from socketserver import StreamRequestHandler, ThreadingTCPServer
 from pathlib import Path
 import ssl
 import subprocess
@@ -72,6 +75,8 @@ def main():
     context.minimum_version = ssl.TLSVersion.TLSv1_2
     context.load_cert_chain(cert, private)
     requests = []
+    origin_auth = []
+    proxy_requests = []
 
     class Handler(BaseHTTPRequestHandler):
         protocol_version = 'HTTP/1.1'
@@ -81,6 +86,7 @@ def main():
 
         def do_GET(self):
             requests.append(self.path)
+            origin_auth.append(bool(self.headers.get('Authorization')))
             if '/manifests/' in self.path:
                 requested = self.path.rsplit('/',1)[1]
                 data = body if requested in ('release',pin) else blobs.get(requested)
@@ -109,6 +115,57 @@ def main():
         finally:
             peer.shutdown();peer.server_close();thread.join(timeout=5)
 
+    @contextmanager
+    def proxy(target, reject=False, secure=False):
+        """Restricted local CONNECT fixture, never an open forward proxy."""
+        authority = target.removeprefix('https://')
+
+        class Tunnel(StreamRequestHandler):
+            def handle(self):
+                self.connection.settimeout(5)
+                line = self.rfile.readline(4096).decode('ascii').strip()
+                headers = []
+                for _ in range(32):
+                    header = self.rfile.readline(4096).strip()
+                    if not header:
+                        break
+                    headers.append(header.split(b':', 1)[0].lower())
+                proxy_requests.append((line, headers))
+                assert b'authorization' not in headers and b'proxy-authorization' not in headers
+                assert line == f'CONNECT {authority} HTTP/1.1'
+                if reject:
+                    self.wfile.write(b'HTTP/1.1 407 Proxy Authentication Required\r\nContent-Length: 0\r\n\r\n')
+                    self.wfile.flush()
+                    return
+                host, port = authority.rsplit(':', 1)
+                with socket.create_connection((host, int(port)), timeout=5) as upstream:
+                    upstream.settimeout(5)
+                    self.wfile.write(b'HTTP/1.1 200 Connection established\r\nContent-Length: 0\r\n\r\n')
+                    self.wfile.flush()
+                    while True:
+                        ready, _, _ = select.select([self.connection, upstream], [], [], 5)
+                        if not ready:
+                            return
+                        for source in ready:
+                            try:
+                                data = source.recv(65536)
+                                if not data:
+                                    return
+                                (upstream if source is self.connection else self.connection).sendall(data)
+                            except (ConnectionResetError, ConnectionAbortedError, BrokenPipeError):
+                                return
+
+        peer = ThreadingTCPServer(('127.0.0.1', 0), Tunnel)
+        peer.daemon_threads = True
+        if secure:
+            peer.socket = context.wrap_socket(peer.socket, server_side=True)
+        thread = threading.Thread(target=lambda: peer.serve_forever(poll_interval=0.05), daemon=True)
+        thread.start()
+        try:
+            yield f'{"https" if secure else "http"}://127.0.0.1:{peer.server_address[1]}'
+        finally:
+            peer.shutdown();peer.server_close();thread.join(timeout=5)
+
     options=['--retries','0','--timeout-ms','5000','--total-timeout-ms','15000','--buffered']
     with server('127.0.0.1') as origin:
         refused=directory/'untrusted-refused'
@@ -119,6 +176,24 @@ def main():
         assert (output/'index.json').read_bytes()==body
         assert {'sha256:'+p.name:p.read_bytes() for p in (output/'blobs/sha256').iterdir()}==blobs
         assert statistics['core']['complete'] and json.loads(run('verify-store',output))['valid']
+        with proxy(origin) as forwarder:
+            environment['MOONOCI_REGISTRY_TOKEN'] = 'fixture-tunnel-token'
+            tunneled = directory / 'through-proxy'
+            run('registry-pull',origin,'tls/app','release',pin,tunneled,*options,'--ca-file',cert,'--proxy-origin',forwarder)
+            environment.pop('MOONOCI_REGISTRY_TOKEN')
+            assert (tunneled/'index.json').read_bytes() == body
+            assert proxy_requests and any(origin_auth)
+            before = len(requests)
+            run('registry-pull',origin,'tls/app','release',pin,directory/'proxy-untrusted',*options,'--proxy-origin',forwarder,status=3)
+            assert len(requests) == before
+        with proxy(origin, reject=True) as forwarder:
+            refused = directory/'proxy-refused'
+            run('registry-pull',origin,'tls/app','release',pin,refused,*options,'--ca-file',cert,'--proxy-origin',forwarder,status=3)
+            assert not refused.exists()
+        with proxy(origin, secure=True) as forwarder:
+            output = directory/'https-proxy'
+            run('registry-pull',origin,'tls/app','release',pin,output,*options,'--ca-file',cert,'--proxy-origin',forwarder.replace('https://','HTTPS://'))
+            assert (output/'index.json').read_bytes() == body
     before=len(requests)
     with server('127.0.0.2') as wrong_origin:
         refused=directory/'hostname-refused'
@@ -127,6 +202,8 @@ def main():
     report=dict(schema='moonoci.registry-tls.v1', private_ca_pull=True, default_untrusted_refused=True,
                 wrong_hostname_refused=True, os_trust_store_modified=False, request_bytes_verified=True,
                 source_root=pin, private_keys_published=False)
+    report.update(connect_proxy_verified=True, proxy_sees_no_registry_authorization=True,
+                  tunneled_tls_checks_preserved=True, proxy_refusal_blocks_output=True, https_proxy_verified=True)
     (directory/'report.json').write_text(json.dumps(report,indent=2),'utf-8')
     print(json.dumps(report,indent=2))
 

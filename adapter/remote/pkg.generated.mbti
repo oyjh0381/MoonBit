@@ -39,6 +39,7 @@ pub(all) struct RegistryDiscoveryResult {
 pub(all) struct RegistryOptions {
   allow_http : Bool
   ca_file : String?
+  proxy_origin : String?
   request_timeout_ms : Int32
   total_timeout_ms : Int32
   max_http_requests : Int32
