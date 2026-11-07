@@ -34,6 +34,8 @@ pub fn referrers_json(ReferrerDiscovery) -> String raise @model.MoonOciError
 
 pub fn resolve_subject(@layout.MemoryLayout, @model.Digest, limits? : @graph.WalkLimits) -> @model.Descriptor raise @model.MoonOciError
 
+pub fn statement_binding_json(StatementBinding) -> String
+
 pub let statement_media_type : String
 
 pub let statement_v1 : String
@@ -47,6 +49,8 @@ pub fn verification_json(StoreVerification) -> String
 pub fn verify_referrer_page(@layout.MemoryLayout, @model.Digest, Array[ReferrerAdvertisement], artifact_type? : String) -> ReferrerPageVerification raise @model.MoonOciError
 
 pub fn verify_statement(Bytes, @model.Digest, String) -> StatementBinding raise @model.MoonOciError
+
+pub fn verify_statement_attachment(@layout.MemoryLayout, @model.Descriptor, @model.Digest, String) -> StatementBinding raise @model.MoonOciError
 
 pub fn verify_store(@layout.MemoryLayout, artifact_limits? : ArtifactLimits, graph_limits? : @graph.WalkLimits, require_subject? : Bool, max_total_payload_bytes? : Int64) -> StoreVerification raise @model.MoonOciError
 

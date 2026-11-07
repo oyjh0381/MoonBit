@@ -12,6 +12,23 @@ async fn main {
     }
     match args[1] {
       "registry-pull" => registry_pull_command(args)
+      "statement-verify" => {
+        require_arity(
+          args, 6, "usage: moonoci statement-verify INPUT ATTACHMENT SUBJECT PREDICATE_TYPE",
+        )
+        let attachment = @model.Digest::parse(args[3])
+        let subject = @model.Digest::parse(args[4])
+        @artifacts.validate_statement_predicate_type(args[5])
+        let source = @native.load_bounded_layout(args[2])
+        let descriptor = @artifacts.resolve_subject(source, attachment)
+        let binding = @artifacts.verify_statement_attachment(
+          source,
+          descriptor,
+          subject,
+          args[5],
+        )
+        @stdio.stdout.write(@artifacts.statement_binding_json(binding) + "\n")
+      }
       "gate-store" => {
         if args.length() != 3 && args.length() != 4 {
           raise @model.InvalidArgument(
@@ -574,6 +591,7 @@ async fn print_usage() -> Unit {
       #|MoonOCI — deterministic OCI Image Layout builder and validator
       #|
       #|Usage:
+      #|  moonoci statement-verify INPUT ATTACHMENT SUBJECT PREDICATE_TYPE
       #|  moonoci gate-store INPUT [POLICY_JSON] (all image branches plus whole supported store)
       #|  moonoci registry-admit ORIGIN REPOSITORY REFERENCE EXPECTED_ROOT SUBJECT OUTPUT
       #|    --require-artifact TYPE [--require-artifact TYPE...] [TRANSPORT/PULL OPTIONS]

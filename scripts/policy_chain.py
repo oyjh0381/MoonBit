@@ -1,5 +1,6 @@
 """Mixed-layout release gate consumer; validates metadata, does not run a container."""
 import argparse
+import hashlib
 import json
 from pathlib import Path
 import subprocess
@@ -78,6 +79,25 @@ def main():
     invalid.write_bytes(b' ' * 65537)
     run('gate-store', directory / 'good-attached', invalid, status=5)
     report.update(versioned_policy_files=True, environment_values_not_echoed=True, oversized_policy_refused=True)
+    predicate_type = 'https://example.org/moonoci/build/v1'
+    media = 'application/vnd.in-toto+json'
+    for name, target, status in [('bound', subject, 0), ('wrong-subject', 'sha256:' + '0' * 64, 5)]:
+        document = directory / (name + '.statement.json')
+        document.write_bytes(json.dumps({
+            '_type': 'https://in-toto.io/Statement/v1', 'predicateType': predicate_type,
+            'subject': [{'digest': {'sha256': target.split(':', 1)[1]}}],
+        }).encode('utf-8'))
+        output = directory / (name + '-statement')
+        attachment = run('artifact-attach', directory / 'good', subject, media, media,
+                         document, 'statement', output).strip()
+        raw = run('statement-verify', output, attachment, subject, predicate_type, status=status)
+        if not status:
+            binding = json.loads(raw)
+            assert binding['payload'] == 'sha256:' + hashlib.sha256(document.read_bytes()).hexdigest()
+            assert binding['subject'] == subject and not binding['signatures_verified']
+        else:
+            assert not raw
+    report.update(statement_attachment_bound=True, incorrect_statement_subject_refused=True)
     (directory / 'report.json').write_text(json.dumps(report, indent=2), 'utf-8')
     print(json.dumps(report, indent=2))
 

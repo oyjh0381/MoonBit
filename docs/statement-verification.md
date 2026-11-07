@@ -16,3 +16,16 @@ This profile uses the official [Statement v1 specification](https://github.com/i
 and [DigestSet format](https://github.com/in-toto/attestation/blob/main/spec/v1/digest_set.md).
 Trust in a producer, DSSE signature verification and predicate-specific checks
 belong to a separate verification layer.
+
+`artifacts.verify_statement_attachment` additionally resolves the expected
+subject in a local OCI layout and checks the attachment's subject digest,
+media type and size. The attachment and its single payload use the
+`application/vnd.in-toto+json` media type for this raw Statement profile.
+
+```text
+moonoci statement-verify INPUT ATTACHMENT_DIGEST SUBJECT_DIGEST PREDICATE_TYPE
+```
+
+The structured result identifies the raw payload digest and records
+`signatures_verified: false`. The policy fixture independently hashes a
+Statement and rejects a valid OCI attachment with the wrong inner digest.
