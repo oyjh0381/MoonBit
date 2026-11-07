@@ -19,6 +19,7 @@ async fn registry_pull_command(args : Array[String]) -> Unit {
       "--allow-http" => options = { ..options, allow_http: true, }
       "--buffered" => buffered = true
       "--cache"
+      | "--ca-file"
       | "--allow-realm"
       | "--allow-blob-origin"
       | "--timeout-ms"
@@ -30,6 +31,12 @@ async fn registry_pull_command(args : Array[String]) -> Unit {
         }
         index += 1
         match flag {
+          "--ca-file" => {
+            if options.ca_file is Some(_) {
+              raise @model.InvalidArgument("duplicate registry CA file option")
+            }
+            options = { ..options, ca_file: Some(args[index]), }
+          }
           "--cache" => {
             if cache_path is Some(_) {
               raise @model.InvalidArgument("duplicate registry cache option")

@@ -5,6 +5,7 @@ import {
   "oyjh0381/moonoci/digest",
   "moonbitlang/async",
   "moonbitlang/async/http",
+  "moonbitlang/async/tls",
 }
 
 supported_targets = "+native"

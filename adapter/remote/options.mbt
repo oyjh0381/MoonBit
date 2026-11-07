@@ -1,6 +1,7 @@
 ///|
 pub(all) struct RegistryOptions {
   allow_http : Bool
+  ca_file : String?
   request_timeout_ms : Int32
   total_timeout_ms : Int32
   max_http_requests : Int32
@@ -17,6 +18,7 @@ pub(all) struct RegistryOptions {
 pub fn RegistryOptions::default() -> RegistryOptions {
   {
     allow_http: false,
+    ca_file: None,
     request_timeout_ms: 30000,
     total_timeout_ms: 300000,
     max_http_requests: 16384,
@@ -35,6 +37,11 @@ pub fn RegistryOptions::validate(
   self : RegistryOptions,
 ) -> Unit raise @model.MoonOciError {
   self.pull_limits.validate()
+  if self.ca_file is Some(path) {
+    if path.is_empty() || path.length() > 4096 || path.contains_char('\u{0000}') {
+      raise @model.InvalidArgument("invalid registry CA file path")
+    }
+  }
   if self.request_timeout_ms < 1 ||
     self.request_timeout_ms > 120000 ||
     self.total_timeout_ms < 1 ||

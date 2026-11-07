@@ -555,6 +555,7 @@ async fn print_usage() -> Unit {
       #|    --allow-http --cache PATH --allow-realm ORIGIN --allow-blob-origin ORIGIN
       #|    --timeout-ms N --total-timeout-ms N --buffered
       #|    --retries N --max-retry-delay-ms N
+      #|    --ca-file PEM_FILE (custom trust roots; certificate/name checks remain enabled)
       #|    Optional Bearer input: MOONOCI_REGISTRY_TOKEN environment variable
       #|  moonoci content-catalog INPUT EXPECTED_INDEX_PIN
       #|  moonoci retain-plan INPUT EXPECTED_INDEX_PIN MODE ROOT [ROOT...]

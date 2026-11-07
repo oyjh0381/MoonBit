@@ -4,9 +4,13 @@ async fn fetch_entity(
   headers : Map[String, String],
   max_bytes : Int32,
   expected_size : Int64?,
+  ca_file : String?,
 ) -> HttpEntity {
-  // System certificate verification is the HTTP dependency's HTTPS default.
-  let client = @http.Client(url.origin().url(), headers~) catch {
+  let trust : @tls.TrustedRoot = match ca_file {
+    None => SystemRoot
+    Some(path) => CustomPemFile(path)
+  }
+  let client = @http.Client(url.origin().url(), headers~, trust~) catch {
     error if @async.is_cancellation_error(error) => raise error
     _ => raise @model.IoFailure("registry connection or TLS setup failed")
   }
@@ -79,7 +83,13 @@ async fn RegistryTransport::fetch_once(
   }
   self.requests += 1
   @async.with_timeout(self.options.request_timeout_ms, () => {
-    fetch_entity(url, Map(headers.iter().collect()), max_bytes, expected_size)
+    fetch_entity(
+      url,
+      Map(headers.iter().collect()),
+      max_bytes,
+      expected_size,
+      self.options.ca_file,
+    )
   }) catch {
     @async.TimeoutError =>
       raise @model.IoFailure("registry HTTP request timed out")
