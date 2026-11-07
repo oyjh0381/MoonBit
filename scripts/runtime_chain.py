@@ -2,6 +2,7 @@
 Requires moon, cc, ldd, skopeo, podman. No remote registry or base image needed.
 """
 import hashlib
+import argparse
 import json
 from pathlib import Path
 import platform
@@ -14,11 +15,16 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 def run(*arguments):
-    result = subprocess.run(list(map(str, arguments)), cwd=ROOT, check=True, capture_output=True, text=True, timeout=240)
+    result = subprocess.run(list(map(str, arguments)), cwd=ROOT, capture_output=True, text=True, timeout=240)
+    if result.returncode:
+        raise RuntimeError((arguments, result.returncode, result.stdout, result.stderr))
     return result.stdout.strip()
 
 
 def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--rootful', action='store_true', help='run isolated Podman storage through sudo')
+    args = parser.parse_args()
     if platform.system() != 'Linux':
         raise SystemExit('Run this chain on a Linux runner; independent_layout.py runs on Windows too.')
     for tool in ('moon', 'ldd', 'skopeo', 'podman'):
@@ -69,8 +75,14 @@ def main():
     archive = workspace / 'image.tar'
     run(binary, 'archive', image, archive)
     tag = 'localhost/moonoci-selfcheck:' + hashlib.sha256(original).hexdigest()[:16]
-    run('skopeo', 'copy', 'oci:' + str(image) + ':selfcheck', 'containers-storage:' + tag)
-    output = run('podman', 'run', '--rm', '--network=none', '--read-only', '--cap-drop=ALL',
+    runtime_archive = workspace / 'runtime.oci.tar'
+    run('skopeo', 'copy', 'oci:' + str(image) + ':selfcheck', 'oci-archive:' + str(runtime_archive) + ':' + tag)
+    podman = (['sudo'] if args.rootful else []) + [
+        'podman', '--root', str(workspace / 'podman-storage'),
+        '--runroot', str(workspace / 'podman-runroot'), '--storage-driver', 'vfs',
+    ]
+    run(*podman, 'load', '--input', runtime_archive)
+    output = run(*podman, 'run', '--rm', '--network=none', '--read-only', '--cap-drop=ALL',
                  '--security-opt=no-new-privileges', tag)
     assert output.startswith('valid: manifests=1')
     assert inspected['Digest'] == independent['images'][0]['manifest']
