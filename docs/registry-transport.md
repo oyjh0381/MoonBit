@@ -94,3 +94,18 @@ registry can omit attachments or change between pages. Listings are discovery
 metadata, not signed evidence or a proof of repository completeness. Advertised
 manifests must subsequently be fetched by digest and checked for actual subject,
 type and annotations before a host relies on them.
+
+`assemble_referrer_bundle` closes that boundary for supplied fetched layouts:
+it checks the caller's source index pin, resolves the local metadata subject,
+validates physical records and aggregate quotas, compares each fetched root with
+its advertisement, and checks exact subject digest/media type/size plus actual
+artifact type and annotations. A final supported-store semantic verification is
+mandatory, including when the listing is empty. Wrong-subject, forged-type,
+corrupt-payload and conflicting-root inputs do not produce a bundle.
+
+Nonempty bundles wrap the original source index as exact nested content and add
+verified referrer roots. Original metadata/extensions, subject identities and
+payload bytes are retained; the output index gets a new digest. Empty bundles
+preserve the original index bytes. The returned receipt binds input/output pins
+and verified associations, with `signatures_verified: false`. Neither an SPDX
+media type nor an in-toto media type implies semantic or cryptographic validity.

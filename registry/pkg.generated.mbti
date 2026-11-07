@@ -8,6 +8,8 @@ import {
 }
 
 // Values
+pub fn assemble_referrer_bundle(@layout.MemoryLayout, @model.Digest, @model.Digest, Array[@artifacts.ReferrerAdvertisement], Array[@layout.MemoryLayout], limits? : PullLimits) -> ReferrerBundle raise @model.MoonOciError
+
 pub fn bearer_authorization(String) -> String raise @model.MoonOciError
 
 pub fn blob_path(String, @model.Digest) -> String raise @model.MoonOciError
@@ -105,6 +107,11 @@ pub fn PullSession::new(String, String, @model.Digest, limits? : PullLimits, inc
 pub fn PullSession::next(Self) -> FetchRequest?
 pub fn PullSession::planned_requests(Self) -> Int32
 pub fn PullSession::reserved_bytes(Self) -> Int64
+
+pub(all) struct ReferrerBundle {
+  layout : @layout.MemoryLayout
+  receipt : String
+}
 
 pub struct ReferrerSession {
   // private fields
