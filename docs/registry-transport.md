@@ -109,3 +109,34 @@ payload bytes are retained; the output index gets a new digest. Empty bundles
 preserve the original index bytes. The returned receipt binds input/output pins
 and verified associations, with `signatures_verified: false`. Neither an SPDX
 media type nor an in-toto media type implies semantic or cryptographic validity.
+
+## Release with remotely discovered attachments
+
+```text
+moonoci registry-bundle https://registry.example.org team/app release \
+  sha256:<trusted-root> sha256:<local-image-or-index-subject> offline-release \
+  --allow-realm https://auth.example.org
+moonoci artifact-gate offline-release sha256:<subject> application/spdx+json
+```
+
+`pull_with_referrers`/`registry-bundle` combine a pinned base pull, local subject
+resolution, paginated discovery, digest-pinned closure pulls and verified bundle
+assembly. Authentication and HTTP quotas, accepted content entity bytes and the
+total cooperative timeout are shared across all these phases. Separate listing
+byte/page/entry budgets remain active. Content already verified during the base
+or preceding attachment pulls is reused; the optional external cache is only
+consumed through per-content verification and is not mutated. Failed pulls or
+associations do not publish any destination.
+
+The accepted-content byte counter excludes listing pages, token responses,
+headers and failed transport attempts. It is not a TCP traffic meter. Cache
+reuse still performs live discovery; an old attachment listing is not implicitly
+reused as current. Only immediate referrers of one explicit local subject are
+discovered; fallback referrers tags and recursive attachment discovery are not
+implemented. Unknown/absent advertised types must match actual metadata under
+the strict association profile. Host policy decides which types are required.
+
+The source pin in a bundle receipt identifies the verified local base index. A
+manifest-root pull receives a generated OCI layout wrapper; the transport report
+separately records the original trusted manifest digest. New nested wrappers
+change the output index digest without changing original subjects or payloads.

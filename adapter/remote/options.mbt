@@ -76,6 +76,12 @@ pub(all) struct RegistryDiscoveryResult {
 }
 
 ///|
+pub(all) struct RegistryBundleResult {
+  layout : @layout.MemoryLayout
+  statistics : String
+}
+
+///|
 fn RegistryTransport::new(
   origin : String,
   options : RegistryOptions,
@@ -99,6 +105,7 @@ fn RegistryTransport::new(
     requests: 0,
     auth_requests: 0,
     retries: 0,
+    accepted_network_bytes: 0L,
   }
 }
 
@@ -117,4 +124,5 @@ priv struct RegistryTransport {
   mut requests : Int32
   mut auth_requests : Int32
   mut retries : Int32
+  mut accepted_network_bytes : Int64
 }

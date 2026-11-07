@@ -48,6 +48,15 @@ supported image/artifact semantics before writing a new destination. The Windows
 consumer independently checks closure/identity and ORAS discovery; source data
 is never deleted. [Validated internals are private](docs/api-encapsulation.md).
 
+[Registry consumption](docs/registry-transport.md) adds digest-pinned read-only
+HTTP/TLS pulls, private CA support, isolated pull-only Bearer authentication,
+bounded retries, verified cache reuse and confined referrer pagination. The
+`registry-bundle` consumer fetches immediate subject attachments, checks their
+actual association and creates a new offline layout for existing artifact gates.
+Loopback HTTP/HTTPS and independent ORAS consumption run on Windows without a
+Linux VM. Public-registry access and Linux container runtime execution remain
+separate evidence requirements; configured CI is not an executed result.
+
 - deterministic USTAR/PAX writer and safety-focused USTAR/PAX/GNU reader;
 - SHA-256 Digest and content-addressed in-memory OCI Image Layout;
 - uncompressed and deterministic gzip Layers with correct compressed Layer Digest and uncompressed DiffID handling;

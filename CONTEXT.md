@@ -1,5 +1,16 @@
 # MoonOCI
 
+**Registry Pull Session**: A bounded private content-graph acceptance state rooted
+in a caller-supplied digest. Finishing all responses is separate from successful
+supported-profile semantic verification.
+
+**Referrer Listing**: A bounded sequence of untrusted attachment advertisements.
+Exhaustion of received next links does not prove remote completeness.
+
+**Referrer Bundle**: A fresh offline layout preserving an original pinned source
+index and digest-fetched immediate attachments whose actual subject/type/metadata
+and content have been verified. Association verification is not signature proof.
+
 **Content Catalog**: An immutable snapshot of verified physical SHA-256 content
 and recognized metadata topology. Its store pin includes orphan membership.
 It is a content-integrity observation, not a layer/runtime semantic proof.

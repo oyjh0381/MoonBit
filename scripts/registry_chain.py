@@ -88,10 +88,12 @@ def main():
     run('artifact-attach', multi, images[0]['digest'], 'application/spdx+json', 'application/json', payload, 'attachment', source_layout)
     root_body = (source_layout / 'index.json').read_bytes()
     root_pin = pin(root_body)  # Independently supplied release metadata.
+    image_root_body = (multi / 'index.json').read_bytes()
+    image_root_pin = pin(image_root_body)
     blobs = {'sha256:' + p.name: p.read_bytes() for p in (source_layout / 'blobs/sha256').iterdir()}
     for digest, data in blobs.items():
         assert pin(data) == digest
-    metadata = {root_pin: (INDEX, root_body)}
+    metadata = {root_pin: (INDEX, root_body), image_root_pin: (INDEX, image_root_body)}
     for digest, data in blobs.items():
         try:
             value = json.loads(data)
@@ -105,6 +107,7 @@ def main():
     attachment = next(item for item in json.loads(root_body)['manifests']
                       if 'artifactType' in json.loads(blobs[item['digest']]))
     attachment_body = json.loads(blobs[attachment['digest']])
+    attachment_payload_pin = attachment_body['layers'][0]['digest']
     advertisement = {**attachment, 'artifactType': attachment_body['artifactType']}
     advertisement.pop('annotations', None)
     if attachment_body.get('annotations'):
@@ -186,7 +189,14 @@ def main():
             if path == f'/v2/{REPOSITORY}/referrers/{images[0]["digest"]}':
                 query = parse_qs(urlsplit(self.path).query)
                 next_page = bool(query.get('last'))
-                listing = encode(dict(schemaVersion=2, mediaType=INDEX, manifests=[] if next_page else [advertisement]))
+                advertised = dict(advertisement)
+                if state['listing_mode'] == 'wrong-type':
+                    advertised['artifactType'] = 'application/vnd.forged'
+                if state['listing_mode'] == 'wrong-size':
+                    advertised['size'] = 1
+                if state['listing_mode'] == 'wrong-annotations':
+                    advertised['annotations'] = {'forged': 'yes'}
+                listing = encode(dict(schemaVersion=2, mediaType=INDEX, manifests=[] if next_page else [advertised]))
                 link = registry_origin + path + '?last=one'
                 if state['listing_mode'] == 'foreign':
                     link = mirror_origin + path + '?last=one'
@@ -201,7 +211,7 @@ def main():
                     self.send(503, extra={'Retry-After': '0'})
                     return
                 reference = path.rsplit('/', 1)[1]
-                digest = root_pin if reference == 'release' else reference
+                digest = root_pin if reference == 'release' else image_root_pin if reference == 'images' else reference
                 if digest not in metadata:
                     self.send(404)
                     return
@@ -224,6 +234,8 @@ def main():
                 else:
                     body = blobs[digest]
                     if state['mode'] == 'corrupt' and digest == layer_pin:
+                        body = bytes([body[0] ^ 1]) + body[1:]
+                    if state['mode'] == 'corrupt-attachment' and digest == attachment_payload_pin:
                         body = bytes([body[0] ^ 1]) + body[1:]
                     self.send(200, body, 'application/octet-stream', digest)
             else:
@@ -267,6 +279,38 @@ def main():
             assert len(state['mirror_requests']) == before
         state['listing_mode'] = 'normal'
         run('registry-referrers', registry_origin, REPOSITORY, images[0]['digest'], '--allow-http', '--max-pages', '1', status=5)
+
+        def bundle(name, *options, status=0):
+            output = directory / name
+            text = run('registry-bundle', registry_origin, REPOSITORY, 'images', image_root_pin,
+                       images[0]['digest'], output, '--allow-http', '--buffered', *options, status=status)
+            if status:
+                assert not output.exists() and not Path(str(output) + '.moonoci-staging').exists()
+                return None
+            return output, json.loads(text)
+
+        bundled, bundle_statistics = bundle('verified-bundle')
+        assert bundle_statistics['auth_requests'] == 1
+        assert bundle_statistics['bundle']['associations_verified'] and not bundle_statistics['bundle']['signatures_verified']
+        assert bundle_statistics['bundle']['referrers'] == [advertisement['digest']]
+        assert (bundled / 'blobs/sha256' / image_root_pin.split(':')[1]).read_bytes() == image_root_body
+        assert json.loads(run('verify-store', bundled))['valid']
+        assert json.loads(run('artifact-gate', bundled, images[0]['digest'], 'application/spdx+json'))['allowed']
+        flat_bundle = directory / 'bundle-images'
+        run('flatten-pinned', bundled, pin((bundled / 'index.json').read_bytes()), flat_bundle, '--images-only')
+        assert observe(flat_bundle) == observe(multi)
+        _, cache_statistics = bundle('cached-bundle', '--cache', bundled)
+        assert cache_statistics['accepted_network_bytes'] == '0'
+        assert cache_statistics['discovery']['pages'] == 2
+        assert cache_statistics['http_requests'] == 4  # 401, token, two listing pages; no content GETs.
+        for mode in ('wrong-type', 'wrong-size', 'wrong-annotations'):
+            state['listing_mode'] = mode
+            bundle('bundle-' + mode, status=4)
+        state['listing_mode'] = 'normal'
+        state['mode'] = 'corrupt-attachment'
+        bundle('bundle-bad-payload', status=5)
+        state['mode'] = 'normal'
+        assert (multi / 'index.json').read_bytes() == image_root_body
 
         # A complete cache works even while the peer refuses all HTTP traffic.
         state['mode'] = 'forbid-all'
@@ -342,6 +386,7 @@ def main():
         malformed_and_interrupted_responses_refused=True, request_timeouts_verified=True,
         auth_loop_bounded=True, optional_digest_header=True, bounded_transient_retries=True, artifact_gate_consumed=True,
         paginated_referrers=True, local_type_filter=True, foreign_and_looping_pages_refused=True,
+        verified_referrer_bundle=True, bundle_cache_content_requests=0, forged_advertisements_refused=True,
         independent_image_observation=True, oras_registry_copy_verified=oras_verified,
         methods=sorted({request[0] for request in state['requests']}), source_writes=0)
     (directory / 'report.json').write_bytes(encode(report))

@@ -13,9 +13,16 @@ pub async fn discover_referrers(String, String, @model.Digest, artifact_type? : 
 
 pub async fn pull_registry(String, String, String, @model.Digest, options? : RegistryOptions, cache? : @layout.MemoryLayout, bearer_token? : String) -> RegistryPullResult
 
+pub async fn pull_with_referrers(String, String, String, @model.Digest, @model.Digest, artifact_type? : String, options? : RegistryOptions, discovery_limits? : @registry.DiscoveryLimits, cache? : @layout.MemoryLayout, bearer_token? : String) -> RegistryBundleResult
+
 // Errors
 
 // Types and methods
+pub(all) struct RegistryBundleResult {
+  layout : @layout.MemoryLayout
+  statistics : String
+}
+
 pub(all) struct RegistryDiscoveryResult {
   advertisements : Array[@artifacts.ReferrerAdvertisement]
   statistics : String

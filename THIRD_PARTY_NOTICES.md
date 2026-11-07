@@ -6,7 +6,7 @@ MoonOCI depends on the following open-source MoonBit packages. No source code is
 | --- | --- | --- | --- | --- |
 | `moonbitlang/x` | 0.5.5 | https://github.com/moonbitlang/x | Apache-2.0 | SHA-256, time and Base64 utilities |
 | `hustcer/fzip` | 0.8.8 | https://github.com/hustcer/fzip | Apache-2.0 | deterministic gzip and bounded decompression |
-| `moonbitlang/async` | 0.20.6 | https://github.com/moonbitlang/async | Apache-2.0 | Native filesystem and stdio integration |
+| `moonbitlang/async` | 0.20.6 | https://github.com/moonbitlang/async | Apache-2.0 | Native filesystem, stdio, HTTP/TLS integration |
 | `moonbitlang/quickcheck` | 0.15.1 | https://github.com/moonbitlang/quickcheck | Apache-2.0 | property-based tests |
 
 Each dependency's license and copyright notices remain available in its distributed package and upstream repository.
@@ -20,3 +20,9 @@ under ignored build/local-tool directories and are not redistributed in Mooncake
 No ORAS implementation was copied into the MoonBit library. The illustrative
 artifact documents and consumer adapters are original project fixtures; they do
 not claim full SPDX/in-toto semantic validation or signed provenance.
+
+The HTTPS fixture uses Python `cryptography` 49.0.0
+(https://github.com/pyca/cryptography, Apache-2.0 OR BSD-3-Clause) only to generate
+ephemeral local certificates. It is a development dependency, not part of the
+MoonBit library or published archive. Generated private keys remain under ignored
+`_build`; no certificate trust store changes or upstream source copies are made.

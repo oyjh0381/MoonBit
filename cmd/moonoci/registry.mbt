@@ -12,6 +12,7 @@ fn parse_registry_options(
   args : Array[String],
   start : Int32,
   discovery~ : Bool = false,
+  output_options~ : Bool = true,
 ) -> RegistryArguments raise @model.MoonOciError {
   let mut options = @remote.RegistryOptions::default()
   let realms : Array[String] = []
@@ -24,7 +25,7 @@ fn parse_registry_options(
   while index < args.length() {
     match args[index] {
       "--allow-http" => options = { ..options, allow_http: true, }
-      "--buffered" if !discovery => buffered = true
+      "--buffered" if output_options => buffered = true
       "--cache"
       | "--ca-file"
       | "--allow-realm"
@@ -36,7 +37,7 @@ fn parse_registry_options(
       | "--max-pages"
       | "--max-entries"
       | "--total-timeout-ms" as flag => {
-        if (discovery && flag == "--cache") ||
+        if (!output_options && flag == "--cache") ||
           (
             !discovery &&
             ["--artifact-type", "--max-pages", "--max-entries"].contains(flag)
@@ -173,7 +174,12 @@ async fn registry_referrers_command(args : Array[String]) -> Unit {
     )
   }
   let subject = @model.Digest::parse(args[4])
-  let parsed = parse_registry_options(args, 5, discovery=true)
+  let parsed = parse_registry_options(
+    args,
+    5,
+    discovery=true,
+    output_options=false,
+  )
   let bearer_token = @env.get_env_var("MOONOCI_REGISTRY_TOKEN")
   let result = @remote.discover_referrers(
     args[2],
@@ -184,5 +190,43 @@ async fn registry_referrers_command(args : Array[String]) -> Unit {
     limits=parsed.discovery_limits,
     bearer_token?,
   )
+  @stdio.stdout.write(result.statistics + "\n")
+}
+
+///|
+async fn registry_bundle_command(args : Array[String]) -> Unit {
+  if args.length() < 8 {
+    raise @model.InvalidArgument(
+      "usage: moonoci registry-bundle ORIGIN REPOSITORY REFERENCE EXPECTED_ROOT SUBJECT OUTPUT [OPTIONS]",
+    )
+  }
+  let expected = @model.Digest::parse(args[5])
+  let subject = @model.Digest::parse(args[6])
+  @registry.validate_repository(args[3])
+  @registry.validate_reference(args[4])
+  let parsed = parse_registry_options(args, 8, discovery=true)
+  if @fs.exists(args[7]) || @fs.exists(args[7] + ".moonoci-staging") {
+    raise @model.IoFailure(
+      "registry bundle output or staging destination already exists",
+    )
+  }
+  let cache = match parsed.cache_path {
+    None => None
+    Some(path) => Some(@native.load_bounded_layout(path))
+  }
+  let bearer_token = @env.get_env_var("MOONOCI_REGISTRY_TOKEN")
+  let result = @remote.pull_with_referrers(
+    args[2],
+    args[3],
+    args[4],
+    expected,
+    subject,
+    artifact_type?=parsed.artifact_type,
+    options=parsed.options,
+    discovery_limits=parsed.discovery_limits,
+    cache?,
+    bearer_token?,
+  )
+  @native.write_layout(args[7], result.layout, buffered=parsed.buffered)
   @stdio.stdout.write(result.statistics + "\n")
 }
