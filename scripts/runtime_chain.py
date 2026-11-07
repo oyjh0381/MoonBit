@@ -91,6 +91,18 @@ def main():
     run(*podman, 'load', '--input', runtime_archive)
     # Keep an init process at PID 1 so the async CLI has ordinary process
     # shutdown semantics inside the container.
+    probe = run(*podman, 'run', '--init', '-d', '--pull=never', '--timeout=15',
+                '--cgroups=disabled', '--log-driver=k8s-file', '--network=none',
+                '--read-only', '--cap-drop=ALL', '--security-opt=no-new-privileges',
+                tag, 'version')
+    pid = run(*podman, 'inspect', '--format', '{{.State.Pid}}', probe)
+    print('runtime-probe-threads', run('ps', '-T', '-p', pid, '-o', 'pid,tid,stat,wchan,comm'), flush=True)
+    trace = workspace / 'startup.strace'
+    subprocess.run(['sudo', 'timeout', '-s', 'INT', '3', 'strace', '-f', '-tt', '-p', pid, '-o', str(trace)], capture_output=True, timeout=10)
+    if trace.exists():
+        print('runtime-probe-strace', trace.read_text()[-16000:], flush=True)
+    print('runtime-probe-stdout', run(*podman, 'logs', probe), flush=True)
+    run(*podman, 'rm', '-f', probe)
     startup = run(*podman, 'run', '--init', '--rm', '--pull=never', '--timeout=15',
                   '--cgroups=disabled', '--network=none', '--read-only', '--cap-drop=ALL',
                   '--security-opt=no-new-privileges', tag, 'version')
