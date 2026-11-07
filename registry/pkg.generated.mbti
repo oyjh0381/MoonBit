@@ -116,6 +116,7 @@ pub fn ReferrerSession::new(RegistryOrigin, String, @model.Digest, artifact_type
 pub fn ReferrerSession::next_path(Self) -> String?
 pub fn ReferrerSession::pages(Self) -> Int32
 pub fn ReferrerSession::received_bytes(Self) -> Int64
+pub fn ReferrerSession::report(Self) -> Json raise @model.MoonOciError
 
 pub struct RegistryOrigin {
   // private fields

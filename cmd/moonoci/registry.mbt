@@ -1,23 +1,30 @@
 ///|
-async fn registry_pull_command(args : Array[String]) -> Unit {
-  if args.length() < 7 {
-    raise @model.InvalidArgument(
-      "usage: moonoci registry-pull ORIGIN REPOSITORY REFERENCE EXPECTED_ROOT OUTPUT [OPTIONS]",
-    )
-  }
-  let expected = @model.Digest::parse(args[5])
-  @registry.validate_repository(args[3])
-  @registry.validate_reference(args[4])
+priv struct RegistryArguments {
+  options : @remote.RegistryOptions
+  cache_path : String?
+  buffered : Bool
+  artifact_type : String?
+  discovery_limits : @registry.DiscoveryLimits
+}
+
+///|
+fn parse_registry_options(
+  args : Array[String],
+  start : Int32,
+  discovery~ : Bool = false,
+) -> RegistryArguments raise @model.MoonOciError {
   let mut options = @remote.RegistryOptions::default()
   let realms : Array[String] = []
   let blob_origins : Array[String] = []
   let mut cache_path = None
   let mut buffered = false
-  let mut index = 7
+  let mut artifact_type = None
+  let mut discovery_limits = @registry.DiscoveryLimits::default()
+  let mut index = start
   while index < args.length() {
     match args[index] {
       "--allow-http" => options = { ..options, allow_http: true, }
-      "--buffered" => buffered = true
+      "--buffered" if !discovery => buffered = true
       "--cache"
       | "--ca-file"
       | "--allow-realm"
@@ -25,12 +32,41 @@ async fn registry_pull_command(args : Array[String]) -> Unit {
       | "--timeout-ms"
       | "--retries"
       | "--max-retry-delay-ms"
+      | "--artifact-type"
+      | "--max-pages"
+      | "--max-entries"
       | "--total-timeout-ms" as flag => {
+        if (discovery && flag == "--cache") ||
+          (
+            !discovery &&
+            ["--artifact-type", "--max-pages", "--max-entries"].contains(flag)
+          ) {
+          raise @model.InvalidArgument(
+            "option is not supported by this registry command",
+          )
+        }
         if index + 1 == args.length() {
           raise @model.InvalidArgument("registry option requires a value")
         }
         index += 1
         match flag {
+          "--artifact-type" => {
+            if artifact_type is Some(_) {
+              raise @model.InvalidArgument("duplicate artifact type filter")
+            }
+            @artifacts.validate_media_type(args[index])
+            artifact_type = Some(args[index])
+          }
+          "--max-pages" =>
+            discovery_limits = {
+              ..discovery_limits,
+              max_pages: integer_argument(args[index]),
+            }
+          "--max-entries" =>
+            discovery_limits = {
+              ..discovery_limits,
+              max_entries: integer_argument(args[index]),
+            }
           "--ca-file" => {
             if options.ca_file is Some(_) {
               raise @model.InvalidArgument("duplicate registry CA file option")
@@ -65,7 +101,7 @@ async fn registry_pull_command(args : Array[String]) -> Unit {
           _ => abort("unreachable registry option")
         }
       }
-      _ => raise @model.InvalidArgument("unknown registry-pull option")
+      _ => raise @model.InvalidArgument("unknown registry option")
     }
     index += 1
   }
@@ -85,7 +121,25 @@ async fn registry_pull_command(args : Array[String]) -> Unit {
     }),
   }
   options.validate()
-  ignore(@registry.RegistryOrigin::parse(args[2], allow_http~))
+  discovery_limits.validate()
+  { options, cache_path, buffered, artifact_type, discovery_limits, }
+}
+
+///|
+async fn registry_pull_command(args : Array[String]) -> Unit {
+  if args.length() < 7 {
+    raise @model.InvalidArgument(
+      "usage: moonoci registry-pull ORIGIN REPOSITORY REFERENCE EXPECTED_ROOT OUTPUT [OPTIONS]",
+    )
+  }
+  let expected = @model.Digest::parse(args[5])
+  @registry.validate_repository(args[3])
+  @registry.validate_reference(args[4])
+  let parsed = parse_registry_options(args, 7)
+  let options = parsed.options
+  ignore(
+    @registry.RegistryOrigin::parse(args[2], allow_http=options.allow_http),
+  )
   let output_exists = @fs.exists(args[6]) ||
     @fs.exists(args[6] + ".moonoci-staging")
   if output_exists {
@@ -93,7 +147,7 @@ async fn registry_pull_command(args : Array[String]) -> Unit {
       "registry output or staging destination already exists",
     )
   }
-  let cache = match cache_path {
+  let cache = match parsed.cache_path {
     Some(path) => Some(@native.load_bounded_layout(path))
     None => None
   }
@@ -107,6 +161,28 @@ async fn registry_pull_command(args : Array[String]) -> Unit {
     cache?,
     bearer_token?,
   )
-  @native.write_layout(args[6], result.layout, buffered~)
+  @native.write_layout(args[6], result.layout, buffered=parsed.buffered)
+  @stdio.stdout.write(result.statistics + "\n")
+}
+
+///|
+async fn registry_referrers_command(args : Array[String]) -> Unit {
+  if args.length() < 5 {
+    raise @model.InvalidArgument(
+      "usage: moonoci registry-referrers ORIGIN REPOSITORY SUBJECT [OPTIONS]",
+    )
+  }
+  let subject = @model.Digest::parse(args[4])
+  let parsed = parse_registry_options(args, 5, discovery=true)
+  let bearer_token = @env.get_env_var("MOONOCI_REGISTRY_TOKEN")
+  let result = @remote.discover_referrers(
+    args[2],
+    args[3],
+    subject,
+    artifact_type?=parsed.artifact_type,
+    options=parsed.options,
+    limits=parsed.discovery_limits,
+    bearer_token?,
+  )
   @stdio.stdout.write(result.statistics + "\n")
 }

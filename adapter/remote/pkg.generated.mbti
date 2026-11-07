@@ -2,17 +2,25 @@
 package "oyjh0381/moonoci/adapter/remote"
 
 import {
+  "oyjh0381/moonoci/artifacts",
   "oyjh0381/moonoci/layout",
   "oyjh0381/moonoci/model",
   "oyjh0381/moonoci/registry",
 }
 
 // Values
+pub async fn discover_referrers(String, String, @model.Digest, artifact_type? : String, options? : RegistryOptions, limits? : @registry.DiscoveryLimits, bearer_token? : String) -> RegistryDiscoveryResult
+
 pub async fn pull_registry(String, String, String, @model.Digest, options? : RegistryOptions, cache? : @layout.MemoryLayout, bearer_token? : String) -> RegistryPullResult
 
 // Errors
 
 // Types and methods
+pub(all) struct RegistryDiscoveryResult {
+  advertisements : Array[@artifacts.ReferrerAdvertisement]
+  statistics : String
+}
+
 pub(all) struct RegistryOptions {
   allow_http : Bool
   ca_file : String?

@@ -194,7 +194,9 @@ async fn RegistryTransport::get(
   let mut redirects = 0
   while true {
     let headers = Map([("Accept-Encoding", "identity"), ("Connection", "close")])
-    if request.kind == "manifest" {
+    if request.kind == "referrers" {
+      headers["Accept"] = "application/vnd.oci.image.index.v1+json"
+    } else if request.kind == "manifest" {
       for header in @registry.manifest_headers() {
         headers[header.key] = header.value
       }

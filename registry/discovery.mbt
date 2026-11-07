@@ -213,3 +213,34 @@ pub fn ReferrerSession::advertisements(
     },
   })
 }
+
+///|
+pub fn ReferrerSession::report(
+  self : ReferrerSession,
+) -> Json raise @model.MoonOciError {
+  let entries = self
+    .advertisements()
+    .map(entry => {
+      let descriptor = @codec.parse_json_document(
+        @utf8.encode(@codec.encode_descriptor(entry.descriptor)),
+      )
+      match descriptor {
+        Object(fields) => {
+          if entry.artifact_type is Some(value) {
+            fields["artifactType"] = Json::string(value)
+          }
+          Json::object(fields)
+        }
+        _ => abort("encoded descriptor is an object")
+      }
+    })
+  {
+    "schema": Json::string("moonoci.registry-referrers.v1"),
+    "subject": Json::string(self.subject.to_string()),
+    "pages": Json::number(self.pages.to_double()),
+    "listing_bytes": Json::string(self.received.to_string()),
+    "listing_exhausted": Json::boolean(true),
+    "manifests_verified": Json::boolean(false),
+    "referrers": Json::array(entries),
+  }
+}

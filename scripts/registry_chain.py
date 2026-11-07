@@ -102,8 +102,16 @@ def main():
             metadata[digest] = (media, data)
     first_manifest = json.loads(blobs[images[0]['digest']])
     layer_pin = first_manifest['layers'][0]['digest']
+    attachment = next(item for item in json.loads(root_body)['manifests']
+                      if 'artifactType' in json.loads(blobs[item['digest']]))
+    attachment_body = json.loads(blobs[attachment['digest']])
+    advertisement = {**attachment, 'artifactType': attachment_body['artifactType']}
+    advertisement.pop('annotations', None)
+    if attachment_body.get('annotations'):
+        advertisement['annotations'] = attachment_body['annotations']
     state = dict(mode='normal', require_auth=True, reject_auth=False, redirect=False, realm=None,
-                 omit_digest=False, requests=[], mirror_requests=[], token_requests=0, bad_scope=False, auth_leak=False, transient=0)
+                 omit_digest=False, requests=[], mirror_requests=[], token_requests=0, bad_scope=False, auth_leak=False, transient=0,
+                 listing_mode='normal')
 
     class Base(BaseHTTPRequestHandler):
         protocol_version = 'HTTP/1.1'
@@ -175,6 +183,18 @@ def main():
             if path == '/v2/':
                 self.send(200, b'{}')
                 return
+            if path == f'/v2/{REPOSITORY}/referrers/{images[0]["digest"]}':
+                query = parse_qs(urlsplit(self.path).query)
+                next_page = bool(query.get('last'))
+                listing = encode(dict(schemaVersion=2, mediaType=INDEX, manifests=[] if next_page else [advertisement]))
+                link = registry_origin + path + '?last=one'
+                if state['listing_mode'] == 'foreign':
+                    link = mirror_origin + path + '?last=one'
+                if state['listing_mode'] == 'loop':
+                    link = registry_origin + path
+                self.send(200, listing, INDEX, pin(listing),
+                          extra=None if next_page else {'Link': f'<{link}>; rel="next"'})
+                return
             if path.startswith(f'/v2/{REPOSITORY}/manifests/'):
                 if state['transient']:
                     state['transient'] -= 1
@@ -233,6 +253,20 @@ def main():
         flat = directory / 'images-only'
         run('flatten-pinned', result, root_pin, flat, '--images-only')
         assert observe(flat) == observe(multi)
+
+        listing = json.loads(run('registry-referrers', registry_origin, REPOSITORY, images[0]['digest'], '--allow-http'))
+        assert listing['pages'] == 2 and listing['listing_exhausted'] and not listing['manifests_verified']
+        assert listing['referrers'] == [advertisement] and listing['auth_requests'] == 1
+        filtered = json.loads(run('registry-referrers', registry_origin, REPOSITORY, images[0]['digest'],
+                                 '--allow-http', '--artifact-type', 'application/vnd.absent'))
+        assert filtered['referrers'] == [] and filtered['pages'] == 2
+        for mode in ('foreign', 'loop'):
+            state['listing_mode'] = mode
+            before = len(state['mirror_requests'])
+            run('registry-referrers', registry_origin, REPOSITORY, images[0]['digest'], '--allow-http', status=4)
+            assert len(state['mirror_requests']) == before
+        state['listing_mode'] = 'normal'
+        run('registry-referrers', registry_origin, REPOSITORY, images[0]['digest'], '--allow-http', '--max-pages', '1', status=5)
 
         # A complete cache works even while the peer refuses all HTTP traffic.
         state['mode'] = 'forbid-all'
@@ -307,6 +341,7 @@ def main():
         redirect_and_realm_allowlists=True, no_cross_origin_authorization=True, corrupt_cache_refused=True,
         malformed_and_interrupted_responses_refused=True, request_timeouts_verified=True,
         auth_loop_bounded=True, optional_digest_header=True, bounded_transient_retries=True, artifact_gate_consumed=True,
+        paginated_referrers=True, local_type_filter=True, foreign_and_looping_pages_refused=True,
         independent_image_observation=True, oras_registry_copy_verified=oras_verified,
         methods=sorted({request[0] for request in state['requests']}), source_writes=0)
     (directory / 'report.json').write_bytes(encode(report))

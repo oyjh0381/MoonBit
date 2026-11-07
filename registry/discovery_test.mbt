@@ -47,6 +47,13 @@ test "paged referrers preserve filters and deduplicate identical overlap" {
   session.accept(200, response_headers(@model.media_type_index, second), second)
   assert_eq(session.pages(), 3)
   assert_eq(session.advertisements().length(), 2)
+  match session.report() {
+    Object(fields) => {
+      assert_eq(fields["listing_exhausted"], Json::boolean(true))
+      assert_eq(fields["manifests_verified"], Json::boolean(false))
+    }
+    _ => abort("expected report object")
+  }
   let returned = session.advertisements()
   returned.clear()
   assert_eq(session.advertisements().length(), 2)

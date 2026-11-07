@@ -66,6 +66,16 @@ not counted as a passing public-registry or public-TLS result.
 
 ## Referrer discovery profile
 
+```text
+moonoci registry-referrers https://registry.example.org team/app \
+  sha256:<subject> --artifact-type application/spdx+json --max-pages 64
+```
+
+The Native `discover_referrers` API and CLI share pull transport credentials,
+custom CA, origin isolation, retries, request quotas and total time budgets. The
+JSON report explicitly marks `manifests_verified: false`; it carries actual
+advertisements for subsequent digest-pinned fetching, not an admission decision.
+
 `ReferrerSession` walks bounded OCI referrers pages. Each acceptance validates
 headers, body length, OCI index shape, optional digest header, advertisements and
 the next link before committing any state. Identical overlapping advertisements

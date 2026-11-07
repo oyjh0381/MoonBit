@@ -70,6 +70,39 @@ pub(all) struct RegistryPullResult {
 }
 
 ///|
+pub(all) struct RegistryDiscoveryResult {
+  advertisements : Array[@artifacts.ReferrerAdvertisement]
+  statistics : String
+}
+
+///|
+fn RegistryTransport::new(
+  origin : String,
+  options : RegistryOptions,
+  bearer_token : String?,
+) -> RegistryTransport raise @model.MoonOciError {
+  options.validate()
+  let options = {
+    ..options,
+    allowed_realms: options.allowed_realms.copy(),
+    allowed_blob_origins: options.allowed_blob_origins.copy(),
+  }
+  {
+    origin: @registry.RegistryOrigin::parse(
+      origin,
+      allow_http=options.allow_http,
+    ),
+    options,
+    authorization: bearer_token.map(token => {
+      @registry.bearer_authorization(token)
+    }),
+    requests: 0,
+    auth_requests: 0,
+    retries: 0,
+  }
+}
+
+///|
 priv struct HttpEntity {
   status : Int32
   headers : Array[@model.KeyValue]
