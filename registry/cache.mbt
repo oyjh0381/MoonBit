@@ -85,7 +85,8 @@ pub fn pull_statistics(session : PullSession) -> Json {
       session.accepted_network_bytes().to_string(),
     ),
     "reserved_unique_bytes": Json::string(session.reserved_bytes().to_string()),
-    "complete": Json::boolean(session.next() is None),
+    "responses_complete": Json::boolean(session.next() is None),
+    "complete": Json::boolean(session.is_verified()),
   }
   value
 }

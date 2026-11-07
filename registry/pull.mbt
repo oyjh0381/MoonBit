@@ -77,6 +77,7 @@ pub struct PullSession {
   priv mut cached_bytes : Int64
   priv mut cached_requests : Int32
   priv mut root : @model.Descriptor?
+  priv mut verified : Bool
 }
 
 ///|
@@ -120,6 +121,7 @@ pub fn PullSession::new(
     cached_bytes: 0L,
     cached_requests: 0,
     root: None,
+    verified: false,
   }
 }
 
@@ -425,5 +427,11 @@ pub fn PullSession::finish(
       "downloaded layout fails supported image/artifact semantic verification",
     )
   }
+  self.verified = true
   result
+}
+
+///|
+pub fn PullSession::is_verified(self : PullSession) -> Bool {
+  self.verified
 }

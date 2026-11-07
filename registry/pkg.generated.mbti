@@ -88,6 +88,7 @@ pub fn PullSession::body_limit(Self) -> Int32 raise @model.MoonOciError
 pub fn PullSession::cached_bytes(Self) -> Int64
 pub fn PullSession::cached_requests(Self) -> Int32
 pub fn PullSession::finish(Self) -> @layout.MemoryLayout raise @model.MoonOciError
+pub fn PullSession::is_verified(Self) -> Bool
 pub fn PullSession::new(String, String, @model.Digest, limits? : PullLimits, include_subjects? : Bool) -> Self raise @model.MoonOciError
 pub fn PullSession::next(Self) -> FetchRequest?
 pub fn PullSession::planned_requests(Self) -> Int32
