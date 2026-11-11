@@ -39,6 +39,7 @@ pub fn ContentCatalog::store_pin(Self) -> @model.Digest
 pub fn ContentCatalog::stored_blobs(Self) -> Int32
 pub fn ContentCatalog::stored_bytes(Self) -> Int64
 pub fn ContentCatalog::upload_closure(Self, String) -> UploadClosure raise @model.MoonOciError
+pub fn ContentCatalog::wrap_index(Self, String) -> @layout.MemoryLayout raise @model.MoonOciError
 
 pub struct RetentionPlan {
   // private fields
