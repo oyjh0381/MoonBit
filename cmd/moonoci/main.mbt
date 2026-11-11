@@ -30,6 +30,29 @@ async fn main {
         )
         @stdio.stdout.write(descriptor.digest.to_string() + "\n")
       }
+      "wasm-inspect" => {
+        require_arity(
+          args, 5, "usage: moonoci wasm-inspect INPUT EXPECTED_INDEX_PIN REF",
+        )
+        let observation = @native.inspect_wasm_layout(
+          args[2],
+          @model.Digest::parse(args[3]),
+          args[4],
+        )
+        @stdio.stdout.write(@wasmartifact.inspection_json(observation) + "\n")
+      }
+      "wasm-export" => {
+        require_arity(
+          args, 6, "usage: moonoci wasm-export INPUT EXPECTED_INDEX_PIN REF OUTPUT_WASM",
+        )
+        let observation = @native.export_wasm_file(
+          args[2],
+          @model.Digest::parse(args[3]),
+          args[4],
+          args[5],
+        )
+        @stdio.stdout.write(@wasmartifact.inspection_json(observation) + "\n")
+      }
       "registry-pull" => registry_pull_command(args)
       "statement-verify" => {
         require_arity(
@@ -658,6 +681,8 @@ async fn print_usage() -> Unit {
       #|  moonoci retain-refs-plan INPUT EXPECTED_INDEX_PIN MODE REF [REF...]
       #|  moonoci retain-refs-export INPUT EXPECTED_INDEX_PIN PLAN_PIN MODE OUTPUT REF [REF...]
       #|  moonoci wasm-pack INPUT_WASM REF OUTPUT_LAYOUT [COMPONENT_JSON]
+      #|  moonoci wasm-inspect INPUT EXPECTED_INDEX_PIN REF
+      #|  moonoci wasm-export INPUT EXPECTED_INDEX_PIN REF OUTPUT_WASM
       #|  Retention MODE: closure | referrers | complete
       #|  moonoci transfer-batch SESSION EXPECTED_PIN MAX_CHUNKS MAX_BYTES
       #|  moonoci transfer-recover-chunk SESSION EXPECTED_PIN INDEX

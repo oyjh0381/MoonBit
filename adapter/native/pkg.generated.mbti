@@ -10,6 +10,7 @@ import {
   "oyjh0381/moonoci/policy",
   "oyjh0381/moonoci/spec",
   "oyjh0381/moonoci/transfer",
+  "oyjh0381/moonoci/wasmartifact",
 }
 
 // Values
@@ -37,7 +38,11 @@ pub async fn export_retained_references(String, @model.Digest, Array[String], @m
 
 pub async fn export_transfer_chunk(String, String, @model.Digest, Int32, String) -> Unit
 
+pub async fn export_wasm_file(String, @model.Digest, String, String) -> @wasmartifact.WasmArtifact
+
 pub async fn finish_transfer(String, @model.Digest, String) -> Unit
+
+pub async fn inspect_wasm_layout(String, @model.Digest, String) -> @wasmartifact.WasmArtifact
 
 pub async fn load_bounded_layout(String, limits? : LayoutLoadLimits) -> @layout.MemoryLayout
 

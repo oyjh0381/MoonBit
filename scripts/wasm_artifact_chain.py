@@ -59,11 +59,34 @@ def main():
     run(oras, "pull", "--oci-layout", "artifact:fixture", "--output", "consumer")
     assert (workspace / "consumer" / "module.wasm").read_bytes() == expected
 
+    # ORAS builds a second manifest from its own config and payload input.
+    (workspace / "payload.wasm").write_bytes(expected)
+    (workspace / "config.json").write_text(json.dumps(config), encoding="utf-8")
+    run(oras, "push", "--oci-layout", "external:module", "--config",
+        "config.json:" + CONFIG_TYPE, "payload.wasm:application/wasm")
+    external_index = (workspace / "external" / "index.json").read_bytes()
+    external_pin = digest(external_index)
+    observed = json.loads(run(cli, "wasm-inspect", "external", external_pin, "module"))
+    assert observed["kind"] == "module"
+    assert observed["layer"] == digest(expected) and observed["bytes"] == len(expected)
+    assert observed["manifest"] != manifest_pin
+    run(cli, "wasm-export", "external", digest(index_bytes), "module", "bad-pin.wasm", status=5)
+    assert not (workspace / "bad-pin.wasm").exists()
+    pending = workspace / "exported.wasm.moonoci-partial"
+    pending.write_bytes(b"other producer")
+    run(cli, "wasm-export", "external", external_pin, "module", "exported.wasm", status=3)
+    assert pending.read_bytes() == b"other producer"
+    pending.unlink()
+    assert json.loads(run(cli, "wasm-export", "external", external_pin, "module",
+                          "exported.wasm")) == observed
+    assert (workspace / "exported.wasm").read_bytes() == expected
+
     (workspace / "invalid.wasm").write_bytes(b"\0asm\x01\0\0\0\x00\x01")
     run(cli, "wasm-pack", "invalid.wasm", "fixture", "invalid-layout", status=2)
     assert not (workspace / "invalid-layout").exists()
     result = dict(manifest=manifest_pin, module=digest(expected), bytes=len(expected),
-                  oras_recovered_exact_module=True, reproducible=True)
+                  oras_recovered_exact_module=True, consumed_oras_produced_layout=True,
+                  reproducible=True)
     print(json.dumps(result, indent=2))
 
 

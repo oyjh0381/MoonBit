@@ -1,5 +1,6 @@
 ///|
 pub(all) struct WasmArtifact {
+  manifest : @model.Descriptor
   binary : BinarySummary
   config : @model.Descriptor
   layer : @model.Descriptor
@@ -130,5 +131,43 @@ pub fn inspect(
       "WebAssembly artifact advertised platform disagrees with config",
     )
   }
-  { binary, config: manifest.config, layer, data, component, }
+  {
+    manifest: descriptor,
+    binary,
+    config: manifest.config,
+    layer,
+    data,
+    component,
+  }
+}
+
+///|
+/// Describe a verified artifact without embedding its binary payload.
+pub fn inspection_json(observation : WasmArtifact) -> String {
+  let kind = match observation.binary.kind {
+    CoreModule => "module"
+    Component => "component"
+  }
+  let details : Json = {
+    "schema": "moonoci.wasm-artifact.v1",
+    "kind": Json::string(kind),
+    "manifest": Json::string(observation.manifest.digest.to_string()),
+    "config": Json::string(observation.config.digest.to_string()),
+    "layer": Json::string(observation.layer.digest.to_string()),
+    "bytes": Json::number(observation.data.length().to_double()),
+    "sections": Json::number(observation.binary.sections.to_double()),
+    "component": match observation.component {
+      None => Json::null()
+      Some(metadata) =>
+        {
+          "imports": Json::array(metadata.imports.map(Json::string)),
+          "exports": Json::array(metadata.exports.map(Json::string)),
+          "target": match metadata.target {
+            None => Json::null()
+            Some(target) => Json::string(target)
+          },
+        }
+    },
+  }
+  details.stringify()
 }

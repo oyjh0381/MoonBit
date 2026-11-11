@@ -16,6 +16,8 @@ pub fn inspect(@layout.MemoryLayout, @model.Descriptor) -> WasmArtifact raise @m
 
 pub fn inspect_binary(Bytes) -> BinarySummary raise @model.MoonOciError
 
+pub fn inspection_json(WasmArtifact) -> String
+
 pub let layer_media_type : String
 
 pub fn pack(Bytes, String, component? : ComponentMetadata) -> @artifacts.ArtifactBundle raise @model.MoonOciError
@@ -40,6 +42,7 @@ pub(all) struct ComponentMetadata {
 }
 
 pub(all) struct WasmArtifact {
+  manifest : @model.Descriptor
   binary : BinarySummary
   config : @model.Descriptor
   layer : @model.Descriptor
