@@ -13,6 +13,8 @@ pub fn compare_releases(@layout.MemoryLayout, @model.Digest, @layout.MemoryLayou
 
 pub fn coverage(@layout.MemoryLayout, @model.Digest, Array[@model.Platform], limits? : @graph.WalkLimits) -> ReleaseCoverage raise @model.MoonOciError
 
+pub fn decode_policy(Bytes) -> RolloutPolicy raise @model.MoonOciError
+
 pub fn evaluate_rollout(@layout.MemoryLayout, @layout.MemoryLayout, RolloutPolicy, limits? : @graph.WalkLimits) -> RolloutDecision raise @model.MoonOciError
 
 // Errors
