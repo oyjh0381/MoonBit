@@ -72,7 +72,9 @@ test "bundle publication verifies immediate subjects and deduplicates shared pay
     { ..entries[0], artifact_type: Some("application/octet-stream"), },
     entries[1],
   ]
-  for listing in [corrupted, [entries[0]]] {
+  let conflicting_duplicate = entries + [corrupted[0]]
+  @registry.verify_bundle_advertisements(plan, entries + entries)
+  for listing in [corrupted, [entries[0]], conflicting_duplicate] {
     let rejected = try {
       @registry.verify_bundle_advertisements(plan, listing)
       false

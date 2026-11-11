@@ -9,6 +9,7 @@ pub fn verify_bundle_advertisements(
   for item in plan.attachments {
     expected[item.object.digest.to_string()] = item
   }
+  let found : Map[String, Bool] = Map([])
   for entry in entries {
     let key = entry.descriptor.digest.to_string()
     if expected.get(key) is Some(item) {
@@ -19,10 +20,10 @@ pub fn verify_bundle_advertisements(
           "Registry advertises incompatible metadata for a pinned attachment",
         )
       }
-      expected.remove(key)
+      found[key] = true
     }
   }
-  if !expected.is_empty() {
+  if found.length() != expected.length() {
     raise @model.InvalidOci("Registry listing omits an approved attachment")
   }
 }
