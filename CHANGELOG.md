@@ -10,6 +10,7 @@ All notable changes to MoonOCI are documented here. The format follows Keep a Ch
 - Publish reviewed OCI layouts with bounded upload sessions, existing-content reuse and exact tag readback.
 - Check multi-platform upgrades with per-platform approvals and embed pinned OCI object verification in a Native C host.
 - Preview and replace pinned OCI base layers while retaining application layers and runtime configuration.
+- Bind full rollout approval to Registry promotion and publish explicitly pinned OCI referrers before tagging a release.
 
 ## [0.2.0] - 2026-11-07
 

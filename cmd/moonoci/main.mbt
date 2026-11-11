@@ -55,6 +55,8 @@ async fn main {
       }
       "registry-pull" => registry_pull_command(args)
       "registry-plan" => registry_plan_command(args)
+      "registry-plan-bundle" => registry_bundle_publish_command(args, false)
+      "registry-publish-bundle" => registry_bundle_publish_command(args, true)
       "wrap-release" => wrap_release_command(args)
       "registry-promote-plan" => registry_promotion_command(args, false)
       "registry-promote" => registry_promotion_command(args, true)
@@ -707,6 +709,8 @@ async fn print_usage() -> Unit {
       #|  moonoci wasm-export INPUT EXPECTED_INDEX_PIN REF OUTPUT_WASM
       #|  moonoci registry-plan INPUT EXPECTED_INDEX_PIN REF ORIGIN REPOSITORY TAG [--allow-http]
       #|  moonoci registry-publish INPUT EXPECTED_INDEX_PIN REF ORIGIN REPOSITORY TAG PLAN_PIN [--allow-http] [--ca-file FILE]
+      #|  moonoci registry-plan-bundle INPUT INDEX_PIN REF ORIGIN REPO TAG ATTACHMENT_PINS [--allow-http]
+      #|  moonoci registry-publish-bundle INPUT INDEX_PIN REF ORIGIN REPO TAG ATTACHMENT_PINS BUNDLE_PIN [--allow-http] [--ca-file FILE]
       #|  moonoci wrap-release INPUT INDEX_PIN REF OUTPUT
       #|  moonoci registry-promote-plan BASE CANDIDATE POLICY REF ORIGIN REPOSITORY TAG [--allow-http]
       #|  moonoci registry-promote BASE CANDIDATE POLICY REF ORIGIN REPOSITORY TAG PROMOTION_PIN [--allow-http] [--ca-file FILE]

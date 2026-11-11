@@ -24,6 +24,8 @@ Native applications can link the [C verification library](c-host.md).
 Release tools can preview and apply an [OCI base replacement](rebase.md).
 The [Registry promotion gate](registry-promotion.md) binds complete rollout
 approval to the exact destination and named release root.
+Use [Registry attachment publication](registry-attachments.md) when approved
+SBOM or attestation objects must be discoverable before tagging a release.
 
 For registry publication, send blobs through the standard POST/PUT session,
 send child manifests before their parent, and publish the selected root under
