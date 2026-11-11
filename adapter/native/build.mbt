@@ -104,6 +104,14 @@ pub async fn write_layout(
   }
   let sync : @fs.SyncMode = if buffered { NoSync } else { Data }
   try {
+    // Acquire this exact staging directory exclusively before registering its
+    // cleanup. A concurrent writer can never clean up the owner's directory.
+    @async.protect_from_cancel(() => @fs.mkdir(staging, recursive=true))
+    errdefer @async.protect_from_cancel(() => {
+      @fs.rmdir(staging, recursive=true, allow_missing=true) catch {
+        _ => ()
+      }
+    })
     @fs.mkdir(join_path(staging, "blobs/sha256"), recursive=true)
     @fs.write_file(
       join_path(staging, "oci-layout"),
@@ -127,13 +135,6 @@ pub async fn write_layout(
     }
     @fs.rename(staging, destination, replace=false)
   } catch {
-    error => {
-      if @fs.exists(staging) {
-        @fs.rmdir(staging, recursive=true) catch {
-          _ => ()
-        }
-      }
-      raise @model.IoFailure("cannot write OCI Image Layout: \{error}")
-    }
+    error => raise @model.IoFailure("cannot write OCI Image Layout: \{error}")
   }
 }

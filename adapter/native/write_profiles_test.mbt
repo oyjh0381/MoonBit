@@ -56,3 +56,41 @@ async test "data-synchronous and explicit buffered publication preserve every co
   assert_false(@fs.exists(root + "/forged.moonoci-staging"))
   @fs.rmdir(root, recursive=true)
 }
+
+///|
+async test "concurrent layout writers leave exactly one intact publication" {
+  ensure_test_build_root()
+  let root = "_build/native-write-contention"
+  if @fs.exists(root) {
+    @fs.rmdir(root, recursive=true)
+  }
+  @fs.mkdir(root)
+  defer @fs.rmdir(root, recursive=true)
+  let destination = root + "/layout"
+  let a = @layout.MemoryLayout::new()
+  a.set_index(b"first")
+  let first = a.put_blob("application/octet-stream", b"first content")
+  let b = @layout.MemoryLayout::new()
+  b.set_index(b"second")
+  let second = b.put_blob("application/octet-stream", b"second content")
+  async fn attempt(layout : @layout.MemoryLayout) -> Bool {
+    try {
+      @native.write_layout(destination, layout)
+      true
+    } catch {
+      @model.IoFailure(_) => false
+      error => raise error
+    }
+  }
+  let outcomes = @async.all([() => attempt(a), () => attempt(b)])
+  assert_true(outcomes[0] != outcomes[1])
+  assert_false(@fs.exists(destination + ".moonoci-staging"))
+  let result = @native.load_bounded_layout(destination)
+  if outcomes[0] {
+    assert_eq(result.index(), a.index())
+    assert_eq(result.require_blob(first), b"first content")
+  } else {
+    assert_eq(result.index(), b.index())
+    assert_eq(result.require_blob(second), b"second content")
+  }
+}

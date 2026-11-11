@@ -55,11 +55,18 @@ pub async fn export_wasm_file(
   }
   let observation = inspect_wasm_layout(source, expected_index, reference)
   let staging = destination + ".moonoci-partial"
-  let file = @fs.open(staging, mode=WriteOnly, create_mode=CreateNew) catch {
+  let file = @async.protect_from_cancel(() => {
+    @fs.open(staging, mode=WriteOnly, create_mode=CreateNew)
+  }) catch {
     error =>
       raise @model.IoFailure("cannot create WebAssembly staging file: \{error}")
   }
   try {
+    errdefer @async.protect_from_cancel(() => {
+      @fs.remove(staging) catch {
+        _ => ()
+      }
+    })
     {
       defer file.close()
       file.write_at(observation.data, position=0L)
@@ -67,12 +74,8 @@ pub async fn export_wasm_file(
     }
     @fs.rename(staging, destination, replace=false)
   } catch {
-    error => {
-      @fs.remove(staging) catch {
-        _ => ()
-      }
+    error =>
       raise @model.IoFailure("cannot export WebAssembly payload: \{error}")
-    }
   }
   observation
 }

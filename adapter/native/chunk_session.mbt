@@ -251,7 +251,9 @@ pub async fn TransferSession::finish(
   if @fs.exists(destination) || @fs.exists(staging) {
     raise @model.IoFailure("transfer output or partial file already exists")
   }
-  let output = @fs.open(staging, mode=WriteOnly, create_mode=CreateNew) catch {
+  let output = @async.protect_from_cancel(() => {
+    @fs.open(staging, mode=WriteOnly, create_mode=CreateNew)
+  }) catch {
     error => raise @model.IoFailure("cannot create transfer output: \{error}")
   }
   {
