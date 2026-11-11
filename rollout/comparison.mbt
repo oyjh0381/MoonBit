@@ -23,6 +23,10 @@ pub(all) struct ReleaseComparison {
   platforms : Array[PlatformPair]
   baseline_unknown : Int32
   candidate_unknown : Int32
+  baseline_non_images : Int32
+  candidate_non_images : Int32
+  baseline_omitted : Array[@model.Platform]
+  candidate_omitted : Array[@model.Platform]
 }
 
 ///|
@@ -78,5 +82,9 @@ fn pair_coverage(
     platforms,
     baseline_unknown: before.unknown_descriptors,
     candidate_unknown: after.unknown_descriptors,
+    baseline_non_images: before.non_images,
+    candidate_non_images: after.non_images,
+    baseline_omitted: before.omitted,
+    candidate_omitted: after.omitted,
   }
 }

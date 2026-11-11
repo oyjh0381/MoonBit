@@ -17,6 +17,7 @@ pub(all) struct ReleaseCoverage {
   required : Array[PlatformCoverage]
   unknown_descriptors : Int32
   non_images : Int32
+  omitted : Array[@model.Platform]
 }
 
 ///|
@@ -73,10 +74,14 @@ fn coverage_from_walk(
     targets[key] = Map([])
     key
   })
+  let omitted : Map[String, @model.Platform] = Map([])
   for image in walk.images {
-    if targets.get(platform_key(image.platform)) is Some(matches) {
+    let key = platform_key(image.platform)
+    if targets.get(key) is Some(matches) {
       let digest = image.descriptor.digest
       matches[digest.to_string()] = digest
+    } else {
+      omitted[key] = image.platform
     }
   }
   let rows = []
@@ -101,10 +106,13 @@ fn coverage_from_walk(
       unknown_descriptors += 1
     }
   }
+  let ordered = omitted.keys().collect()
+  ordered.sort_by((a, b) => a.compare(b))
   {
     index_pin: expected_index,
     required: rows,
     unknown_descriptors,
     non_images,
+    omitted: ordered.map(key => omitted[key]),
   }
 }

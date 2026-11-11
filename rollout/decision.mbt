@@ -75,6 +75,7 @@ pub fn evaluate_rollout(
   candidate : @layout.MemoryLayout,
   policy : RolloutPolicy,
   limits~ : @graph.WalkLimits = @graph.WalkLimits::default(),
+  complete~ : Bool = false,
 ) -> RolloutDecision raise @model.MoonOciError {
   if policy.approvals.length() > policy.required.length() {
     raise @model.InvalidArgument("too many rollout approvals")
@@ -101,6 +102,10 @@ pub fn evaluate_rollout(
   )
   let old_descriptors = image_descriptors(old_walk)
   let new_descriptors = image_descriptors(new_walk)
+  let complete_coverage = comparison.baseline_omitted.is_empty() &&
+    comparison.candidate_omitted.is_empty() &&
+    comparison.baseline_non_images == 0 &&
+    comparison.candidate_non_images == 0
   let platforms = comparison.platforms.map(pair => {
     let approval = approvals.get(platform_key(pair.platform))
     if approval is Some(_) && !(pair.transition is Updated) {
@@ -145,6 +150,7 @@ pub fn evaluate_rollout(
     platforms,
     allowed: comparison.baseline_unknown == 0 &&
     comparison.candidate_unknown == 0 &&
+    (!complete || complete_coverage) &&
     platforms.all(row => row.allowed),
   }
 }

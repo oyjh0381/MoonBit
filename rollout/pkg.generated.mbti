@@ -15,7 +15,7 @@ pub fn coverage(@layout.MemoryLayout, @model.Digest, Array[@model.Platform], lim
 
 pub fn decode_policy(Bytes) -> RolloutPolicy raise @model.MoonOciError
 
-pub fn evaluate_rollout(@layout.MemoryLayout, @layout.MemoryLayout, RolloutPolicy, limits? : @graph.WalkLimits) -> RolloutDecision raise @model.MoonOciError
+pub fn evaluate_rollout(@layout.MemoryLayout, @layout.MemoryLayout, RolloutPolicy, limits? : @graph.WalkLimits, complete? : Bool) -> RolloutDecision raise @model.MoonOciError
 
 pub fn rollout_json(RolloutDecision) -> String
 
@@ -66,6 +66,10 @@ pub(all) struct ReleaseComparison {
   platforms : Array[PlatformPair]
   baseline_unknown : Int32
   candidate_unknown : Int32
+  baseline_non_images : Int32
+  candidate_non_images : Int32
+  baseline_omitted : Array[@model.Platform]
+  candidate_omitted : Array[@model.Platform]
 }
 
 pub(all) struct ReleaseCoverage {
@@ -73,6 +77,7 @@ pub(all) struct ReleaseCoverage {
   required : Array[PlatformCoverage]
   unknown_descriptors : Int32
   non_images : Int32
+  omitted : Array[@model.Platform]
 }
 
 pub(all) struct RolloutDecision {

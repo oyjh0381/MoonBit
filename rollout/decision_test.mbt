@@ -87,3 +87,45 @@ test "unchanged manifest identity cannot hide corrupted candidate layer bytes" {
   }
   assert_true(rejected)
 }
+
+///|
+test "complete rollout refuses an omitted exact variant on either release" {
+  let amd = @model.default_platform()
+  let arm = { ..amd, architecture: "arm64", variant: Some("v8"), }
+  let a = rollout_fixture(amd, b"same")
+  let b = rollout_fixture(arm, b"arm")
+  let pin = @digest.sha256(a.layout.index())
+  let index = @codec.decode_index(a.layout.index())
+  let mixed = @layout.MemoryLayout::from_untrusted_parts(
+    a.layout.marker(),
+    @codec.encode_index({
+      ..index,
+      manifests: [a.report.manifest, b.report.manifest],
+    }),
+    (a.layout.blob_records() + b.layout.blob_records()).map(record => {
+      (record.descriptor(), record.data())
+    }),
+  )
+  let mixed_pin = @digest.sha256(mixed.index())
+  let policy : @rollout.RolloutPolicy = {
+    baseline_index: pin,
+    candidate_index: mixed_pin,
+    required: [amd],
+    approvals: [],
+    allow_new_platforms: false,
+  }
+  let scoped = @rollout.evaluate_rollout(a.layout, mixed, policy)
+  assert_true(scoped.allowed)
+  assert_eq(scoped.comparison.candidate_omitted, [arm])
+  assert_false(
+    @rollout.evaluate_rollout(a.layout, mixed, policy, complete=true).allowed,
+  )
+  let reversed = @rollout.evaluate_rollout(
+    mixed,
+    a.layout,
+    { ..policy, baseline_index: mixed_pin, candidate_index: pin, },
+    complete=true,
+  )
+  assert_false(reversed.allowed)
+  assert_eq(reversed.comparison.baseline_omitted, [arm])
+}

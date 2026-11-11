@@ -9,8 +9,7 @@ fn match_json(result : PlatformMatch) -> Json {
 }
 
 ///|
-fn row_json(row : PlatformDecision) -> Json {
-  let platform = row.pair.platform
+fn platform_json(platform : @model.Platform) -> Json {
   let identity : Map[String, Json] = {
     "os": Json::string(platform.os),
     "architecture": Json::string(platform.architecture),
@@ -21,6 +20,11 @@ fn row_json(row : PlatformDecision) -> Json {
   if platform.os_version is Some(value) {
     identity["osVersion"] = Json::string(value)
   }
+  Json::object(identity)
+}
+
+///|
+fn row_json(row : PlatformDecision) -> Json {
   let transition = match row.pair.transition {
     Unavailable => "unavailable"
     Introduced => "introduced"
@@ -30,7 +34,7 @@ fn row_json(row : PlatformDecision) -> Json {
     AmbiguousMatch => "ambiguous"
   }
   let fields : Map[String, Json] = {
-    "platform": Json::object(identity),
+    "platform": platform_json(row.pair.platform),
     "baseline": match_json(row.pair.baseline),
     "candidate": match_json(row.pair.candidate),
     "transition": Json::string(transition),
@@ -69,6 +73,18 @@ pub fn rollout_json(decision : RolloutDecision) -> String {
     ),
     "candidateUnknownDescriptors": Json::number(
       decision.comparison.candidate_unknown.to_double(),
+    ),
+    "baselineNonImageDescriptors": Json::number(
+      decision.comparison.baseline_non_images.to_double(),
+    ),
+    "candidateNonImageDescriptors": Json::number(
+      decision.comparison.candidate_non_images.to_double(),
+    ),
+    "baselineOmittedPlatforms": Json::array(
+      decision.comparison.baseline_omitted.map(platform_json),
+    ),
+    "candidateOmittedPlatforms": Json::array(
+      decision.comparison.candidate_omitted.map(platform_json),
     ),
     "allowed": Json::boolean(decision.allowed),
     "platforms": Json::array(decision.platforms.map(row_json)),
