@@ -3,11 +3,14 @@ package "oyjh0381/moonoci/wasmartifact"
 
 import {
   "oyjh0381/moonoci/artifacts",
+  "oyjh0381/moonoci/layout",
   "oyjh0381/moonoci/model",
 }
 
 // Values
 pub let config_media_type : String
+
+pub fn inspect(@layout.MemoryLayout, @model.Descriptor) -> WasmArtifact raise @model.MoonOciError
 
 pub fn inspect_binary(Bytes) -> BinarySummary raise @model.MoonOciError
 
@@ -32,6 +35,14 @@ pub(all) struct ComponentMetadata {
   imports : Array[String]
   exports : Array[String]
   target : String?
+}
+
+pub(all) struct WasmArtifact {
+  binary : BinarySummary
+  config : @model.Descriptor
+  layer : @model.Descriptor
+  data : Bytes
+  component : ComponentMetadata?
 }
 
 // Type aliases

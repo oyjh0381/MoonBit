@@ -13,21 +13,20 @@ pub(all) struct ComponentMetadata {
 }
 
 ///|
-fn interface_array(names : Array[String]) -> Json raise @model.MoonOciError {
+fn validate_interface_names(
+  names : Array[String],
+) -> Unit raise @model.MoonOciError {
   if names.length() > 4096 {
     raise @model.ResourceLimitExceeded("too many WebAssembly interface names")
   }
   let seen : Map[String, Bool] = Map([])
-  Json::array(
-    names.map(name => {
-      validate_interface_name(name)
-      if seen.contains(name) {
-        raise @model.InvalidArgument("repeated WebAssembly interface name")
-      }
-      seen[name] = true
-      Json::string(name)
-    }),
-  )
+  for name in names {
+    validate_interface_name(name)
+    if seen.contains(name) {
+      raise @model.InvalidArgument("repeated WebAssembly interface name")
+    }
+    seen[name] = true
+  }
 }
 
 ///|
@@ -41,9 +40,11 @@ fn validate_interface_name(name : String) -> Unit raise @model.MoonOciError {
 fn component_json(
   metadata : ComponentMetadata,
 ) -> Json raise @model.MoonOciError {
+  validate_interface_names(metadata.imports)
+  validate_interface_names(metadata.exports)
   let fields : Map[String, Json] = {
-    "imports": interface_array(metadata.imports),
-    "exports": interface_array(metadata.exports),
+    "imports": Json::array(metadata.imports.map(Json::string)),
+    "exports": Json::array(metadata.exports.map(Json::string)),
   }
   if metadata.target is Some(target) {
     validate_interface_name(target)
