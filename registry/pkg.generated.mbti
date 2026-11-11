@@ -10,6 +10,8 @@ import {
 }
 
 // Values
+pub const MaxReferrerLockBytes : Int32 = 16384
+
 pub fn assemble_referrer_bundle(@layout.MemoryLayout, @model.Digest, @model.Digest, Array[@artifacts.ReferrerAdvertisement], Array[@layout.MemoryLayout], limits? : PullLimits) -> ReferrerBundle raise @model.MoonOciError
 
 pub fn bearer_authorization(String) -> String raise @model.MoonOciError
@@ -31,6 +33,8 @@ pub fn check_response_head(Int32, Array[@model.KeyValue], Int32, expected_size? 
 pub fn content_length(Array[@model.KeyValue]) -> Int64? raise @model.MoonOciError
 
 pub fn decode_bearer_token(Bytes) -> String raise @model.MoonOciError
+
+pub fn decode_referrer_lock(Bytes, @model.Digest) -> ReferrerLock raise @model.MoonOciError
 
 pub fn encode_query_value(String) -> String
 
@@ -180,6 +184,16 @@ pub(all) struct ReferrerBundle {
   layout : @layout.MemoryLayout
   receipt : String
 }
+
+pub struct ReferrerLock {
+  // private fields
+}
+pub fn ReferrerLock::encode(Self) -> Bytes
+pub fn ReferrerLock::new(@model.Digest, @model.Digest, Array[@model.Digest]) -> Self raise @model.MoonOciError
+pub fn ReferrerLock::pin(Self) -> @model.Digest
+pub fn ReferrerLock::root(Self) -> @model.Digest
+pub fn ReferrerLock::selection(Self, exact_listing? : Bool) -> ReferrerSelection
+pub fn ReferrerLock::subject(Self) -> @model.Digest
 
 pub struct ReferrerSelection {
   // private fields
