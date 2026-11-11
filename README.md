@@ -65,6 +65,9 @@ separate evidence requirements; configured CI is not an executed result.
 - Native `build`, `inspect`, `list`, `verify`, `archive`, and `version` commands;
 - generated-case, corruption, Native filesystem, and reproducibility tests.
 
+The development branch also supports packaging compiled MoonBit WebAssembly
+binaries as [single-layer Wasm OCI artifacts](docs/wasm-artifacts.md).
+
 ## Scope
 
 MoonOCI v0.1 builds one platform image per invocation and writes OCI Image Spec 1.1.1 layouts. It does not parse Dockerfiles, run containers, contact registries, sign images, or encode zstd Layers. The portable archive API represents symbolic links, but the v0.1 Native Layer Source adapter rejects host symlinks because its filesystem dependency does not expose a portable read-link operation.

@@ -10,6 +10,8 @@ import {
 // Values
 pub let config_media_type : String
 
+pub fn decode_component_metadata(Bytes) -> ComponentMetadata raise @model.MoonOciError
+
 pub fn inspect(@layout.MemoryLayout, @model.Descriptor) -> WasmArtifact raise @model.MoonOciError
 
 pub fn inspect_binary(Bytes) -> BinarySummary raise @model.MoonOciError

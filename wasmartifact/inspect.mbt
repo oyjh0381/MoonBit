@@ -48,6 +48,19 @@ fn read_component(value : Json) -> ComponentMetadata raise @model.MoonOciError {
 }
 
 ///|
+/// Decode a producer-supplied component interface document.
+pub fn decode_component_metadata(
+  data : Bytes,
+) -> ComponentMetadata raise @model.MoonOciError {
+  if data.length() > @artifacts.ArtifactLimits::default().max_config_bytes {
+    raise @model.ResourceLimitExceeded(
+      "component interface document exceeds 1 MiB",
+    )
+  }
+  read_component(@codec.parse_json_document(data))
+}
+
+///|
 /// Verify and read an externally produced single-layer Wasm artifact. The
 /// config media type identifies the profile, including manifests that omit
 /// artifactType. The caller supplies the trusted manifest descriptor.

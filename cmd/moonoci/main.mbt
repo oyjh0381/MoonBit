@@ -11,6 +11,25 @@ async fn main {
       return
     }
     match args[1] {
+      "wasm-pack" => {
+        if args.length() != 5 && args.length() != 6 {
+          raise @model.InvalidArgument(
+            "usage: moonoci wasm-pack INPUT_WASM REF OUTPUT_LAYOUT [COMPONENT_JSON]",
+          )
+        }
+        let component_file = if args.length() == 6 {
+          Some(args[5])
+        } else {
+          None
+        }
+        let descriptor = @native.pack_wasm_file(
+          args[2],
+          args[3],
+          args[4],
+          component_file?,
+        )
+        @stdio.stdout.write(descriptor.digest.to_string() + "\n")
+      }
       "registry-pull" => registry_pull_command(args)
       "statement-verify" => {
         require_arity(
@@ -638,6 +657,7 @@ async fn print_usage() -> Unit {
       #|  moonoci retain-export-buffered INPUT EXPECTED_INDEX_PIN PLAN_PIN MODE OUTPUT ROOT [ROOT...]
       #|  moonoci retain-refs-plan INPUT EXPECTED_INDEX_PIN MODE REF [REF...]
       #|  moonoci retain-refs-export INPUT EXPECTED_INDEX_PIN PLAN_PIN MODE OUTPUT REF [REF...]
+      #|  moonoci wasm-pack INPUT_WASM REF OUTPUT_LAYOUT [COMPONENT_JSON]
       #|  Retention MODE: closure | referrers | complete
       #|  moonoci transfer-batch SESSION EXPECTED_PIN MAX_CHUNKS MAX_BYTES
       #|  moonoci transfer-recover-chunk SESSION EXPECTED_PIN INDEX

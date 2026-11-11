@@ -10,6 +10,7 @@ import {
   "oyjh0381/moonoci/layout",
   "oyjh0381/moonoci/spec",
   "oyjh0381/moonoci/policy",
+  "oyjh0381/moonoci/wasmartifact",
   "moonbitlang/async/fs",
   "moonbitlang/core/env",
   "moonbitlang/core/encoding/utf8",

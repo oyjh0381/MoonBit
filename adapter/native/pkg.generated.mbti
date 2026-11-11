@@ -45,6 +45,8 @@ pub async fn load_layout(String) -> @layout.MemoryLayout
 
 pub async fn load_release_policy(String) -> @policy.ReleasePolicy
 
+pub async fn pack_wasm_file(String, String, String, component_file? : String) -> @model.Descriptor
+
 pub async fn receive_transfer_chunk(String, @model.Digest, Int32, String) -> Unit
 
 pub async fn recover_transfer_chunk(String, @model.Digest, Int32) -> String
