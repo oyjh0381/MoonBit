@@ -1,0 +1,14 @@
+import {
+  "oyjh0381/moonoci/codec",
+  "oyjh0381/moonoci/digest",
+  "oyjh0381/moonoci/model",
+  "moonbitlang/core/encoding/utf8",
+}
+
+supported_targets = "+native"
+
+pkgtype(kind: "foreign_library")
+
+options(
+  "native-stub": [ "buffer.c" ],
+)

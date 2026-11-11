@@ -36,6 +36,15 @@ jobs:
           moon build --target native --release --deny-warn
       - name: Restartable delivery consumer
         run: python scripts/resume_chain.py --binary _build/native/release/build/cmd/moonoci/moonoci.exe
+      - name: C static archive consumer (Linux)
+        if: runner.os == 'Linux'
+        run: python scripts/c_host_chain.py --archive _build/native/release/build/adapter/chost/chost.a
+      - name: C static archive consumer (Windows)
+        if: runner.os == 'Windows'
+        shell: cmd
+        run: |
+          call "%ProgramFiles%\Microsoft Visual Studio\2022\Enterprise\Common7\Tools\VsDevCmd.bat" -arch=amd64 -host_arch=amd64
+          python scripts/c_host_chain.py --archive _build/native/release/build/adapter/chost/chost.lib
       - name: Mixed release policy consumer
         run: python scripts/policy_chain.py --binary _build/native/release/build/cmd/moonoci/moonoci.exe
       - name: Multi-platform rollout consumer

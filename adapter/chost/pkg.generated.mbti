@@ -1,0 +1,17 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "oyjh0381/moonoci/adapter/chost"
+
+// Values
+pub fn abi_version() -> Int32
+
+pub fn verify_entity(HostBuffer, UInt64, HostBuffer, UInt64, Int32) -> Int32
+
+// Errors
+
+// Types and methods
+#external
+pub type HostBuffer
+
+// Type aliases
+
+// Traits
