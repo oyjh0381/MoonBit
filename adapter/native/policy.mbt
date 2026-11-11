@@ -3,3 +3,8 @@
 pub async fn load_release_policy(path : String) -> @policy.ReleasePolicy {
   @policy.decode_release_policy(read_bounded_file(path, 65536))
 }
+
+///|
+pub async fn load_rollout_policy(path : String) -> @rollout.RolloutPolicy {
+  @rollout.decode_policy(read_bounded_file(path, 65536))
+}

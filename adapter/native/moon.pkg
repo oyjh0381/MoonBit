@@ -11,6 +11,7 @@ import {
   "oyjh0381/moonoci/spec",
   "oyjh0381/moonoci/policy",
   "oyjh0381/moonoci/wasmartifact",
+  "oyjh0381/moonoci/rollout",
   "moonbitlang/async",
   "moonbitlang/async/fs",
   "moonbitlang/core/env",

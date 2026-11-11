@@ -55,6 +55,21 @@ async fn main {
       }
       "registry-pull" => registry_pull_command(args)
       "registry-plan" => registry_plan_command(args)
+      "rollout-check" => {
+        require_arity(
+          args, 5, "usage: moonoci rollout-check BASE CANDIDATE POLICY_JSON",
+        )
+        let policy = @native.load_rollout_policy(args[4])
+        let decision = @rollout.evaluate_rollout(
+          @native.load_bounded_layout(args[2]),
+          @native.load_bounded_layout(args[3]),
+          policy,
+        )
+        @stdio.stdout.write(@rollout.rollout_json(decision) + "\n")
+        if !decision.allowed {
+          process_exit(5)
+        }
+      }
       "registry-publish" => registry_publish_command(args)
       "statement-verify" => {
         require_arity(
@@ -712,6 +727,7 @@ async fn print_usage() -> Unit {
       #|  moonoci diff BASE TARGET OS ARCH
       #|  moonoci config-diff BASE TARGET OS ARCH
       #|  moonoci upgrade-check BASE TARGET OS ARCH BASE_PIN TARGET_PIN
+      #|  moonoci rollout-check BASE CANDIDATE POLICY_JSON
       #|  moonoci merge OUTPUT INPUT INPUT [INPUT...]
       #|  moonoci select INPUT OUTPUT OS ARCH
       #|  moonoci delta BASE TARGET

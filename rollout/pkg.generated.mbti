@@ -17,6 +17,8 @@ pub fn decode_policy(Bytes) -> RolloutPolicy raise @model.MoonOciError
 
 pub fn evaluate_rollout(@layout.MemoryLayout, @layout.MemoryLayout, RolloutPolicy, limits? : @graph.WalkLimits) -> RolloutDecision raise @model.MoonOciError
 
+pub fn rollout_json(RolloutDecision) -> String
+
 // Errors
 
 // Types and methods
