@@ -689,6 +689,7 @@ async fn print_usage() -> Unit {
       #|    --release-policy POLICY_JSON (optional all-platform configuration gate)
       #|    --statement-digest DIGEST --statement-predicate TYPE (optional exact Statement requirement)
       #|  moonoci registry-bundle ORIGIN REPOSITORY REFERENCE EXPECTED_ROOT SUBJECT OUTPUT [OPTIONS]
+      #|    Bundle/admit: --attachment-pins DIGEST[,DIGEST...] [--exact-referrers]
       #|  moonoci registry-referrers ORIGIN REPOSITORY SUBJECT [OPTIONS]
       #|    --artifact-type TYPE --max-pages N --max-entries N (plus transport options below)
       #|  moonoci registry-pull ORIGIN REPOSITORY REFERENCE EXPECTED_ROOT OUTPUT [OPTIONS]

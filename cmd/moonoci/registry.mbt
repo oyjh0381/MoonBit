@@ -4,6 +4,7 @@ priv struct RegistryArguments {
   cache_path : String?
   buffered : Bool
   artifact_type : String?
+  selection : @registry.ReferrerSelection?
   discovery_limits : @registry.DiscoveryLimits
   requirements : Array[@policy.ArtifactRequirement]
   release_policy_path : String?
@@ -24,6 +25,8 @@ fn parse_registry_options(
   let mut cache_path = None
   let mut buffered = false
   let mut artifact_type = None
+  let mut attachment_pins = None
+  let mut exact_referrers = false
   let mut discovery_limits = @registry.DiscoveryLimits::default()
   let requirements : Array[@policy.ArtifactRequirement] = []
   let mut release_policy_path = None
@@ -34,6 +37,12 @@ fn parse_registry_options(
     match args[index] {
       "--allow-http" => options = { ..options, allow_http: true, }
       "--buffered" if output_options => buffered = true
+      "--exact-referrers" if discovery && output_options => {
+        if exact_referrers {
+          raise @model.InvalidArgument("duplicate exact referrer option")
+        }
+        exact_referrers = true
+      }
       "--cache"
       | "--ca-file"
       | "--proxy-origin"
@@ -43,6 +52,7 @@ fn parse_registry_options(
       | "--retries"
       | "--max-retry-delay-ms"
       | "--artifact-type"
+      | "--attachment-pins"
       | "--max-pages"
       | "--max-entries"
       | "--max-page-bytes"
@@ -67,6 +77,11 @@ fn parse_registry_options(
           !admission {
           raise @model.InvalidArgument(
             "required artifacts are only accepted by registry-admit",
+          )
+        }
+        if flag == "--attachment-pins" && (!discovery || !output_options) {
+          raise @model.InvalidArgument(
+            "attachment pins require registry-bundle or registry-admit",
           )
         }
         if (
@@ -196,6 +211,12 @@ fn parse_registry_options(
                 max_depth: integer_argument(args[index]),
               },
             }
+          "--attachment-pins" => {
+            if attachment_pins is Some(_) {
+              raise @model.InvalidArgument("duplicate attachment pin option")
+            }
+            attachment_pins = Some(parse_attachment_pins(args[index]))
+          }
           "--artifact-type" => {
             if artifact_type is Some(_) {
               raise @model.InvalidArgument("duplicate artifact type filter")
@@ -274,6 +295,26 @@ fn parse_registry_options(
       "registry-admit requires --require-artifact TYPE",
     )
   }
+  let selection = match attachment_pins {
+    Some(pins) => {
+      if artifact_type is Some(_) {
+        raise @model.InvalidArgument(
+          "attachment pins cannot use an artifact type filter",
+        )
+      }
+      Some(
+        @registry.ReferrerSelection::new(pins, exact_listing=exact_referrers),
+      )
+    }
+    None => {
+      if exact_referrers {
+        raise @model.InvalidArgument(
+          "--exact-referrers requires --attachment-pins",
+        )
+      }
+      None
+    }
+  }
   let statement : @remote.StatementRequirement? = match
     (statement_pin, predicate_type) {
     (None, None) => None
@@ -289,6 +330,7 @@ fn parse_registry_options(
     cache_path,
     buffered,
     artifact_type,
+    selection,
     discovery_limits,
     requirements,
     release_policy_path,
@@ -419,6 +461,7 @@ async fn registry_bundle_command(
       parsed.requirements,
       release_policy?,
       statement?=parsed.statement,
+      selection?=parsed.selection,
       options=parsed.options,
       discovery_limits=parsed.discovery_limits,
       cache?,
@@ -442,6 +485,7 @@ async fn registry_bundle_command(
     expected,
     subject,
     artifact_type?=parsed.artifact_type,
+    selection?=parsed.selection,
     options=parsed.options,
     discovery_limits=parsed.discovery_limits,
     cache?,
