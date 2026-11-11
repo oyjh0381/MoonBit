@@ -48,6 +48,14 @@ test "bundle publication verifies immediate subjects and deduplicates shared pay
     image.report.layers.length() + 3,
   )
   assert_eq(plan.publication().root(), image.report.manifest.digest)
+  let lock = plan.referrer_lock()
+  assert_eq(lock.root(), image.report.manifest.digest)
+  assert_eq(lock.subject(), lock.root())
+  assert_eq(lock.pin(), reversed.referrer_lock().pin())
+  assert_eq(
+    lock.selection().pins(),
+    plan.attachments().map(item => item.object.digest),
+  )
   let discovery = @registry.DiscoveryLimits::default()
   let base_estimate = plan.publication().preflight()
   let estimate = plan.preflight(discovery~)

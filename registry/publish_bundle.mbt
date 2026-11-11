@@ -22,11 +22,7 @@ pub fn plan_bundle_publication(
   tag : String,
   attachments : Array[@model.Digest],
 ) -> BundlePublicationPlan raise @model.MoonOciError {
-  if attachments.is_empty() || attachments.length() > 128 {
-    raise @model.InvalidArgument(
-      "bundle publication requires 1..128 attachment digests",
-    )
-  }
+  let selection = ReferrerSelection::new(attachments)
   let base = plan_publication(
     catalog, source_reference, origin, repository, tag,
   )
@@ -37,17 +33,8 @@ pub fn plan_bundle_publication(
   for object in all_blobs {
     blob_seen[object.digest.to_string()] = true
   }
-  let selected : Map[String, Bool] = Map([])
-  let ordered = attachments.copy()
-  ordered.sort_by((a, b) => a.to_string().compare(b.to_string()))
   let verified : Array[PublicationAttachment] = []
-  for digest in ordered {
-    let key = digest.to_string()
-    ignore(@model.Digest::parse(key))
-    if selected.contains(key) {
-      raise @model.InvalidArgument("duplicate bundle publication attachment")
-    }
-    selected[key] = true
+  for digest in selection.pins {
     guard source.get_blob(digest) is Some(data) else {
       raise @model.InvalidArgument("bundle publication attachment is absent")
     }
@@ -126,10 +113,32 @@ pub fn BundlePublicationPlan::pin(
 }
 
 ///|
+/// Export the approved content identifiers independently of the push destination.
+pub fn BundlePublicationPlan::referrer_lock(
+  self : BundlePublicationPlan,
+) -> ReferrerLock {
+  let root = self.publication.root
+  {
+    root,
+    subject: root,
+    approved: {
+      pins: self.attachments.map(item => item.object.digest),
+      exact_listing: false,
+    },
+  }
+}
+
+///|
 pub fn bundle_publication_value(plan : BundlePublicationPlan) -> Json {
   let fields = bundle_publication_fields(plan)
   fields["bundlePin"] = Json::string(plan.pin().to_string())
   fields["publication"] = Json::object(publication_fields(plan.publication))
+  let lock = plan.referrer_lock()
+  let document = lock.encode()
+  fields["referrerLock"] = {
+    "pin": Json::string(@digest.sha256(document).to_string()),
+    "document": Json::string(@utf8.decode_lossy(document)),
+  }
   Json::object(fields)
 }
 

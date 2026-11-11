@@ -96,6 +96,7 @@ pub fn BundlePublicationPlan::attachments(Self) -> Array[PublicationAttachment]
 pub fn BundlePublicationPlan::pin(Self) -> @model.Digest
 pub fn BundlePublicationPlan::preflight(Self, limits? : PublishLimits, discovery? : DiscoveryLimits) -> PublishEstimate raise @model.MoonOciError
 pub fn BundlePublicationPlan::publication(Self) -> PublishPlan
+pub fn BundlePublicationPlan::referrer_lock(Self) -> ReferrerLock
 
 pub(all) struct DiscoveryLimits {
   max_pages : Int32
