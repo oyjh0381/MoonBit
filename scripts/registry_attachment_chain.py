@@ -30,7 +30,8 @@ def main():
             raise RuntimeError((arguments, result.returncode, result.stdout, result.stderr))
         return result.stdout.strip()
 
-    layout, _, root = build_layout(run, work)
+    baseline, baseline_pin, root = build_layout(run, work)
+    layout = baseline
     expected = {}
     for label, media in [("sbom", "application/spdx+json"), ("proof", "application/in-toto+json")]:
         payload = work / (label + ".json")
@@ -41,6 +42,15 @@ def main():
         layout = output
     source_pin = pin((layout / "index.json").read_bytes())
     selected = ",".join(expected)
+
+    policy = work / "promotion.json"
+    required = [dict(os="linux", architecture=arch) for arch in ("amd64", "arm64")]
+    policy_document = dict(schemaVersion=1, baselineIndex=baseline_pin,
+                           candidateIndex=source_pin, requiredPlatforms=required)
+    policy.write_text(json.dumps(policy_document), encoding="utf-8")
+
+    def promotion_target(origin):
+        return (baseline, layout, policy, "candidate", origin, REPO + "-promotion", "reviewed", selected)
 
     def target(origin):
         return (layout, source_pin, "candidate", origin, REPO, "annotated", selected)
@@ -53,6 +63,16 @@ def main():
         inputs = target(origin)
         plan = json.loads(run("registry-plan-bundle", *inputs, "--allow-http"))
         run("registry-publish-bundle", *inputs, pin(b"wrong plan"), "--allow-http", status=5)
+        assert not state["requests"]
+        promotion_inputs = promotion_target(origin)
+        review = json.loads(run("registry-promote-bundle-plan", *promotion_inputs, "--allow-http"))
+        original_policy = policy.read_bytes()
+        policy.write_bytes(original_policy + b"\n")
+        run("registry-promote-bundle", *promotion_inputs, review["promotionPin"], "--allow-http", status=5)
+        policy.write_text(json.dumps(dict(policy_document, requiredPlatforms=required[:1])),
+                          encoding="utf-8")
+        run("registry-promote-bundle-plan", *promotion_inputs, "--allow-http", status=5)
+        policy.write_bytes(original_policy)
         assert not state["requests"]
         run("registry-publish-bundle", *inputs, plan["bundlePin"], "--allow-http", status=4)
         assert not state["tags"] and root in state["manifests"]
@@ -72,9 +92,25 @@ def main():
             "--format", "json", "--depth", "1", destination, executable=oras))
         assert {item["digest"]: item["artifactType"] for item in discoveries["referrers"]} == expected
 
+        promotion_inputs = promotion_target(origin)
+        review = json.loads(run("registry-promote-bundle-plan", *promotion_inputs, "--allow-http"))
+        assert {item["digest"]: item["artifactType"] for item in review["bundle"]["attachments"]} == expected
+        receipt = json.loads(run("registry-promote-bundle", *promotion_inputs, review["promotionPin"],
+                                 "--allow-http"))
+        assert receipt["promotionPin"] == review["promotionPin"]
+        assert receipt["bundle"]["bundlePin"] == review["bundlePin"]
+        assert receipt["bundle"]["verifiedAttachments"] == len(expected)
+        assert receipt["publication"]["root"] == root and receipt["publication"]["tag_written"]
+        destination = origin.removeprefix("http://") + "/" + REPO + "-promotion:reviewed"
+        discoveries = json.loads(run("discover", "--plain-http", "--registry-config", auth,
+            "--format", "json", "--depth", "1", destination, executable=oras))
+        assert {item["digest"]: item["artifactType"] for item in discoveries["referrers"]} == expected
+
     print(json.dumps(dict(root=root, approved_referrers=len(expected),
         listing_pages=result["listingPages"], oras_verified=True,
         retry_uploaded_bytes=0, unapproved_plan_sent_no_requests=True,
+        combined_promotion_oras_verified=True, omitted_platform_refused=True,
+        changed_policy_sent_no_requests=True,
         registry_without_referrers_left_tag_unset=True), indent=2))
 
 

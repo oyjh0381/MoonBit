@@ -32,3 +32,34 @@ approval and, when needed, its Registry credential.
 The [rebase consumer](rebase.md) exercises this path against loopback Zot. It
 checks that a missing approval and a changed policy are refused before the
 approved promotion, then compares ORAS readback with the derived filesystem.
+
+## Promote a release with evidence
+
+Use `registry-promote-bundle-plan` and `registry-promote-bundle` when the
+candidate layout contains both the image release and its immediate OCI
+attachments. Supply every candidate attachment as a comma-separated digest
+list. The plan shows the full publication destination, attachment digests
+and artifact types and returns a single `promotionPin`.
+
+```text
+moonoci registry-promote-bundle-plan BASE CANDIDATE POLICY_JSON release https://registry.example team/app patched SBOM_PIN,PROOF_PIN
+moonoci registry-promote-bundle BASE CANDIDATE POLICY_JSON release https://registry.example team/app patched SBOM_PIN,PROOF_PIN PROMOTION_PIN
+```
+
+The candidate index must advertise exactly one image root and the selected
+attachments. Each attachment must name the same subject digest, media type
+and size. Baseline artifacts are outside the image comparison, so a previously
+approved bundle can serve as the next baseline. Unknown media and omitted
+image platforms still block the operation. The pin covers the exact policy
+bytes and the selected attachments as well as the publication destination.
+
+The target Registry must implement OCI 1.1 referrers. Before publishing the
+tag, MoonOCI reads back the attachment manifests and checks that the
+Registry advertises their exact metadata. The receipt contains both the
+reviewed bundle pin and the publication result. This verifies OCI association
+and storage; verification of signatures and evidence documents belongs to the
+consumer that interprets those documents.
+
+The attachment consumer in `scripts/registry_attachment_chain.py` checks
+both changed-policy and omitted-platform refusals, promotes a two-platform
+release to Zot, and independently compares both referrers with ORAS.
