@@ -306,7 +306,12 @@ pub async fn publish_registry(
 
 ///|
 pub fn publication_receipt_json(receipt : PublicationReceipt) -> String {
-  let result : Json = {
+  publication_receipt_value(receipt).stringify()
+}
+
+///|
+pub fn publication_receipt_value(receipt : PublicationReceipt) -> Json {
+  {
     "schema": "moonoci.registry-publication-receipt.v1",
     "root": Json::string(receipt.root.to_string()),
     "review_pin": Json::string(receipt.review_pin.to_string()),
@@ -318,5 +323,4 @@ pub fn publication_receipt_json(receipt : PublicationReceipt) -> String {
     "uploaded_bytes": Json::string(receipt.uploaded_bytes.to_string()),
     "tag_written": Json::boolean(receipt.tag_written),
   }
-  result.stringify()
 }

@@ -30,8 +30,19 @@ async fn registry_publish_command(args : Array[String]) -> Unit {
     )
   }
   let review_pin = @model.Digest::parse(args[8])
+  let options = parse_publish_options(args, 9)
+  let plan = read_publication_plan(args, options.allow_http)
+  let receipt = execute_publication(plan, review_pin, options)
+  @stdio.stdout.write(@remote.publication_receipt_json(receipt) + "\n")
+}
+
+///|
+fn parse_publish_options(
+  args : Array[String],
+  start : Int32,
+) -> @remote.PublishOptions raise @model.MoonOciError {
   let mut options = @remote.PublishOptions::default()
-  let mut index = 9
+  let mut index = start
   while index < args.length() {
     match args[index] {
       "--allow-http" if !options.allow_http =>
@@ -44,13 +55,15 @@ async fn registry_publish_command(args : Array[String]) -> Unit {
     }
     index += 1
   }
-  let plan = read_publication_plan(args, options.allow_http)
+  options
+}
+
+///|
+async fn execute_publication(
+  plan : @registry.PublishPlan,
+  review_pin : @model.Digest,
+  options : @remote.PublishOptions,
+) -> @remote.PublicationReceipt {
   let bearer_token = @env.get_env_var("MOONOCI_REGISTRY_PUSH_TOKEN")
-  let receipt = @remote.publish_registry(
-    plan,
-    review_pin,
-    options~,
-    bearer_token?,
-  )
-  @stdio.stdout.write(@remote.publication_receipt_json(receipt) + "\n")
+  @remote.publish_registry(plan, review_pin, options~, bearer_token?)
 }

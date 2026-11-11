@@ -55,6 +55,9 @@ async fn main {
       }
       "registry-pull" => registry_pull_command(args)
       "registry-plan" => registry_plan_command(args)
+      "wrap-release" => wrap_release_command(args)
+      "registry-promote-plan" => registry_promotion_command(args, false)
+      "registry-promote" => registry_promotion_command(args, true)
       "rebase-plan" => rebase_command(args, false)
       "rebase" => rebase_command(args, true)
       "rollout-check" => {
@@ -704,6 +707,9 @@ async fn print_usage() -> Unit {
       #|  moonoci wasm-export INPUT EXPECTED_INDEX_PIN REF OUTPUT_WASM
       #|  moonoci registry-plan INPUT EXPECTED_INDEX_PIN REF ORIGIN REPOSITORY TAG [--allow-http]
       #|  moonoci registry-publish INPUT EXPECTED_INDEX_PIN REF ORIGIN REPOSITORY TAG PLAN_PIN [--allow-http] [--ca-file FILE]
+      #|  moonoci wrap-release INPUT INDEX_PIN REF OUTPUT
+      #|  moonoci registry-promote-plan BASE CANDIDATE POLICY REF ORIGIN REPOSITORY TAG [--allow-http]
+      #|  moonoci registry-promote BASE CANDIDATE POLICY REF ORIGIN REPOSITORY TAG PROMOTION_PIN [--allow-http] [--ca-file FILE]
       #|  Retention MODE: closure | referrers | complete
       #|  moonoci transfer-batch SESSION EXPECTED_PIN MAX_CHUNKS MAX_BYTES
       #|  moonoci transfer-recover-chunk SESSION EXPECTED_PIN INDEX

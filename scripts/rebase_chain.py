@@ -122,18 +122,41 @@ def main():
         environment.pop("MOONOCI_REGISTRY_PUSH_TOKEN", None)
         empty_auth = directory / "empty-auth.json"
         empty_auth.write_bytes(b"{}")
+        wrapped = directory / "wrapped"
+        wrap = json.loads(run("wrap-release", output, receipt["indexDigest"], "release", wrapped))
+        assert wrap["root"] == receipt["indexDigest"]
+        assert (wrapped / "blobs/sha256" / wrap["root"][7:]).read_bytes() == (output / "index.json").read_bytes()
+        policy["candidateIndex"] = wrap["indexDigest"]
         with run_zot(args.zot.resolve(strict=True), directory) as origin:
-            destination = (output, receipt["indexDigest"], "candidate", origin, "team/app", "patched")
-            publish = json.loads(run("registry-plan", *destination, "--allow-http"))
-            assert publish["root"] == receipt["manifestDigest"]
-            remote = json.loads(run("registry-publish", *destination, publish["plan_pin"],
+            destination = (application, wrapped, policy_path, "release", origin, "team/app", "patched")
+            without_approval = {key: value for key, value in policy.items() if key != "approvals"}
+            policy_path.write_text(json.dumps(without_approval), encoding="utf-8")
+            run("registry-promote-plan", *destination, "--allow-http", status=5)
+            policy_bytes = json.dumps(policy).encode()
+            policy_path.write_bytes(policy_bytes)
+            review = json.loads(run("registry-promote-plan", *destination, "--allow-http"))
+            assert review["root"] == wrap["root"] and review["policyDigest"] == sha(policy_bytes)
+            policy_path.write_bytes(policy_bytes + b"\n")
+            run("registry-promote", *destination, review["promotionPin"], "--allow-http",
+                status=5, environment=environment)
+            policy_path.write_bytes(policy_bytes)
+            promoted = json.loads(run("registry-promote", *destination, review["promotionPin"],
                                     "--allow-http", environment=environment))
-            assert remote["root"] == receipt["manifestDigest"] and remote["tag_written"]
+            assert promoted["promotionPin"] == review["promotionPin"]
+            remote = promoted["publication"]
+            assert remote["root"] == wrap["root"] and remote["tag_written"]
+            assert remote["review_pin"] == review["publicationPin"]
             readback = directory / "published"
             address = origin.removeprefix("http://") + "/team/app:patched"
             run("cp", "--from-plain-http", "--from-registry-config", empty_auth,
                 "--to-oci-layout", address, str(readback) + ":patched",
                 executable=args.oras.resolve(strict=True), environment=environment)
+            roots = json.loads((readback / "index.json").read_bytes())["manifests"]
+            [read_root] = [root for root in roots
+                           if root.get("annotations", {}).get("org.opencontainers.image.ref.name") == "patched"]
+            assert read_root["digest"] == wrap["root"]
+            child = read_blob(readback, read_root)
+            (readback / "index.json").write_bytes(child)
             assert observe(readback)["images"][0]["files"] == independent
             registry_checked = True
     print(json.dumps(dict(

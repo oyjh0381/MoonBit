@@ -2,6 +2,7 @@
 package "oyjh0381/moonoci/adapter/remote"
 
 import {
+  "moonbitlang/core/json",
   "oyjh0381/moonoci/artifacts",
   "oyjh0381/moonoci/layout",
   "oyjh0381/moonoci/model",
@@ -15,6 +16,8 @@ pub async fn admit_registry_release(String, String, String, @model.Digest, @mode
 pub async fn discover_referrers(String, String, @model.Digest, artifact_type? : String, options? : RegistryOptions, limits? : @registry.DiscoveryLimits, bearer_token? : String) -> RegistryDiscoveryResult
 
 pub fn publication_receipt_json(PublicationReceipt) -> String
+
+pub fn publication_receipt_value(PublicationReceipt) -> @json.Json
 
 pub async fn publish_registry(@registry.PublishPlan, @model.Digest, options? : PublishOptions, bearer_token? : String) -> PublicationReceipt
 
