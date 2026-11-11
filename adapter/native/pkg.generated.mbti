@@ -8,6 +8,7 @@ import {
   "oyjh0381/moonoci/lifecycle",
   "oyjh0381/moonoci/model",
   "oyjh0381/moonoci/policy",
+  "oyjh0381/moonoci/registry",
   "oyjh0381/moonoci/rollout",
   "oyjh0381/moonoci/spec",
   "oyjh0381/moonoci/transfer",
@@ -48,6 +49,8 @@ pub async fn inspect_wasm_layout(String, @model.Digest, String) -> @wasmartifact
 pub async fn load_bounded_layout(String, limits? : LayoutLoadLimits) -> @layout.MemoryLayout
 
 pub async fn load_layout(String) -> @layout.MemoryLayout
+
+pub async fn load_referrer_lock(String, @model.Digest) -> @registry.ReferrerLock
 
 pub async fn load_release_policy(String) -> @policy.ReleasePolicy
 

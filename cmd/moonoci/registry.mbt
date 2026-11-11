@@ -1,10 +1,18 @@
 ///|
+priv struct ReferrerLockInput {
+  path : String
+  pin : @model.Digest
+  exact_listing : Bool
+}
+
+///|
 priv struct RegistryArguments {
   options : @remote.RegistryOptions
   cache_path : String?
   buffered : Bool
   artifact_type : String?
   selection : @registry.ReferrerSelection?
+  referrer_lock : ReferrerLockInput?
   discovery_limits : @registry.DiscoveryLimits
   requirements : Array[@policy.ArtifactRequirement]
   release_policy_path : String?
@@ -26,6 +34,8 @@ fn parse_registry_options(
   let mut buffered = false
   let mut artifact_type = None
   let mut attachment_pins = None
+  let mut lock_path = None
+  let mut lock_pin = None
   let mut exact_referrers = false
   let mut discovery_limits = @registry.DiscoveryLimits::default()
   let requirements : Array[@policy.ArtifactRequirement] = []
@@ -53,6 +63,8 @@ fn parse_registry_options(
       | "--max-retry-delay-ms"
       | "--artifact-type"
       | "--attachment-pins"
+      | "--referrer-lock"
+      | "--referrer-lock-pin"
       | "--max-pages"
       | "--max-entries"
       | "--max-page-bytes"
@@ -79,9 +91,12 @@ fn parse_registry_options(
             "required artifacts are only accepted by registry-admit",
           )
         }
-        if flag == "--attachment-pins" && (!discovery || !output_options) {
+        if ["--attachment-pins", "--referrer-lock", "--referrer-lock-pin"].contains(
+            flag,
+          ) &&
+          (!discovery || !output_options) {
           raise @model.InvalidArgument(
-            "attachment pins require registry-bundle or registry-admit",
+            "attachment selection requires registry-bundle or registry-admit",
           )
         }
         if (
@@ -211,6 +226,18 @@ fn parse_registry_options(
                 max_depth: integer_argument(args[index]),
               },
             }
+          "--referrer-lock" => {
+            if lock_path is Some(_) {
+              raise @model.InvalidArgument("duplicate referrer lock path")
+            }
+            lock_path = Some(args[index])
+          }
+          "--referrer-lock-pin" => {
+            if lock_pin is Some(_) {
+              raise @model.InvalidArgument("duplicate referrer lock pin")
+            }
+            lock_pin = Some(@model.Digest::parse(args[index]))
+          }
           "--attachment-pins" => {
             if attachment_pins is Some(_) {
               raise @model.InvalidArgument("duplicate attachment pin option")
@@ -295,26 +322,34 @@ fn parse_registry_options(
       "registry-admit requires --require-artifact TYPE",
     )
   }
-  let selection = match attachment_pins {
-    Some(pins) => {
-      if artifact_type is Some(_) {
-        raise @model.InvalidArgument(
-          "attachment pins cannot use an artifact type filter",
-        )
-      }
-      Some(
-        @registry.ReferrerSelection::new(pins, exact_listing=exact_referrers),
+  let referrer_lock : ReferrerLockInput? = match (lock_path, lock_pin) {
+    (None, None) => None
+    (Some(path), Some(pin)) =>
+      Some({ path, pin, exact_listing: exact_referrers, })
+    _ =>
+      raise @model.InvalidArgument(
+        "referrer lock path and pin must be supplied together",
       )
-    }
-    None => {
-      if exact_referrers {
-        raise @model.InvalidArgument(
-          "--exact-referrers requires --attachment-pins",
-        )
-      }
-      None
-    }
   }
+  if referrer_lock is Some(_) && attachment_pins is Some(_) {
+    raise @model.InvalidArgument(
+      "choose either a referrer lock or inline attachment pins",
+    )
+  }
+  if artifact_type is Some(_) &&
+    (referrer_lock is Some(_) || attachment_pins is Some(_)) {
+    raise @model.InvalidArgument(
+      "attachment selection cannot use an artifact type filter",
+    )
+  }
+  if exact_referrers && referrer_lock is None && attachment_pins is None {
+    raise @model.InvalidArgument(
+      "--exact-referrers requires an approved attachment selection",
+    )
+  }
+  let selection = attachment_pins.map(pins => {
+    @registry.ReferrerSelection::new(pins, exact_listing=exact_referrers)
+  })
   let statement : @remote.StatementRequirement? = match
     (statement_pin, predicate_type) {
     (None, None) => None
@@ -331,6 +366,7 @@ fn parse_registry_options(
     buffered,
     artifact_type,
     selection,
+    referrer_lock,
     discovery_limits,
     requirements,
     release_policy_path,
@@ -437,6 +473,18 @@ async fn registry_bundle_command(
       "registry-admit discovers all types; artifact filter is not accepted",
     )
   }
+  let selection = match parsed.referrer_lock {
+    None => parsed.selection
+    Some(input) => {
+      let lock = @native.load_referrer_lock(input.path, input.pin)
+      if lock.root() != expected || lock.subject() != subject {
+        raise @model.DigestMismatch(
+          "referrer lock root or subject differs from the requested release",
+        )
+      }
+      Some(lock.selection(exact_listing=input.exact_listing))
+    }
+  }
   let release_policy = match parsed.release_policy_path {
     None => None
     Some(path) => Some(@native.load_release_policy(path))
@@ -461,7 +509,7 @@ async fn registry_bundle_command(
       parsed.requirements,
       release_policy?,
       statement?=parsed.statement,
-      selection?=parsed.selection,
+      selection?,
       options=parsed.options,
       discovery_limits=parsed.discovery_limits,
       cache?,
@@ -485,7 +533,7 @@ async fn registry_bundle_command(
     expected,
     subject,
     artifact_type?=parsed.artifact_type,
-    selection?=parsed.selection,
+    selection?,
     options=parsed.options,
     discovery_limits=parsed.discovery_limits,
     cache?,
