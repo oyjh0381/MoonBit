@@ -15,10 +15,8 @@ MoonOCI needs to own. [ArtifactDock](https://mooncakes.io/docs/Hhsqoo/artifactdo
 | Publish reviewed layouts to a Registry | Derive the upload order from the verified catalog. Bind repository, tag, source and object order to a review digest. Upload missing content and publish the tag after its dependencies | Test against a local OCI Registry, verify through an independent client, and retry after a controlled failed upload. Check that an incorrect review digest causes zero requests |
 | Review a multi-platform rollout | Define the required platform matrix and compare verified source and candidate releases. Report missing or ambiguous matches and per-platform content changes | Compare with an independent OCI reader using distinct platform variants and shared layers. Exercise a missing required platform and a no-change release |
 
-The offline and Wasm workflows are usable through the current CLI. Registry
-publication currently has a portable plan, a local CLI command and upload-path
-validation. HTTP execution and external verification are separate milestones.
-The rollout matrix is a design target.
+The offline, Wasm and Registry publication workflows are usable through the
+current CLI. The rollout matrix is a design target.
 
 For registry publication, send blobs through the standard POST/PUT session,
 send child manifests before their parent, and publish the selected root under
@@ -32,10 +30,30 @@ concurrency requires a separate documented server contract. [OCI Distribution
 
 ```text
 moonoci registry-plan artifact EXPECTED_INDEX_PIN fixture https://registry.example team/modules release
+moonoci registry-publish artifact EXPECTED_INDEX_PIN fixture https://registry.example team/modules release PLAN_PIN
 ```
 
-This command performs bounded local reads and emits the ordered plan with its
-review digest. It makes no connection to the registry.
+The plan command performs bounded local reads and emits the ordered plan with
+its review digest. The publish command reconstructs it and compares the
+caller-supplied digest before any connection. It checks existing objects with
+HEAD, sends missing content and reads the tag manifest back by digest and
+size. The receipt counts child manifests separately from the final tag write.
+
+The CLI accepts a pre-authorized bearer token in `MOONOCI_REGISTRY_PUSH_TOKEN`
+for HTTPS. `--ca-file` supplies a private trust root. Plain HTTP is opt-in and
+requires an empty token setting. The write client uses one origin, with no
+automatic redirects or credential exchange. Publication accepts a missing tag
+or an existing tag with identical content. Use one writer per destination tag,
+because OCI Distribution does not define a compare-and-swap tag update.
+
+On Windows, a two-platform layout with a shared layer was published to Zot
+2.1.23. ORAS 1.3.6 copied all six objects back byte for byte. A repeat used
+eight requests and uploaded zero bytes. The loopback fixture also injects a
+failed upload, rejects an unrelated tag and rejects corrupted tag readback.
+
+```text
+python scripts/registry_publish_chain.py --binary PATH_TO_MOONOCI --oras PATH_TO_ORAS --zot PATH_TO_ZOT
+```
 
 The publication planner visits each reachable metadata digest once and each
 strong edge once. It uses digest sets for deduplication, with separate

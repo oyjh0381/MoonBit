@@ -1,12 +1,11 @@
 ///|
-async fn fetch_entity(
+async fn[T] with_registry_client(
   url : @registry.RegistryUrl,
   headers : Map[String, String],
-  max_bytes : Int32,
-  expected_size : Int64?,
   ca_file : String?,
   proxy_origin : String?,
-) -> HttpEntity {
+  action : async (@http.Client) -> T,
+) -> T {
   let trust : @tls.TrustedRoot = match ca_file {
     None => SystemRoot
     Some(path) => CustomPemFile(path)
@@ -32,13 +31,44 @@ async fn fetch_entity(
     _ => raise @model.IoFailure("registry connection or TLS setup failed")
   }
   defer client.close()
-  let response = client.get(url.path()) catch {
+  action(client)
+}
+
+///|
+fn registry_response_headers(
+  response : @http.Response,
+) -> Array[@model.KeyValue] {
+  response.headers
+  .iter()
+  .map(pair => ({ key: pair.0.to_string(), value: pair.1, } : @model.KeyValue))
+  .collect()
+}
+
+///|
+async fn fetch_entity(
+  url : @registry.RegistryUrl,
+  headers : Map[String, String],
+  max_bytes : Int32,
+  expected_size : Int64?,
+  ca_file : String?,
+  proxy_origin : String?,
+) -> HttpEntity {
+  with_registry_client(url, headers, ca_file, proxy_origin, client => {
+    fetch_connected(client, url.path(), max_bytes, expected_size)
+  })
+}
+
+///|
+async fn fetch_connected(
+  client : @http.Client,
+  path : String,
+  max_bytes : Int32,
+  expected_size : Int64?,
+) -> HttpEntity {
+  let response = client.get(path) catch {
     _ => raise @model.IoFailure("registry request or response framing failed")
   }
-  let headers = response.headers
-    .iter()
-    .map(pair => ({ key: pair.0.to_string(), value: pair.1, } : @model.KeyValue))
-    .collect()
+  let headers = registry_response_headers(response)
   if response.code != 200 {
     // Error, redirect and auth bodies are not read into memory or echoed.
     return { status: response.code, headers, body: b"", }

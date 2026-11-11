@@ -55,6 +55,7 @@ async fn main {
       }
       "registry-pull" => registry_pull_command(args)
       "registry-plan" => registry_plan_command(args)
+      "registry-publish" => registry_publish_command(args)
       "statement-verify" => {
         require_arity(
           args, 6, "usage: moonoci statement-verify INPUT ATTACHMENT SUBJECT PREDICATE_TYPE",
@@ -685,6 +686,7 @@ async fn print_usage() -> Unit {
       #|  moonoci wasm-inspect INPUT EXPECTED_INDEX_PIN REF
       #|  moonoci wasm-export INPUT EXPECTED_INDEX_PIN REF OUTPUT_WASM
       #|  moonoci registry-plan INPUT EXPECTED_INDEX_PIN REF ORIGIN REPOSITORY TAG [--allow-http]
+      #|  moonoci registry-publish INPUT EXPECTED_INDEX_PIN REF ORIGIN REPOSITORY TAG PLAN_PIN [--allow-http] [--ca-file FILE]
       #|  Retention MODE: closure | referrers | complete
       #|  moonoci transfer-batch SESSION EXPECTED_PIN MAX_CHUNKS MAX_BYTES
       #|  moonoci transfer-recover-chunk SESSION EXPECTED_PIN INDEX
