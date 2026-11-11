@@ -14,6 +14,8 @@ pub fn bearer_authorization(String) -> String raise @model.MoonOciError
 
 pub fn blob_path(String, @model.Digest) -> String raise @model.MoonOciError
 
+pub fn blob_upload_path(String) -> String raise @model.MoonOciError
+
 pub fn check_response_head(Int32, Array[@model.KeyValue], Int32, expected_size? : Int64) -> Unit raise @model.MoonOciError
 
 pub fn content_length(Array[@model.KeyValue]) -> Int64? raise @model.MoonOciError
@@ -21,6 +23,8 @@ pub fn content_length(Array[@model.KeyValue]) -> Int64? raise @model.MoonOciErro
 pub fn decode_bearer_token(Bytes) -> String raise @model.MoonOciError
 
 pub fn encode_query_value(String) -> String
+
+pub fn finalize_blob_upload(RegistryOrigin, String, Int32, Array[@model.KeyValue], @model.Digest) -> RegistryUrl raise @model.MoonOciError
 
 pub fn manifest_headers() -> Array[@model.KeyValue]
 
