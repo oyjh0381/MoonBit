@@ -60,16 +60,47 @@ def main():
         receipt = json.loads(run("registry-promote-bundle", *target, review["promotionPin"], "--allow-http"))
         assert receipt["publication"]["root"] == root and receipt["publication"]["tag_written"]
         assert receipt["bundle"]["verifiedAttachments"] == 1
+        exact = json.loads(run("registry-bundle", origin, REPO, "reviewed", root, root,
+                               work / "exact-referrers", "--allow-http",
+                               "--attachment-pins", evidence, "--exact-referrers"))
+        assert exact["attachment_selection"] == dict(advertised=1, selected=1, exact_listing=True)
+
+        additional = work / "additional.json"
+        additional.write_text(json.dumps({"fixture": "unapproved", "note": "x" * 65536}), encoding="utf-8")
+        with_extra = work / "with-extra"
+        extra = run("artifact-attach", candidate, root, "application/json",
+                    "application/json", additional, "unapproved", with_extra)
+        extra_target = (with_extra, pin((with_extra / "index.json").read_bytes()), "candidate",
+                        origin, REPO, "reviewed", extra)
+        extra_plan = json.loads(run("registry-plan-bundle", *extra_target, "--allow-http"))
+        extra_receipt = json.loads(run("registry-publish-bundle", *extra_target,
+                                       extra_plan["bundlePin"], "--allow-http"))
+        assert not extra_receipt["publication"]["tag_written"]
 
     reconstructed = work / "admitted"
     refused = work / "refused"
     with launch("consumer") as origin:
         source = (origin, REPO, "reviewed", root, root)
-        requirements = ("--allow-http", "--require-artifact", STATEMENT_MEDIA, "--statement-digest", evidence)
+        requirements = ("--allow-http", "--require-artifact", STATEMENT_MEDIA,
+                        "--statement-digest", evidence, "--attachment-pins", evidence)
         run("registry-admit", *source, refused, *requirements,
             "--statement-predicate", PREDICATE + "-incorrect", status=5)
         assert not refused.exists()
-        run("registry-admit", *source, reconstructed, *requirements, "--statement-predicate", PREDICATE)
+        run("registry-admit", *source, refused, *requirements, "--statement-predicate", PREDICATE,
+            "--exact-referrers", status=5)
+        assert not refused.exists()
+        run("registry-bundle", *source, refused, "--allow-http",
+            "--attachment-pins", pin(b"not published"), status=5)
+        assert not refused.exists()
+        admitted = json.loads(run("registry-admit", *source, reconstructed, *requirements,
+                                  "--statement-predicate", PREDICATE))["acquisition"]
+        all_referrers = json.loads(run("registry-bundle", *source, work / "all-referrers", "--allow-http"))
+        assert admitted["attachment_selection"] == dict(advertised=2, selected=1, exact_listing=False)
+        assert admitted["bundle"]["referrers"] == [evidence]
+        assert set(all_referrers["bundle"]["referrers"]) == {evidence, extra}
+        avoided_bytes = (int(all_referrers["accepted_network_bytes"])
+                         - int(admitted["accepted_network_bytes"]))
+        assert avoided_bytes >= additional.stat().st_size
 
     def read_blobs(layout):
         return {entry.name: entry.read_bytes() for entry in (layout / "blobs/sha256").iterdir()}
@@ -80,7 +111,8 @@ def main():
     assert all(pin(value) == "sha256:" + name for name, value in recovered.items())
     print(json.dumps(dict(root=root, statement_manifest=evidence, restored_objects=len(recovered),
                           persistent_restart=True, predicate_mismatch_refused=True,
-                          admitted_bytes_identical=True), indent=2))
+                          admitted_bytes_identical=True, exact_listing_refused_extra=True,
+                          missing_pin_refused=True, avoided_network_bytes=avoided_bytes), indent=2))
 
 
 if __name__ == "__main__":

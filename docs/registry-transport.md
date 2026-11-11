@@ -221,3 +221,28 @@ The local TLS fixture executes both HTTP and HTTPS proxy paths, checks that
 Registry Authorization reaches the target but not CONNECT headers, retains
 default certificate distrust, and refuses a 407 proxy response without output.
 It binds only loopback and forwards only to the fixture's exact authority.
+
+## Acquire an approved attachment set
+
+\`registry-bundle\` and \`registry-admit\` accept a comma-separated list of
+1–128 manifest digests with \`--attachment-pins\`. Use the attachment digests
+from the approved publication plan. The client follows the full bounded
+Referrers API listing, checks that every approved digest is advertised,
+and fetches only those manifests and their payloads. Image content and
+each attachment's actual subject association are still verified.
+
+\`\`\`text
+moonoci registry-bundle ORIGIN REPOSITORY TAG ROOT ROOT OUTPUT --attachment-pins SBOM_PIN,PROOF_PIN
+moonoci registry-admit ORIGIN REPOSITORY TAG ROOT ROOT OUTPUT --attachment-pins PROOF_PIN --exact-referrers --require-artifact application/vnd.in-toto+json --statement-digest PROOF_PIN --statement-predicate PREDICATE
+\`\`\`
+
+Add \`--exact-referrers\` to refuse any additional advertised digest. This
+checks the pages the Registry returned. The Registry can withhold data,
+so a listing is insufficient evidence of what is stored elsewhere.
+The option is incompatible with \`--artifact-type\`, which would limit
+the listing before comparison. Required types and optional Statement
+checks apply to the selected bundle, and a required Statement pin must
+be in the selected set.
+
+The ArtifactDock consumer exercised both modes with and without a later
+attachment. Selection avoided 66,198 accepted network bytes in that fixture.
