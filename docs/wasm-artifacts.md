@@ -36,7 +36,7 @@ type checking, WASI compatibility and execution belong to the consumer.
 This profile accepts a single payload up to 64 MiB and config up to 1 MiB.
 
 The Windows/Linux workflow compiles the MoonBit example and checks the resulting
-layout with CPython and ORAS. On Windows, ORAS 1.3.6 recovered all 227,871 bytes
-of the compiled fixture with the same SHA-256 digest as the compiler output.
+layout with CPython and ORAS. On Windows, ORAS 1.3.6 recovered all 232,180 bytes
+of the MoonBit 0.10.20 fixture with the same SHA-256 digest as the compiler output.
 The consumer also constructs a separate layout with ORAS, inspects its Wasm
 configuration, then verifies that the extracted binary is byte-identical.

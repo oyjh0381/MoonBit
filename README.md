@@ -86,7 +86,7 @@ The reusable packages include `oyjh0381/moonoci/archive`, `builder`, `codec`, `d
 
 ## Requirements and development
 
-- MoonBit toolchain 0.1.20260803 or newer;
+- MoonBit compiler and core `0.10.20+65efd5b93` with `moon` `0.1.20261104` for the development branch;
 - for Native builds on Windows: Visual Studio 2022 Build Tools with the C++ workload and Windows SDK;
 - for Native builds on Linux: a C compiler and archiver.
 

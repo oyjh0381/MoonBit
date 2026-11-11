@@ -2,13 +2,14 @@
 package "oyjh0381/moonoci/codec"
 
 import {
+  "moonbitlang/core/json",
   "oyjh0381/moonoci/model",
 }
 
 // Values
 pub fn decode_config(Bytes) -> @model.ImageConfig raise @model.MoonOciError
 
-pub fn decode_descriptor(Json) -> @model.Descriptor raise @model.MoonOciError
+pub fn decode_descriptor(@json.Json) -> @model.Descriptor raise @model.MoonOciError
 
 pub fn decode_index(Bytes) -> @model.ImageIndex raise @model.MoonOciError
 
@@ -22,7 +23,7 @@ pub fn encode_index(@model.ImageIndex) -> Bytes raise @model.MoonOciError
 
 pub fn encode_manifest(@model.ImageManifest) -> Bytes raise @model.MoonOciError
 
-pub fn parse_json_document(Bytes, preserve_number_repr? : Bool) -> Json raise @model.MoonOciError
+pub fn parse_json_document(Bytes, preserve_number_repr? : Bool) -> @json.Json raise @model.MoonOciError
 
 pub fn validate_layout_marker(Bytes) -> Unit raise @model.MoonOciError
 

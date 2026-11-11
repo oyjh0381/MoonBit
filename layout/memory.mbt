@@ -1,18 +1,20 @@
 ///|
 /// One immutable content-addressed object stored in an in-memory layout.
+#derive(Debug, Eq)
 pub struct BlobRecord {
   priv descriptor : @model.Descriptor
   priv data : Bytes
-} derive(Debug, Eq)
+}
 
 ///|
 /// Portable in-memory representation of the files in an OCI Image Layout.
+#derive(Debug, Eq)
 pub struct MemoryLayout {
   priv marker : Bytes
   priv mut index : Bytes
   priv blobs : Array[BlobRecord]
   priv lookup : Map[String, Int32]
-} derive(Debug, Eq)
+}
 
 ///|
 /// Construct an empty OCI Image Layout with the v1 marker.

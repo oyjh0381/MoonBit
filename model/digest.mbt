@@ -1,9 +1,10 @@
 ///|
 /// Content-addressed identifier in `algorithm:encoded` form.
+#derive(Debug, Eq)
 pub(all) struct Digest {
   algorithm : String
   encoded : String
-} derive(Debug, Eq)
+}
 
 ///|
 /// Construct a validated SHA-256 digest from its lowercase hexadecimal value.

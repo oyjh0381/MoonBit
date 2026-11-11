@@ -28,10 +28,11 @@ pub fn verify_memory(@layout.MemoryLayout) -> @model.VerificationReport
 // Errors
 
 // Types and methods
+#derive(Eq, @debug.Debug)
 pub(all) struct BuildResult {
   layout : @layout.MemoryLayout
   report : @model.BuildReport
-} derive(Eq, @debug.Debug)
+}
 pub fn BuildResult::equal(Self, Self) -> Bool
 pub fn BuildResult::not_equal(Self, Self) -> Bool
 pub fn BuildResult::to_repr(Self) -> @debug.Repr
@@ -45,6 +46,7 @@ pub(all) struct FileEvidence {
   mtime : Int64
 }
 
+#derive(Eq, @debug.Debug)
 pub(all) struct ImageBuildRequest {
   layers : Array[LayerBuildRequest]
   platform : @model.Platform
@@ -53,30 +55,33 @@ pub(all) struct ImageBuildRequest {
   author : String?
   reference : String
   annotations : Array[@model.KeyValue]
-} derive(Eq, @debug.Debug)
+}
 pub fn ImageBuildRequest::equal(Self, Self) -> Bool
 pub fn ImageBuildRequest::not_equal(Self, Self) -> Bool
 pub fn ImageBuildRequest::to_repr(Self) -> @debug.Repr
 
+#derive(Eq, @debug.Debug)
 pub(all) struct ImageBuildResult {
   layout : @layout.MemoryLayout
   report : @model.BuildReport
   rootfs : Array[@model.RootfsEntry]
-} derive(Eq, @debug.Debug)
+}
 pub fn ImageBuildResult::equal(Self, Self) -> Bool
 pub fn ImageBuildResult::not_equal(Self, Self) -> Bool
 pub fn ImageBuildResult::to_repr(Self) -> @debug.Repr
 
+#derive(Eq, @debug.Debug)
 pub(all) struct LayerBuildRequest {
   entries : Array[@archive.TarEntry]
   remove : Array[String]
   opaque_dirs : Array[String]
   compression : @model.Compression
-} derive(Eq, @debug.Debug)
+}
 pub fn LayerBuildRequest::equal(Self, Self) -> Bool
 pub fn LayerBuildRequest::not_equal(Self, Self) -> Bool
 pub fn LayerBuildRequest::to_repr(Self) -> @debug.Repr
 
+#derive(Eq, @debug.Debug)
 pub(all) struct SingleLayerRequest {
   entries : Array[@archive.TarEntry]
   platform : @model.Platform
@@ -86,7 +91,7 @@ pub(all) struct SingleLayerRequest {
   reference : String
   annotations : Array[@model.KeyValue]
   compression : @model.Compression
-} derive(Eq, @debug.Debug)
+}
 pub fn SingleLayerRequest::equal(Self, Self) -> Bool
 pub fn SingleLayerRequest::not_equal(Self, Self) -> Bool
 pub fn SingleLayerRequest::to_repr(Self) -> @debug.Repr

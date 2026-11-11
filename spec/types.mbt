@@ -1,15 +1,17 @@
 ///|
 /// Optional normalized metadata applied to entries read from a Layer Source.
+#derive(Debug, Eq)
 pub(all) struct MetadataSpec {
   mode : Int32?
   uid : Int32?
   gid : Int32?
   mtime : Int64?
   preserve_mtime : Bool
-} derive(Debug, Eq)
+}
 
 ///|
 /// One declarative filesystem changeset in a Build Specification.
+#derive(Debug, Eq)
 pub(all) struct LayerSpec {
   source : String
   compression : @model.Compression
@@ -18,16 +20,18 @@ pub(all) struct LayerSpec {
   exclude : Array[String]
   ignore_file : String?
   metadata : MetadataSpec
-} derive(Debug, Eq)
+}
 
 ///|
 /// Destination settings for a Native build.
+#derive(Debug, Eq)
 pub(all) struct OutputSpec {
   layout : String
-} derive(Debug, Eq)
+}
 
 ///|
 /// Strict schemaVersion 1 input consumed by MoonOCI.
+#derive(Debug, Eq)
 pub(all) struct BuildSpec {
   schema_version : Int32
   reference : String
@@ -38,7 +42,7 @@ pub(all) struct BuildSpec {
   author : String?
   annotations : Array[@model.KeyValue]
   output : OutputSpec
-} derive(Debug, Eq)
+}
 
 ///|
 pub fn default_metadata_spec() -> MetadataSpec {

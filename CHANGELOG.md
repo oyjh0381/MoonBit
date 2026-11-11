@@ -2,6 +2,12 @@
 
 All notable changes to MoonOCI are documented here. The format follows Keep a Changelog and versions follow Semantic Versioning.
 
+## [Unreleased]
+
+- Build and test the development branch with MoonBit 0.10.20 and Async 0.22.9. Adapt HTTP headers and shield failed transfer cleanup under the new cancellation semantics.
+- Resolve exact layout references for reviewed offline exports and Registry publication planning.
+- Package, inspect and export single-layer Wasm OCI artifacts with ORAS interoperability.
+
 ## [0.2.0] - 2026-11-07
 
 - Add digest-pinned Registry pulls, private CA and explicit CONNECT proxy support, isolated Bearer authentication and configurable resource budgets.

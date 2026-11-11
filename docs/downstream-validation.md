@@ -10,7 +10,7 @@ moon package
 python scripts/downstream_chain.py --archive _build/publish/oyjh0381-moonoci-0.2.0.zip
 ```
 
-Run with MoonBit 0.10.16 and a Native C build environment. A wrapper command can
+Run with MoonBit 0.10.20 and a Native C build environment. A wrapper command can
 be supplied as an argv array using `--moon-command-json`. The harness calls
 check and test with all four backends and warnings denied.
 

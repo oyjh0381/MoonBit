@@ -2,6 +2,7 @@
 package "oyjh0381/moonoci/registry"
 
 import {
+  "moonbitlang/core/json",
   "oyjh0381/moonoci/artifacts",
   "oyjh0381/moonoci/layout",
   "oyjh0381/moonoci/lifecycle",
@@ -43,7 +44,7 @@ pub fn publication_exists(Int32, Array[@model.KeyValue], PublishObject) -> Bool 
 
 pub fn publication_json(PublishPlan) -> String
 
-pub fn pull_statistics(PullSession) -> Json
+pub fn pull_statistics(PullSession) -> @json.Json
 
 pub fn pull_statistics_json(PullSession) -> String
 
@@ -153,7 +154,7 @@ pub fn ReferrerSession::new(RegistryOrigin, String, @model.Digest, artifact_type
 pub fn ReferrerSession::next_path(Self) -> String?
 pub fn ReferrerSession::pages(Self) -> Int32
 pub fn ReferrerSession::received_bytes(Self) -> Int64
-pub fn ReferrerSession::report(Self) -> Json raise @model.MoonOciError
+pub fn ReferrerSession::report(Self) -> @json.Json raise @model.MoonOciError
 
 pub struct RegistryOrigin {
   // private fields

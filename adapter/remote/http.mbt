@@ -15,7 +15,6 @@ async fn fetch_entity(
     None => None
     Some(origin) =>
       Some(@http.Client(origin, trust~)) catch {
-        error if @async.is_cancellation_error(error) => raise error
         _ =>
           raise @model.IoFailure(
             "registry proxy connection or TLS setup failed",
@@ -23,18 +22,22 @@ async fn fetch_entity(
       }
   }
   defer (if proxy is Some(proxy) { proxy.close() })
+  let headers : @http.Headers = Map(
+    headers
+    .iter()
+    .map(pair => (@http.CaseInsensitiveString(pair.0), pair.1))
+    .collect(),
+  )
   let client = @http.Client(url.origin().url(), headers~, trust~, proxy?) catch {
-    error if @async.is_cancellation_error(error) => raise error
     _ => raise @model.IoFailure("registry connection or TLS setup failed")
   }
   defer client.close()
   let response = client.get(url.path()) catch {
-    error if @async.is_cancellation_error(error) => raise error
     _ => raise @model.IoFailure("registry request or response framing failed")
   }
   let headers = response.headers
     .iter()
-    .map(pair => ({ key: pair.0, value: pair.1, } : @model.KeyValue))
+    .map(pair => ({ key: pair.0.to_string(), value: pair.1, } : @model.KeyValue))
     .collect()
   if response.code != 200 {
     // Error, redirect and auth bodies are not read into memory or echoed.
@@ -58,7 +61,6 @@ async fn fetch_entity(
       offset=received,
       max_len=buffer.length() - received,
     ) catch {
-      error if @async.is_cancellation_error(error) => raise error
       _ =>
         raise @model.IoFailure(
           "registry body read was interrupted or malformed",

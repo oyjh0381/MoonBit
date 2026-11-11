@@ -1,5 +1,6 @@
 ///|
 /// Portable request for the first complete in-memory build path.
+#derive(Debug, Eq)
 pub(all) struct SingleLayerRequest {
   entries : Array[@archive.TarEntry]
   platform : @model.Platform
@@ -9,14 +10,15 @@ pub(all) struct SingleLayerRequest {
   reference : String
   annotations : Array[@model.KeyValue]
   compression : @model.Compression
-} derive(Debug, Eq)
+}
 
 ///|
 /// Layout and report returned by a portable in-memory build.
+#derive(Debug, Eq)
 pub(all) struct BuildResult {
   layout : @layout.MemoryLayout
   report : @model.BuildReport
-} derive(Debug, Eq)
+}
 
 ///|
 /// Construct a deterministic, single-layer, uncompressed OCI Image Layout.

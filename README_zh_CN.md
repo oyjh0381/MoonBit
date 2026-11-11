@@ -45,6 +45,9 @@ moon add oyjh0381/moonoci@0.2.0
 
 ## 构建与测试
 
+开发分支使用 MoonBit 编译器与标准库 `0.10.20+65efd5b93`，配套
+`moon` 为 `0.1.20261104`。
+
 ```text
 moon update
 moon check --target all

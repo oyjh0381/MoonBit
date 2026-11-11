@@ -1,14 +1,16 @@
 ///|
 /// One portable layer changeset supplied to the multi-layer builder.
+#derive(Debug, Eq)
 pub(all) struct LayerBuildRequest {
   entries : Array[@archive.TarEntry]
   remove : Array[String]
   opaque_dirs : Array[String]
   compression : @model.Compression
-} derive(Debug, Eq)
+}
 
 ///|
 /// Complete portable request for one single-platform image.
+#derive(Debug, Eq)
 pub(all) struct ImageBuildRequest {
   layers : Array[LayerBuildRequest]
   platform : @model.Platform
@@ -17,15 +19,16 @@ pub(all) struct ImageBuildRequest {
   author : String?
   reference : String
   annotations : Array[@model.KeyValue]
-} derive(Debug, Eq)
+}
 
 ///|
 /// Full result including the effective Root Filesystem view.
+#derive(Debug, Eq)
 pub(all) struct ImageBuildResult {
   layout : @layout.MemoryLayout
   report : @model.BuildReport
   rootfs : Array[@model.RootfsEntry]
-} derive(Debug, Eq)
+}
 
 ///|
 /// Build an ordered, deterministic multi-layer OCI Image Layout in memory.

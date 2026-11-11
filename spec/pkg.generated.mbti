@@ -14,6 +14,7 @@ pub fn parse_build_spec(Bytes) -> BuildSpec raise @model.MoonOciError
 // Errors
 
 // Types and methods
+#derive(Eq, @debug.Debug)
 pub(all) struct BuildSpec {
   schema_version : Int32
   reference : String
@@ -24,11 +25,12 @@ pub(all) struct BuildSpec {
   author : String?
   annotations : Array[@model.KeyValue]
   output : OutputSpec
-} derive(Eq, @debug.Debug)
+}
 pub fn BuildSpec::equal(Self, Self) -> Bool
 pub fn BuildSpec::not_equal(Self, Self) -> Bool
 pub fn BuildSpec::to_repr(Self) -> @debug.Repr
 
+#derive(Eq, @debug.Debug)
 pub(all) struct LayerSpec {
   source : String
   compression : @model.Compression
@@ -37,25 +39,27 @@ pub(all) struct LayerSpec {
   exclude : Array[String]
   ignore_file : String?
   metadata : MetadataSpec
-} derive(Eq, @debug.Debug)
+}
 pub fn LayerSpec::equal(Self, Self) -> Bool
 pub fn LayerSpec::not_equal(Self, Self) -> Bool
 pub fn LayerSpec::to_repr(Self) -> @debug.Repr
 
+#derive(Eq, @debug.Debug)
 pub(all) struct MetadataSpec {
   mode : Int32?
   uid : Int32?
   gid : Int32?
   mtime : Int64?
   preserve_mtime : Bool
-} derive(Eq, @debug.Debug)
+}
 pub fn MetadataSpec::equal(Self, Self) -> Bool
 pub fn MetadataSpec::not_equal(Self, Self) -> Bool
 pub fn MetadataSpec::to_repr(Self) -> @debug.Repr
 
+#derive(Eq, @debug.Debug)
 pub(all) struct OutputSpec {
   layout : String
-} derive(Eq, @debug.Debug)
+}
 pub fn OutputSpec::equal(Self, Self) -> Bool
 pub fn OutputSpec::not_equal(Self, Self) -> Bool
 pub fn OutputSpec::to_repr(Self) -> @debug.Repr

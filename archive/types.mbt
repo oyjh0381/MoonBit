@@ -1,13 +1,15 @@
 ///|
 /// File kind encoded in a layer tar header.
+#derive(Debug, Eq)
 pub(all) enum TarEntryKind {
   Regular
   Directory
   Symlink
-} derive(Debug, Eq)
+}
 
 ///|
 /// Complete deterministic input for one tar entry.
+#derive(Debug, Eq)
 pub(all) struct TarEntry {
   path : String
   kind : TarEntryKind
@@ -17,7 +19,7 @@ pub(all) struct TarEntry {
   mtime : Int64
   data : Bytes
   link_target : String?
-} derive(Debug, Eq)
+}
 
 ///|
 /// Construct a normalized regular file entry.

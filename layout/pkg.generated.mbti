@@ -11,18 +11,20 @@ import {
 // Errors
 
 // Types and methods
+#derive(Eq, @debug.Debug)
 pub struct BlobRecord {
   // private fields
-} derive(Eq, @debug.Debug)
+}
 pub fn BlobRecord::data(Self) -> Bytes
 pub fn BlobRecord::descriptor(Self) -> @model.Descriptor
 pub fn BlobRecord::equal(Self, Self) -> Bool
 pub fn BlobRecord::not_equal(Self, Self) -> Bool
 pub fn BlobRecord::to_repr(Self) -> @debug.Repr
 
+#derive(Eq, @debug.Debug)
 pub struct MemoryLayout {
   // private fields
-} derive(Eq, @debug.Debug)
+}
 pub fn MemoryLayout::blob_bytes(Self) -> Int64
 pub fn MemoryLayout::blob_count(Self) -> Int32
 pub fn MemoryLayout::blob_records(Self) -> Array[BlobRecord]

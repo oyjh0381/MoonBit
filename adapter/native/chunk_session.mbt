@@ -258,9 +258,7 @@ pub async fn TransferSession::finish(
     errdefer {
       output.close()
       // This exact file was created exclusively by this invocation.
-      @fs.remove(staging) catch {
-        _ => ()
-      }
+      @async.protect_from_cancel(() => @fs.remove(staging) catch { _ => () })
     }
     assemble_transfer(session, plan, output)
     output.close()

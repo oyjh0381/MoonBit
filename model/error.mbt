@@ -1,5 +1,6 @@
 ///|
 /// Stable error categories exposed by the MoonOCI library.
+#derive(Debug, Eq)
 pub(all) suberror MoonOciError {
   InvalidArgument(String)
   InvalidBuildSpec(String)
@@ -13,7 +14,7 @@ pub(all) suberror MoonOciError {
   ResourceLimitExceeded(String)
   IoFailure(String)
   Unsupported(String)
-} derive(Debug, Eq)
+}
 
 ///|
 /// Return a stable machine-readable code for an error category.

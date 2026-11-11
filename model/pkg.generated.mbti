@@ -27,6 +27,7 @@ pub let media_type_layout : String
 pub let media_type_manifest : String
 
 // Errors
+#derive(Eq, @debug.Debug)
 pub(all) suberror MoonOciError {
   InvalidArgument(String)
   InvalidBuildSpec(String)
@@ -40,7 +41,7 @@ pub(all) suberror MoonOciError {
   ResourceLimitExceeded(String)
   IoFailure(String)
   Unsupported(String)
-} derive(Eq, @debug.Debug)
+}
 pub fn MoonOciError::code(Self) -> String
 pub fn MoonOciError::equal(Self, Self) -> Bool
 pub fn MoonOciError::exit_code(Self) -> Int32
@@ -49,40 +50,44 @@ pub fn MoonOciError::not_equal(Self, Self) -> Bool
 pub fn MoonOciError::to_repr(Self) -> @debug.Repr
 
 // Types and methods
+#derive(Eq, @debug.Debug)
 pub(all) struct BuildReport {
   manifest : Descriptor
   config : Descriptor
   layers : Array[Descriptor]
   blobs_written : Int32
   bytes_written : Int64
-} derive(Eq, @debug.Debug)
+}
 pub fn BuildReport::equal(Self, Self) -> Bool
 pub fn BuildReport::not_equal(Self, Self) -> Bool
 pub fn BuildReport::to_repr(Self) -> @debug.Repr
 
+#derive(Eq, @debug.Debug)
 pub(all) enum Compression {
   Uncompressed
   Gzip
-} derive(Eq, @debug.Debug)
+}
 pub fn Compression::equal(Self, Self) -> Bool
 pub fn Compression::not_equal(Self, Self) -> Bool
 pub fn Compression::to_repr(Self) -> @debug.Repr
 
+#derive(Eq, @debug.Debug)
 pub(all) struct Descriptor {
   media_type : String
   digest : Digest
   size : Int64
   annotations : Array[KeyValue]
   platform : Platform?
-} derive(Eq, @debug.Debug)
+}
 pub fn Descriptor::equal(Self, Self) -> Bool
 pub fn Descriptor::not_equal(Self, Self) -> Bool
 pub fn Descriptor::to_repr(Self) -> @debug.Repr
 
+#derive(Eq, @debug.Debug)
 pub(all) struct Digest {
   algorithm : String
   encoded : String
-} derive(Eq, @debug.Debug)
+}
 pub fn Digest::blob_path(Self) -> String
 pub fn Digest::equal(Self, Self) -> Bool
 pub fn Digest::not_equal(Self, Self) -> Bool
@@ -91,26 +96,29 @@ pub fn Digest::sha256(String) -> Self raise MoonOciError
 pub fn Digest::to_repr(Self) -> @debug.Repr
 pub fn Digest::to_string(Self) -> String
 
+#derive(Eq, @debug.Debug)
 pub(all) enum FindingLevel {
   Error
   Warning
   Info
-} derive(Eq, @debug.Debug)
+}
 pub fn FindingLevel::equal(Self, Self) -> Bool
 pub fn FindingLevel::not_equal(Self, Self) -> Bool
 pub fn FindingLevel::to_repr(Self) -> @debug.Repr
 
+#derive(Eq, @debug.Debug)
 pub(all) struct History {
   created : String?
   created_by : String?
   author : String?
   comment : String?
   empty_layer : Bool
-} derive(Eq, @debug.Debug)
+}
 pub fn History::equal(Self, Self) -> Bool
 pub fn History::not_equal(Self, Self) -> Bool
 pub fn History::to_repr(Self) -> @debug.Repr
 
+#derive(Eq, @debug.Debug)
 pub(all) struct ImageConfig {
   created : String?
   author : String?
@@ -118,50 +126,55 @@ pub(all) struct ImageConfig {
   runtime : RuntimeConfig
   diff_ids : Array[Digest]
   history : Array[History]
-} derive(Eq, @debug.Debug)
+}
 pub fn ImageConfig::equal(Self, Self) -> Bool
 pub fn ImageConfig::not_equal(Self, Self) -> Bool
 pub fn ImageConfig::to_repr(Self) -> @debug.Repr
 
+#derive(Eq, @debug.Debug)
 pub(all) struct ImageIndex {
   schema_version : Int32
   media_type : String
   manifests : Array[Descriptor]
   annotations : Array[KeyValue]
-} derive(Eq, @debug.Debug)
+}
 pub fn ImageIndex::equal(Self, Self) -> Bool
 pub fn ImageIndex::not_equal(Self, Self) -> Bool
 pub fn ImageIndex::to_repr(Self) -> @debug.Repr
 
+#derive(Eq, @debug.Debug)
 pub(all) struct ImageManifest {
   schema_version : Int32
   media_type : String
   config : Descriptor
   layers : Array[Descriptor]
   annotations : Array[KeyValue]
-} derive(Eq, @debug.Debug)
+}
 pub fn ImageManifest::equal(Self, Self) -> Bool
 pub fn ImageManifest::not_equal(Self, Self) -> Bool
 pub fn ImageManifest::to_repr(Self) -> @debug.Repr
 
+#derive(Eq, @debug.Debug)
 pub(all) struct KeyValue {
   key : String
   value : String
-} derive(Eq, @debug.Debug)
+}
 pub fn KeyValue::equal(Self, Self) -> Bool
 pub fn KeyValue::not_equal(Self, Self) -> Bool
 pub fn KeyValue::to_repr(Self) -> @debug.Repr
 
+#derive(Eq, @debug.Debug)
 pub(all) struct Platform {
   os : String
   architecture : String
   variant : String?
   os_version : String?
-} derive(Eq, @debug.Debug)
+}
 pub fn Platform::equal(Self, Self) -> Bool
 pub fn Platform::not_equal(Self, Self) -> Bool
 pub fn Platform::to_repr(Self) -> @debug.Repr
 
+#derive(Eq, @debug.Debug)
 pub(all) struct RootfsEntry {
   path : String
   kind : String
@@ -169,11 +182,12 @@ pub(all) struct RootfsEntry {
   size : Int64
   link_target : String?
   layer_index : Int32
-} derive(Eq, @debug.Debug)
+}
 pub fn RootfsEntry::equal(Self, Self) -> Bool
 pub fn RootfsEntry::not_equal(Self, Self) -> Bool
 pub fn RootfsEntry::to_repr(Self) -> @debug.Repr
 
+#derive(Eq, @debug.Debug)
 pub(all) struct RuntimeConfig {
   user : String?
   env : Array[KeyValue]
@@ -184,27 +198,29 @@ pub(all) struct RuntimeConfig {
   exposed_ports : Array[String]
   volumes : Array[String]
   stop_signal : String?
-} derive(Eq, @debug.Debug)
+}
 pub fn RuntimeConfig::equal(Self, Self) -> Bool
 pub fn RuntimeConfig::not_equal(Self, Self) -> Bool
 pub fn RuntimeConfig::to_repr(Self) -> @debug.Repr
 
+#derive(Eq, @debug.Debug)
 pub(all) struct ValidationFinding {
   level : FindingLevel
   code : String
   message : String
   object_path : String?
-} derive(Eq, @debug.Debug)
+}
 pub fn ValidationFinding::equal(Self, Self) -> Bool
 pub fn ValidationFinding::not_equal(Self, Self) -> Bool
 pub fn ValidationFinding::to_repr(Self) -> @debug.Repr
 
+#derive(Eq, @debug.Debug)
 pub(all) struct VerificationReport {
   findings : Array[ValidationFinding]
   manifests_checked : Int32
   blobs_checked : Int32
   layers_checked : Int32
-} derive(Eq, @debug.Debug)
+}
 pub fn VerificationReport::equal(Self, Self) -> Bool
 pub fn VerificationReport::is_valid(Self) -> Bool
 pub fn VerificationReport::not_equal(Self, Self) -> Bool

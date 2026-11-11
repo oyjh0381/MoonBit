@@ -24,7 +24,7 @@ observation is not a complete reference implementation of all OCI semantics.
 python3 scripts/runtime_chain.py
 ```
 
-Prerequisites: Linux, MoonBit 0.10.16, a C compiler, Python 3, ldd, Skopeo and
+Prerequisites: Linux, MoonBit 0.10.20, a C compiler, Python 3, ldd, Skopeo and
 access to a Docker daemon. The CI `runtime-consumer` job provides this
 environment remotely. The verifier has a 60-second execution limit and uses
 unique local image and container names so cleanup affects only this run.
