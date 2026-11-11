@@ -63,3 +63,20 @@ consumer that interprets those documents.
 The attachment consumer in `scripts/registry_attachment_chain.py` checks
 both changed-policy and omitted-platform refusals, promotes a two-platform
 release to Zot, and independently compares both referrers with ORAS.
+
+## Use a MoonBit-native Registry
+
+[ArtifactDock 0.2.3](https://github.com/Hhsqoo/artifactdock/tree/011f22ae3b2da6651eb223de9502dff1a423a1e5)
+provides the server and persistent storage. Build that revision with
+\`moon build --target native\` and give its executable to the local consumer.
+
+\`\`\`text
+python scripts/artifactdock_chain.py --binary PATH_TO_MOONOCI --artifactdock PATH_TO_ARTIFACTDOCK
+\`\`\`
+
+On Windows, the script promoted a two-platform image and one in-toto
+Statement, stopped the server, and started a new process with the same store.
+The admission command rejected an incorrect predicate type without writing
+the destination. With the correct type and manifest pin, it restored nine
+objects. Each object matched the original bytes and its SHA-256 path.
+The test uses loopback and checks the Statement's subject binding.

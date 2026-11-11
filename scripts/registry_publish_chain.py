@@ -147,21 +147,31 @@ def fixture():
     return Registry, state
 
 
-@contextmanager
-def run_zot(executable, directory):
+def loopback_port():
     with socket.socket() as probe:
         probe.bind(("127.0.0.1", 0))
-        port = probe.getsockname()[1]
-    origin = f"http://127.0.0.1:{port}"
+        return probe.getsockname()[1]
+
+
+@contextmanager
+def run_zot(executable, directory):
+    port = loopback_port()
     settings = directory / "zot.json"
     settings.write_bytes(encode(dict(
         distSpecVersion="1.1.1",
         storage=dict(rootDirectory=str(directory / "zot-store"), gc=False, dedupe=False),
         http=dict(address="127.0.0.1", port=str(port)),
     )))
-    with (directory / "zot.log").open("wb") as log:
-        server = subprocess.Popen([str(executable), "serve", str(settings)],
-            cwd=directory, stdout=log, stderr=subprocess.STDOUT,
+    with run_loopback_registry([executable, "serve", settings], directory / "zot.log", port) as origin:
+        yield origin
+
+
+@contextmanager
+def run_loopback_registry(command, log_path, port):
+    origin = f"http://127.0.0.1:{port}"
+    with log_path.open("wb") as log:
+        server = subprocess.Popen(list(map(str, command)), cwd=log_path.parent,
+            stdout=log, stderr=subprocess.STDOUT,
             creationflags=subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0)
         try:
             for _ in range(100):
@@ -174,9 +184,9 @@ def run_zot(executable, directory):
                 except OSError:
                     time.sleep(0.1)
             else:
-                raise RuntimeError("zot did not become ready")
+                raise RuntimeError(f"Registry did not become ready; see {log_path}")
             if server.poll() is not None:
-                raise RuntimeError("zot exited; see " + str(directory / "zot.log"))
+                raise RuntimeError(f"Registry exited; see {log_path}")
             yield origin
         finally:
             if server.poll() is None:
