@@ -31,6 +31,16 @@ pub fn PublishPlan::preflight(
   self : PublishPlan,
   limits~ : PublishLimits = PublishLimits::default(),
 ) -> PublishEstimate raise @model.MoonOciError {
+  self.estimate_publication(limits, [], 0)
+}
+
+///|
+fn PublishPlan::estimate_publication(
+  self : PublishPlan,
+  limits : PublishLimits,
+  extra_objects : Array[PublishObject],
+  extra_requests : Int32,
+) -> PublishEstimate raise @model.MoonOciError {
   if limits.max_object_bytes < 1L ||
     limits.max_object_bytes > 536870912L ||
     limits.max_total_bytes < 1L ||
@@ -41,7 +51,8 @@ pub fn PublishPlan::preflight(
   }
   let max_requests = self.blobs.length() * 3 +
     (self.manifests.length() - 1) * 2 +
-    4
+    4 +
+    extra_requests
   if max_requests > limits.max_requests {
     raise @model.ResourceLimitExceeded(
       "publication exceeds worst-case request budget",
@@ -49,7 +60,7 @@ pub fn PublishPlan::preflight(
   }
   let mut body_bytes = 0L
   let mut largest_object = 0L
-  for objects in [self.blobs, self.manifests] {
+  for objects in [self.blobs, self.manifests, extra_objects] {
     for object in objects {
       let size = object.data.length().to_int64()
       if size > limits.max_object_bytes ||
@@ -63,4 +74,22 @@ pub fn PublishPlan::preflight(
     }
   }
   { body_bytes, largest_object, max_requests, }
+}
+
+///|
+/// A bundle stages the root by digest before attaching objects. Reserve
+/// requests for attachment HEAD, PUT and GET plus bounded discovery pages.
+pub fn BundlePublicationPlan::preflight(
+  self : BundlePublicationPlan,
+  limits~ : PublishLimits = PublishLimits::default(),
+  discovery~ : DiscoveryLimits = DiscoveryLimits::default(),
+) -> PublishEstimate raise @model.MoonOciError {
+  discovery.validate()
+  let base = self.publication
+  let root = base.manifests[base.manifests.length() - 1]
+  base.estimate_publication(
+    limits,
+    [root] + self.attachments.map(item => item.object),
+    2 + self.attachments.length() * 3 + discovery.max_pages,
+  )
 }

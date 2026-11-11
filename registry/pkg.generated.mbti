@@ -20,6 +20,8 @@ pub fn blob_upload_path(String) -> String raise @model.MoonOciError
 
 pub fn bundle_publication_json(BundlePublicationPlan) -> String
 
+pub fn check_publication_subject(Array[@model.KeyValue], @model.Digest) -> Unit raise @model.MoonOciError
+
 pub fn check_publication_written(Int32, Array[@model.KeyValue], @model.Digest) -> Unit raise @model.MoonOciError
 
 pub fn check_response_head(Int32, Array[@model.KeyValue], Int32, expected_size? : Int64) -> Unit raise @model.MoonOciError
@@ -68,6 +70,8 @@ pub fn validate_repository(String) -> Unit raise @model.MoonOciError
 
 pub fn verify_blob_response(Int32, Array[@model.KeyValue], Bytes, @model.Descriptor, max_bytes? : Int32) -> Unit raise @model.MoonOciError
 
+pub fn verify_bundle_advertisements(BundlePublicationPlan, Array[@artifacts.ReferrerAdvertisement]) -> Unit raise @model.MoonOciError
+
 pub fn verify_manifest_response(Int32, Array[@model.KeyValue], Bytes, @model.Digest, max_bytes? : Int32, expected_size? : Int64, expected_media? : String) -> @model.Descriptor raise @model.MoonOciError
 
 // Errors
@@ -84,6 +88,7 @@ pub struct BundlePublicationPlan {
 }
 pub fn BundlePublicationPlan::attachments(Self) -> Array[PublicationAttachment]
 pub fn BundlePublicationPlan::pin(Self) -> @model.Digest
+pub fn BundlePublicationPlan::preflight(Self, limits? : PublishLimits, discovery? : DiscoveryLimits) -> PublishEstimate raise @model.MoonOciError
 pub fn BundlePublicationPlan::publication(Self) -> PublishPlan
 
 pub(all) struct DiscoveryLimits {

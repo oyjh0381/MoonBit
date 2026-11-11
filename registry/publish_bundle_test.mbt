@@ -48,6 +48,40 @@ test "bundle publication verifies immediate subjects and deduplicates shared pay
     image.report.layers.length() + 3,
   )
   assert_eq(plan.publication().root(), image.report.manifest.digest)
+  let discovery = @registry.DiscoveryLimits::default()
+  let base_estimate = plan.publication().preflight()
+  let estimate = plan.preflight(discovery~)
+  assert_eq(
+    estimate.max_requests,
+    base_estimate.max_requests + 8 + discovery.max_pages,
+  )
+  let entries : Array[@artifacts.ReferrerAdvertisement] = plan
+    .attachments()
+    .map(item => {
+      descriptor: {
+        digest: item.object.digest,
+        media_type: item.object.media_type,
+        size: item.object.data.length().to_int64(),
+        annotations: [],
+        platform: None,
+      },
+      artifact_type: Some(item.artifact_type),
+    })
+  @registry.verify_bundle_advertisements(plan, entries)
+  let corrupted = [
+    { ..entries[0], artifact_type: Some("application/octet-stream"), },
+    entries[1],
+  ]
+  for listing in [corrupted, [entries[0]]] {
+    let rejected = try {
+      @registry.verify_bundle_advertisements(plan, listing)
+      false
+    } catch {
+      @model.InvalidOci(_) => true
+      _ => false
+    }
+    assert_true(rejected)
+  }
   let wrong = try {
     ignore(
       @registry.plan_bundle_publication(
