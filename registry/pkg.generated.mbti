@@ -17,6 +17,8 @@ pub fn blob_path(String, @model.Digest) -> String raise @model.MoonOciError
 
 pub fn blob_upload_path(String) -> String raise @model.MoonOciError
 
+pub fn check_publication_written(Int32, Array[@model.KeyValue], @model.Digest) -> Unit raise @model.MoonOciError
+
 pub fn check_response_head(Int32, Array[@model.KeyValue], Int32, expected_size? : Int64) -> Unit raise @model.MoonOciError
 
 pub fn content_length(Array[@model.KeyValue]) -> Int64? raise @model.MoonOciError
@@ -36,6 +38,8 @@ pub fn manifest_path(String, String) -> String raise @model.MoonOciError
 pub fn parse_bearer_challenge(String) -> BearerChallenge raise @model.MoonOciError
 
 pub fn plan_publication(@lifecycle.ContentCatalog, String, RegistryOrigin, String, String) -> PublishPlan raise @model.MoonOciError
+
+pub fn publication_exists(Int32, Array[@model.KeyValue], PublishObject) -> Bool raise @model.MoonOciError
 
 pub fn publication_json(PublishPlan) -> String
 
