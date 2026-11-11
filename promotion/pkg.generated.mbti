@@ -1,0 +1,26 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "oyjh0381/moonoci/promotion"
+
+import {
+  "oyjh0381/moonoci/layout",
+  "oyjh0381/moonoci/model",
+  "oyjh0381/moonoci/registry",
+}
+
+// Values
+pub fn prepare(@layout.MemoryLayout, @layout.MemoryLayout, Bytes, String, @registry.RegistryOrigin, String, String) -> PromotionPlan raise @model.MoonOciError
+
+pub fn review_json(PromotionPlan) -> String
+
+// Errors
+
+// Types and methods
+pub struct PromotionPlan {
+  // private fields
+}
+pub fn PromotionPlan::pin(Self) -> @model.Digest
+pub fn PromotionPlan::publication(Self) -> @registry.PublishPlan
+
+// Type aliases
+
+// Traits
