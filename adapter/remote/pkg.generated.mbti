@@ -13,6 +13,8 @@ import {
 // Values
 pub async fn admit_registry_release(String, String, String, @model.Digest, @model.Digest, Array[@policy.ArtifactRequirement], release_policy? : @policy.ReleasePolicy, statement? : StatementRequirement, options? : RegistryOptions, discovery_limits? : @registry.DiscoveryLimits, cache? : @layout.MemoryLayout, bearer_token? : String) -> RegistryAdmissionResult
 
+pub fn bundle_receipt_json(BundlePublicationReceipt) -> String
+
 pub async fn discover_referrers(String, String, @model.Digest, artifact_type? : String, options? : RegistryOptions, limits? : @registry.DiscoveryLimits, bearer_token? : String) -> RegistryDiscoveryResult
 
 pub fn publication_receipt_json(PublicationReceipt) -> String
@@ -21,6 +23,8 @@ pub fn publication_receipt_value(PublicationReceipt) -> @json.Json
 
 pub async fn publish_registry(@registry.PublishPlan, @model.Digest, options? : PublishOptions, bearer_token? : String) -> PublicationReceipt
 
+pub async fn publish_registry_bundle(@registry.BundlePublicationPlan, @model.Digest, options? : PublishOptions, discovery? : @registry.DiscoveryLimits, bearer_token? : String) -> BundlePublicationReceipt
+
 pub async fn pull_registry(String, String, String, @model.Digest, options? : RegistryOptions, cache? : @layout.MemoryLayout, bearer_token? : String) -> RegistryPullResult
 
 pub async fn pull_with_referrers(String, String, String, @model.Digest, @model.Digest, artifact_type? : String, options? : RegistryOptions, discovery_limits? : @registry.DiscoveryLimits, cache? : @layout.MemoryLayout, bearer_token? : String) -> RegistryBundleResult
@@ -28,6 +32,13 @@ pub async fn pull_with_referrers(String, String, String, @model.Digest, @model.D
 // Errors
 
 // Types and methods
+pub(all) struct BundlePublicationReceipt {
+  publication : PublicationReceipt
+  bundle_pin : @model.Digest
+  verified_attachments : Int32
+  listing_pages : Int32
+}
+
 pub(all) struct PublicationReceipt {
   root : @model.Digest
   review_pin : @model.Digest

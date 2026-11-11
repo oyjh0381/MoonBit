@@ -147,6 +147,7 @@ async fn PublishTransport::put(
   url : @registry.RegistryUrl,
   object : @registry.PublishObject,
   manifest : Bool,
+  subject? : @model.Digest,
 ) -> Unit {
   let response = self.request_head(url, @http.Put, manifest, body=object)
   @registry.check_publication_written(
@@ -154,6 +155,9 @@ async fn PublishTransport::put(
     response.headers,
     object.digest,
   )
+  if subject is Some(expected) {
+    @registry.check_publication_subject(response.headers, expected)
+  }
   self.uploaded_bytes += object.data.length().to_int64()
 }
 
@@ -187,6 +191,7 @@ async fn PublishTransport::upload_blob(
 async fn PublishTransport::publish(
   self : PublishTransport,
   review_pin : @model.Digest,
+  before_tag? : async (@registry.PublishObject) -> Unit,
 ) -> PublicationReceipt {
   let origin = self.plan.origin()
   let repository = self.plan.repository()
@@ -215,14 +220,37 @@ async fn PublishTransport::publish(
       uploaded_manifests += 1
     }
   }
+  if before_tag is Some(verify_dependencies) {
+    verify_dependencies(root)
+  }
   let tag_written = !self.exists(tag_url, root, true)
   if tag_written {
     self.put(tag_url, root, true)
   }
-  let bytes = root.data.length()
+  self.verify_manifest_readback(tag_url, root)
+  {
+    root: root.digest,
+    review_pin,
+    requests: self.requests,
+    uploaded_blobs,
+    reused_blobs: blobs.length() - uploaded_blobs,
+    uploaded_manifests,
+    reused_manifests: manifests.length() - 1 - uploaded_manifests,
+    uploaded_bytes: self.uploaded_bytes,
+    tag_written,
+  }
+}
+
+///|
+async fn PublishTransport::verify_manifest_readback(
+  self : PublishTransport,
+  url : @registry.RegistryUrl,
+  object : @registry.PublishObject,
+) -> Unit {
+  let bytes = object.data.length()
   let response = self.perform(() => {
     fetch_entity(
-      tag_url,
+      url,
       self.headers(true),
       bytes,
       Some(bytes.to_int64()),
@@ -235,23 +263,12 @@ async fn PublishTransport::publish(
       response.status,
       response.headers,
       response.body,
-      root.digest,
+      object.digest,
       max_bytes=bytes,
       expected_size=bytes.to_int64(),
-      expected_media=root.media_type,
+      expected_media=object.media_type,
     ),
   )
-  {
-    root: root.digest,
-    review_pin,
-    requests: self.requests,
-    uploaded_blobs,
-    reused_blobs: blobs.length() - uploaded_blobs,
-    uploaded_manifests,
-    reused_manifests: manifests.length() - 1 - uploaded_manifests,
-    uploaded_bytes: self.uploaded_bytes,
-    tag_written,
-  }
 }
 
 ///|
@@ -267,6 +284,15 @@ pub async fn publish_registry(
     raise @model.DigestMismatch("registry publication review pin mismatch")
   }
   ignore(plan.preflight(limits=options.limits))
+  new_publish_transport(plan, options, bearer_token).run(expected_review)
+}
+
+///|
+fn new_publish_transport(
+  plan : @registry.PublishPlan,
+  options : PublishOptions,
+  bearer_token : String?,
+) -> PublishTransport raise @model.MoonOciError {
   if plan.origin().is_http() && (!options.allow_http || bearer_token is Some(_)) {
     raise @model.InvalidArgument(
       "plaintext publication requires opt-in and no bearer token",
@@ -288,15 +314,23 @@ pub async fn publish_registry(
       @registry.RegistryOrigin::parse(value, allow_http=true).url()
     }),
   }
-  let transport : PublishTransport = {
+  {
     plan,
     options,
     authorization: bearer_token.map(@registry.bearer_authorization),
     requests: 0,
     uploaded_bytes: 0L,
   }
-  @async.with_timeout(options.total_timeout_ms, () => {
-    transport.publish(expected_review)
+}
+
+///|
+async fn PublishTransport::run(
+  self : PublishTransport,
+  expected_review : @model.Digest,
+  before_tag? : async (@registry.PublishObject) -> Unit,
+) -> PublicationReceipt {
+  @async.with_timeout(self.options.total_timeout_ms, () => {
+    self.publish(expected_review, before_tag?)
   }) catch {
     @async.TimeoutError =>
       raise @model.IoFailure("registry publication exceeded its time budget")
