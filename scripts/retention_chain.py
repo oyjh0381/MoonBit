@@ -135,6 +135,14 @@ def main():
     assert physical(current) == stored
     assert digest((current / 'index.json').read_bytes()) == source_pin
     run('retain-export', current, source_pin, plan['plan_pin'], 'referrers', output, images[0], status=3)
+    named = json.loads(run('retain-refs-plan', current, source_pin, 'referrers', 'stable'))
+    assert named == plan
+    named_output = directory / 'retained-stable'
+    assert json.loads(run('retain-refs-export', current, source_pin, named['plan_pin'],
+                          'referrers', named_output, 'stable')) == plan
+    assert physical(named_output) == physical(output)
+    assert (named_output / 'index.json').read_bytes() == (output / 'index.json').read_bytes()
+    run('retain-refs-plan', current, source_pin, 'referrers', 'Stable', status=2)
 
     # Independently consume the retained runnable image without attachment roots.
     image_view = directory / 'image-view'
@@ -157,6 +165,8 @@ def main():
     blob_path(current, digest(new_orphan)).write_bytes(new_orphan)
     stale_output = directory / 'stale-output'
     run('retain-export', current, source_pin, plan['plan_pin'], 'referrers', stale_output, images[0], status=5)
+    run('retain-refs-export', current, source_pin, named['plan_pin'],
+        'referrers', stale_output, 'stable', status=5)
     assert not stale_output.exists() and not Path(str(stale_output) + '.moonoci-staging').exists()
     fresh_plan = json.loads(run('retain-plan', current, source_pin, 'referrers', images[0]))
     assert fresh_plan['plan_pin'] != plan['plan_pin']
@@ -195,6 +205,7 @@ def main():
                   source_blob_bytes=sum(stored.values()), kept_blob_bytes=sum(stored[p] for p in expected),
                   reclaimed_copy_bytes=int(plan['reclaimable_bytes']), independent_closure=True,
                   independent_store_and_review_pins=True, aliases_and_extensions_preserved=True,
+                  named_export_matches_digest_export=True,
                   image_consumption_verified=True, source_unchanged_by_export=True, stale_plan_refused=True,
                   weak_subject_modes=True, index_subject_preserved=True, semantic_failure_refused=True,
                   oras_discovery_verified=oras_verified, source_deletions=0,

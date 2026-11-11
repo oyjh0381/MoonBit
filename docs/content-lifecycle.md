@@ -60,7 +60,15 @@ moonoci content-catalog INPUT EXPECTED_INDEX_PIN
 moonoci retain-plan INPUT EXPECTED_INDEX_PIN MODE ROOT [ROOT...]
 moonoci retain-export INPUT EXPECTED_INDEX_PIN PLAN_PIN MODE OUTPUT ROOT [ROOT...]
 moonoci retain-export-buffered INPUT EXPECTED_INDEX_PIN PLAN_PIN MODE OUTPUT ROOT [ROOT...]
+moonoci retain-refs-plan INPUT EXPECTED_INDEX_PIN MODE REF [REF...]
+moonoci retain-refs-export INPUT EXPECTED_INDEX_PIN PLAN_PIN MODE OUTPUT REF [REF...]
 ```
+
+The reference commands match exact `org.opencontainers.image.ref.name` values
+on the pinned layout root. An ambiguous name fails the whole request. Several
+names can share one digest and therefore one content closure and review pin.
+Retained root aliases are preserved. The export command resolves names again
+and checks the resulting plan pin before creating the destination.
 
 | Mode | Incoming attachments | Outgoing weak subject |
 | --- | --- | --- |

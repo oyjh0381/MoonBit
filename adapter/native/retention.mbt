@@ -17,6 +17,37 @@ pub async fn export_retained_layout(
   let layout = load_bounded_layout(source)
   let catalog = @lifecycle.catalog(layout, expected_index)
   let plan = catalog.retain(roots, policy~)
+  write_reviewed_retention(plan, expected_plan, destination, buffered)
+  plan
+}
+
+///|
+/// Re-resolve local OCI names against the pinned source before publishing a
+/// verified copy to a new destination.
+pub async fn export_retained_references(
+  source : String,
+  expected_index : @model.Digest,
+  names : Array[String],
+  expected_plan : @model.Digest,
+  destination : String,
+  policy~ : @lifecycle.RetentionPolicy = @lifecycle.RetentionPolicy::default(),
+) -> @lifecycle.RetentionPlan {
+  if @fs.exists(destination) {
+    raise @model.IoFailure("retained layout destination already exists")
+  }
+  let catalog = @lifecycle.catalog(load_bounded_layout(source), expected_index)
+  let plan = catalog.retain_references(names, policy~)
+  write_reviewed_retention(plan, expected_plan, destination, false)
+  plan
+}
+
+///|
+async fn write_reviewed_retention(
+  plan : @lifecycle.RetentionPlan,
+  expected_plan : @model.Digest,
+  destination : String,
+  buffered : Bool,
+) -> Unit {
   if plan.pin() != expected_plan {
     raise @model.DigestMismatch(
       "retention decision differs from the reviewed plan pin",
@@ -30,5 +61,4 @@ pub async fn export_retained_layout(
     )
   }
   write_layout(destination, result, buffered~)
-  plan
 }

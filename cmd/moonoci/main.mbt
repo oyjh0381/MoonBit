@@ -63,20 +63,42 @@ async fn main {
         )
         @stdio.stdout.write(@lifecycle.catalog_json(catalog) + "\n")
       }
-      "retain-plan" => {
+      "retain-plan" | "retain-refs-plan" => {
+        let command = args[1]
         if args.length() < 6 {
           raise @model.InvalidArgument(
-            "usage: moonoci retain-plan INPUT EXPECTED_INDEX_PIN MODE ROOT [ROOT...]",
+            "usage: moonoci " +
+            command +
+            " INPUT EXPECTED_INDEX_PIN MODE ROOT [ROOT...]",
           )
         }
         let catalog = @lifecycle.catalog(
           @native.load_bounded_layout(args[2]),
           @model.Digest::parse(args[3]),
         )
-        let roots = args[5:]
-          .to_owned()
-          .map(value => @model.Digest::parse(value))
-        let plan = catalog.retain(roots, policy=retention_policy(args[4]))
+        let roots = args[5:].to_owned()
+        let policy = retention_policy(args[4])
+        let plan = if command == "retain-refs-plan" {
+          catalog.retain_references(roots, policy~)
+        } else {
+          catalog.retain(roots.map(@model.Digest::parse), policy~)
+        }
+        @stdio.stdout.write(@lifecycle.retention_json(plan) + "\n")
+      }
+      "retain-refs-export" => {
+        if args.length() < 8 {
+          raise @model.InvalidArgument(
+            "usage: moonoci retain-refs-export INPUT EXPECTED_INDEX_PIN PLAN_PIN MODE OUTPUT REF [REF...]",
+          )
+        }
+        let plan = @native.export_retained_references(
+          args[2],
+          @model.Digest::parse(args[3]),
+          args[7:].to_owned(),
+          @model.Digest::parse(args[4]),
+          args[6],
+          policy=retention_policy(args[5]),
+        )
         @stdio.stdout.write(@lifecycle.retention_json(plan) + "\n")
       }
       "retain-export" | "retain-export-buffered" => {
@@ -614,6 +636,8 @@ async fn print_usage() -> Unit {
       #|  moonoci retain-plan INPUT EXPECTED_INDEX_PIN MODE ROOT [ROOT...]
       #|  moonoci retain-export INPUT EXPECTED_INDEX_PIN PLAN_PIN MODE OUTPUT ROOT [ROOT...]
       #|  moonoci retain-export-buffered INPUT EXPECTED_INDEX_PIN PLAN_PIN MODE OUTPUT ROOT [ROOT...]
+      #|  moonoci retain-refs-plan INPUT EXPECTED_INDEX_PIN MODE REF [REF...]
+      #|  moonoci retain-refs-export INPUT EXPECTED_INDEX_PIN PLAN_PIN MODE OUTPUT REF [REF...]
       #|  Retention MODE: closure | referrers | complete
       #|  moonoci transfer-batch SESSION EXPECTED_PIN MAX_CHUNKS MAX_BYTES
       #|  moonoci transfer-recover-chunk SESSION EXPECTED_PIN INDEX

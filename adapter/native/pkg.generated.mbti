@@ -33,6 +33,8 @@ pub async fn export_artifact_payload(String, @model.Digest, Int32, String) -> Un
 
 pub async fn export_retained_layout(String, @model.Digest, Array[@model.Digest], @model.Digest, String, policy? : @lifecycle.RetentionPolicy, buffered? : Bool) -> @lifecycle.RetentionPlan
 
+pub async fn export_retained_references(String, @model.Digest, Array[String], @model.Digest, String, policy? : @lifecycle.RetentionPolicy) -> @lifecycle.RetentionPlan
+
 pub async fn export_transfer_chunk(String, String, @model.Digest, Int32, String) -> Unit
 
 pub async fn finish_transfer(String, @model.Digest, String) -> Unit
