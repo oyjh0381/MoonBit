@@ -11,5 +11,6 @@ import {
 
 import {
   "oyjh0381/moonoci/archive",
+  "oyjh0381/moonoci/artifacts",
   "oyjh0381/moonoci/builder",
 } for "test"

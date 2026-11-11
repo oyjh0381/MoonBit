@@ -15,7 +15,7 @@ pub fn coverage(@layout.MemoryLayout, @model.Digest, Array[@model.Platform], lim
 
 pub fn decode_policy(Bytes) -> RolloutPolicy raise @model.MoonOciError
 
-pub fn evaluate_rollout(@layout.MemoryLayout, @layout.MemoryLayout, RolloutPolicy, limits? : @graph.WalkLimits, complete? : Bool) -> RolloutDecision raise @model.MoonOciError
+pub fn evaluate_rollout(@layout.MemoryLayout, @layout.MemoryLayout, RolloutPolicy, limits? : @graph.WalkLimits, complete? : Bool, allow_known_non_images? : Bool) -> RolloutDecision raise @model.MoonOciError
 
 pub fn rollout_json(RolloutDecision) -> String
 

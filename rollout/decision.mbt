@@ -69,13 +69,15 @@ fn branch_layout(
 ///|
 /// Evaluate exact platform matches and explicit per-manifest approvals.
 /// Unknown media block the decision. Known non-image artifacts are outside
-/// this image rollout policy. Runtime changes are reviewed as observations.
+/// this image rollout policy. Complete coverage excludes them unless the
+/// caller handles them separately and explicitly allows known non-images.
 pub fn evaluate_rollout(
   baseline : @layout.MemoryLayout,
   candidate : @layout.MemoryLayout,
   policy : RolloutPolicy,
   limits~ : @graph.WalkLimits = @graph.WalkLimits::default(),
   complete~ : Bool = false,
+  allow_known_non_images~ : Bool = false,
 ) -> RolloutDecision raise @model.MoonOciError {
   if policy.approvals.length() > policy.required.length() {
     raise @model.InvalidArgument("too many rollout approvals")
@@ -104,8 +106,13 @@ pub fn evaluate_rollout(
   let new_descriptors = image_descriptors(new_walk)
   let complete_coverage = comparison.baseline_omitted.is_empty() &&
     comparison.candidate_omitted.is_empty() &&
-    comparison.baseline_non_images == 0 &&
-    comparison.candidate_non_images == 0
+    (
+      allow_known_non_images ||
+      (
+        comparison.baseline_non_images == 0 &&
+        comparison.candidate_non_images == 0
+      )
+    )
   let platforms = comparison.platforms.map(pair => {
     let approval = approvals.get(platform_key(pair.platform))
     if approval is Some(_) && !(pair.transition is Updated) {

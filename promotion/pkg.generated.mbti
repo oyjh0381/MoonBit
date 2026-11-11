@@ -10,6 +10,8 @@ import {
 // Values
 pub fn prepare(@layout.MemoryLayout, @layout.MemoryLayout, Bytes, String, @registry.RegistryOrigin, String, String) -> PromotionPlan raise @model.MoonOciError
 
+pub fn prepare_bundle(@layout.MemoryLayout, @layout.MemoryLayout, Bytes, String, @registry.RegistryOrigin, String, String, Array[@model.Digest]) -> PromotionPlan raise @model.MoonOciError
+
 pub fn review_json(PromotionPlan) -> String
 
 // Errors
@@ -18,6 +20,7 @@ pub fn review_json(PromotionPlan) -> String
 pub struct PromotionPlan {
   // private fields
 }
+pub fn PromotionPlan::bundle(Self) -> @registry.BundlePublicationPlan?
 pub fn PromotionPlan::pin(Self) -> @model.Digest
 pub fn PromotionPlan::publication(Self) -> @registry.PublishPlan
 

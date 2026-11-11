@@ -99,3 +99,99 @@ test "promotion refuses a selected root when another root could be reviewed inst
   }
   assert_true(rejected)
 }
+
+///|
+test "bundle promotion reviews a previous bundle and pins the entire candidate evidence set" {
+  let image = @builder.build_single_layer(
+    @builder.default_single_layer_request([
+      @archive.TarEntry::file("app", b"stable"),
+    ]),
+  )
+  let subject = image.report.manifest
+  let payloads : Array[@artifacts.ArtifactPayload] = [
+    { media_type: "application/json", data: b"{}", annotations: [], },
+  ]
+  let first = @artifacts.attach(
+    image.layout,
+    subject,
+    "application/spdx+json",
+    payloads,
+  )
+  let next = @artifacts.attach(
+    first.layout,
+    subject,
+    "application/in-toto+json",
+    payloads,
+    reference="proof",
+  )
+  let policy = promotion_policy(first.layout, next.layout)
+  let origin = @registry.RegistryOrigin::parse("https://registry.example")
+  let pins = [first.descriptor.digest, next.descriptor.digest]
+  let approved = @promotion.prepare_bundle(
+    first.layout,
+    next.layout,
+    policy,
+    "latest",
+    origin,
+    "team/app",
+    "stable",
+    pins,
+  )
+  let equivalent = @promotion.prepare_bundle(
+    first.layout,
+    next.layout,
+    policy,
+    "latest",
+    origin,
+    "team/app",
+    "stable",
+    [pins[1], pins[0]],
+  )
+  assert_eq(approved.pin(), equivalent.pin())
+  assert_eq(approved.bundle().unwrap().attachments().length(), 2)
+  let changed = @promotion.prepare_bundle(
+    first.layout,
+    next.layout,
+    policy + b"\n",
+    "latest",
+    origin,
+    "team/app",
+    "stable",
+    pins,
+  )
+  assert_eq(approved.bundle().unwrap().pin(), changed.bundle().unwrap().pin())
+  assert_true(approved.pin() != changed.pin())
+
+  let index = @codec.decode_index(next.layout.index())
+  let hidden = @layout.MemoryLayout::from_untrusted_parts(
+    next.layout.marker(),
+    @codec.encode_index({
+      ..index,
+      manifests: index.manifests.filter(item => item.digest != pins[1]),
+    }),
+    next.layout
+    .blob_records()
+    .map(record => (record.descriptor(), record.data())),
+  )
+  for (source, selected) in [(next.layout, [pins[0]]), (hidden, pins)] {
+    let rejected = try {
+      ignore(
+        @promotion.prepare_bundle(
+          first.layout,
+          source,
+          promotion_policy(first.layout, source),
+          "latest",
+          origin,
+          "team/app",
+          "stable",
+          selected,
+        ),
+      )
+      false
+    } catch {
+      @model.InvalidArgument(_) => true
+      _ => false
+    }
+    assert_true(rejected)
+  }
+}
