@@ -1,4 +1,4 @@
-# Release workflows after 0.2.0
+# Release workflows in 0.3.0
 
 MoonOCI owns the steps from build output to verified OCI content. The MoonBit
 ecosystem also provides an OCI server in ArtifactDock, a Wasm package client in

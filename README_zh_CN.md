@@ -38,7 +38,7 @@ v0.1 每次构建一个平台镜像，目标格式为 OCI Image Spec 1.1.1。项
 在 MoonBit 项目中添加已发布的库：
 
 ```text
-moon add oyjh0381/moonoci@0.2.0
+moon add oyjh0381/moonoci@0.3.0
 ```
 
 可复用包包括 `oyjh0381/moonoci/archive`、`builder`、`codec`、`digest`、`layout`、`model`、`pathing` 和 `spec`。Native CLI 需要从本源码仓库构建并运行。

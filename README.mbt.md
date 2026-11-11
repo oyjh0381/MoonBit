@@ -10,10 +10,15 @@ package adds bounded chunk plans, missing-work scheduling and whole-content
 verification; Native restart/recovery and host reuse are described in
 `docs/resumable-delivery.md`.
 
+Version 0.3.0 adds digest-pinned image rebasing, multi-platform rollout review,
+review-bound Registry publication and explicit OCI attachment publication. It
+also packages MoonBit Wasm as OCI artifacts and exposes a Native C verification
+interface. See [release workflows](docs/release-workflows.md).
+
 Install the published module with:
 
 ```text
-moon add oyjh0381/moonoci@0.2.0
+moon add oyjh0381/moonoci@0.3.0
 ```
 
 ```mbt check

@@ -2,7 +2,7 @@
 
 All notable changes to MoonOCI are documented here. The format follows Keep a Changelog and versions follow Semantic Versioning.
 
-## [Unreleased]
+## [0.3.0] - 2026-11-12
 
 - Build and test the development branch with MoonBit 0.10.20 and Async 0.22.9. Adapt HTTP headers and shield failed transfer cleanup under the new cancellation semantics.
 - Resolve exact layout references for reviewed offline exports and Registry publication planning.

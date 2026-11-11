@@ -108,7 +108,7 @@ def main():
     consumer.mkdir()
     (work / 'moon.work').write_text('members = ["library", "consumer"]\n', encoding='utf-8')
     (consumer / 'moon.mod').write_text(
-        'name = "validation/downstream"\nimport { "oyjh0381/moonoci@0.2.0" }\n', encoding='utf-8')
+        'name = "validation/downstream"\nimport { "oyjh0381/moonoci@0.3.0" }\n', encoding='utf-8')
     imports = ['archive', 'builder', 'artifacts', 'digest', 'policy', 'registry', 'graph']
     (consumer / 'moon.pkg').write_text('import {\n' +
         ''.join(f'  "oyjh0381/moonoci/{name}",\n' for name in imports) +
