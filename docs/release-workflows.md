@@ -52,8 +52,12 @@ eight requests and uploaded zero bytes. The loopback fixture also injects a
 failed upload, rejects an unrelated tag and rejects corrupted tag readback.
 
 ```text
+python scripts/setup_zot.py
 python scripts/registry_publish_chain.py --binary PATH_TO_MOONOCI --oras PATH_TO_ORAS --zot PATH_TO_ZOT
 ```
+
+The Windows and Linux CI jobs verify the pinned Zot release's size and SHA-256
+before starting it on a loopback port. [Zot v2.1.23 release](https://github.com/project-zot/zot/releases/tag/v2.1.23)
 
 The publication planner visits each reachable metadata digest once and each
 strong edge once. It uses digest sets for deduplication, with separate

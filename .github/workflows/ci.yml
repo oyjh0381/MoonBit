@@ -52,6 +52,11 @@ jobs:
       - name: Independently checked transfer workload
         run: python scripts/transfer_benchmark.py --binary _build/native/release/build/cmd/moonoci/moonoci.exe --size-mib 16 --runs 1
       - run: python scripts/setup_oras.py
+      - uses: actions/cache@v4
+        with:
+          path: _build/tools/zot-2.1.23
+          key: zot-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('scripts/setup_zot.py') }}
+      - run: python scripts/setup_zot.py
       - name: Compile a MoonBit Wasm example for artifact packaging
         run: moon build examples/single-layer --target wasm --release --deny-warn
       - name: Wasm artifact consumer (Linux)
@@ -69,13 +74,13 @@ jobs:
         run: python scripts/registry_chain.py --binary _build/native/release/build/cmd/moonoci/moonoci.exe --oras _build/tools/oras-1.3.6/linux_amd64/oras
       - name: Registry publication consumer (Linux)
         if: runner.os == 'Linux'
-        run: python scripts/registry_publish_chain.py --binary _build/native/release/build/cmd/moonoci/moonoci.exe --oras _build/tools/oras-1.3.6/linux_amd64/oras
+        run: python scripts/registry_publish_chain.py --binary _build/native/release/build/cmd/moonoci/moonoci.exe --oras _build/tools/oras-1.3.6/linux_amd64/oras --zot _build/tools/zot-2.1.23/zot
       - name: Registry consumer (Windows)
         if: runner.os == 'Windows'
         run: python scripts/registry_chain.py --binary _build/native/release/build/cmd/moonoci/moonoci.exe --oras _build/tools/oras-1.3.6/windows_amd64/oras.exe
       - name: Registry publication consumer (Windows)
         if: runner.os == 'Windows'
-        run: python scripts/registry_publish_chain.py --binary _build/native/release/build/cmd/moonoci/moonoci.exe --oras _build/tools/oras-1.3.6/windows_amd64/oras.exe
+        run: python scripts/registry_publish_chain.py --binary _build/native/release/build/cmd/moonoci/moonoci.exe --oras _build/tools/oras-1.3.6/windows_amd64/oras.exe --zot _build/tools/zot-2.1.23/zot.exe
       - name: ORAS consumer (Linux)
         if: runner.os == 'Linux'
         run: python scripts/artifact_chain.py --binary _build/native/release/build/cmd/moonoci/moonoci.exe --oras _build/tools/oras-1.3.6/linux_amd64/oras
