@@ -2,11 +2,13 @@
 import argparse
 import hashlib
 import json
+import os
 from pathlib import Path
 import subprocess
 import tempfile
 
 from independent_layout import observe
+from registry_publish_chain import run_zot
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -24,13 +26,17 @@ def read_blob(layout, descriptor):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--binary", type=Path, required=True)
+    parser.add_argument("--zot", type=Path)
+    parser.add_argument("--oras", type=Path)
     args = parser.parse_args()
+    if bool(args.zot) != bool(args.oras):
+        parser.error("--zot and --oras must be supplied together")
     binary = args.binary.resolve(strict=True)
     directory = Path(tempfile.mkdtemp(prefix="rebase-", dir=ROOT / "_build"))
 
-    def run(*arguments, status=0):
-        result = subprocess.run([str(binary), *map(str, arguments)], cwd=directory,
-            capture_output=True, text=True, encoding="utf-8", timeout=120)
+    def run(*arguments, status=0, executable=binary, environment=None):
+        result = subprocess.run([str(executable), *map(str, arguments)], cwd=directory,
+            capture_output=True, text=True, encoding="utf-8", timeout=120, env=environment)
         if result.returncode != status:
             raise RuntimeError((arguments, result.returncode, result.stdout, result.stderr))
         return result.stdout
@@ -96,10 +102,45 @@ def main():
     run("rebase", application, unrelated, new, app_desc["digest"], unrelated_pin,
         new_desc["digest"], "candidate", invalid, status=5)
     assert not invalid.exists()
+    policy = dict(schemaVersion=1, baselineIndex=sha(originals[0]),
+                  candidateIndex=receipt["indexDigest"],
+                  requiredPlatforms=[{"os": "linux", "architecture": "amd64"}])
+    policy_path = directory / "rollout-policy.json"
+    policy_path.write_text(json.dumps(policy), encoding="utf-8")
+    denied = json.loads(run("rollout-check", application, output, policy_path, status=5))
+    [platform] = denied["platforms"]
+    assert platform["unreviewedPaths"] == ["base", "patch"]
+    assert platform["unreviewedFields"] == []
+    policy["approvals"] = [dict(platform=policy["requiredPlatforms"][0],
+        baselineManifest=app_desc["digest"], candidateManifest=receipt["manifestDigest"],
+        paths=["base", "patch"])]
+    policy_path.write_text(json.dumps(policy), encoding="utf-8")
+    assert json.loads(run("rollout-check", application, output, policy_path))["allowed"]
+    registry_checked = False
+    if args.zot:
+        environment = os.environ.copy()
+        environment.pop("MOONOCI_REGISTRY_PUSH_TOKEN", None)
+        empty_auth = directory / "empty-auth.json"
+        empty_auth.write_bytes(b"{}")
+        with run_zot(args.zot.resolve(strict=True), directory) as origin:
+            destination = (output, receipt["indexDigest"], "candidate", origin, "team/app", "patched")
+            publish = json.loads(run("registry-plan", *destination, "--allow-http"))
+            assert publish["root"] == receipt["manifestDigest"]
+            remote = json.loads(run("registry-publish", *destination, publish["plan_pin"],
+                                    "--allow-http", environment=environment))
+            assert remote["root"] == receipt["manifestDigest"] and remote["tag_written"]
+            readback = directory / "published"
+            address = origin.removeprefix("http://") + "/team/app:patched"
+            run("cp", "--from-plain-http", "--from-registry-config", empty_auth,
+                "--to-oci-layout", address, str(readback) + ":patched",
+                executable=args.oras.resolve(strict=True), environment=environment)
+            assert observe(readback)["images"][0]["files"] == independent
+            registry_checked = True
     print(json.dumps(dict(
         manifest=receipt["manifestDigest"], preserved_app_layer=True,
         runtime_configuration_preserved=True, independent_files=len(independent),
         whiteout_preserved=True, reproducible=True, unrelated_prefix_blocked=True,
+        approved_rollout=True, registry_readback=registry_checked,
     ), indent=2))
 
 

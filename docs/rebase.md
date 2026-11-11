@@ -36,4 +36,7 @@ python scripts/rebase_chain.py --binary _build/native/debug/build/cmd/moonoci/mo
 ```
 
 The consumer confirms byte-for-byte reuse of the app layer, checks the updated
-base and removed path independently, and rejects an unrelated old base.
+base and removed path independently, and rejects an unrelated old base. It
+then checks the upgrade and approves only the two observed base file changes.
+Pass `--zot PATH_TO_ZOT --oras PATH_TO_ORAS` to publish the reviewed output
+to a loopback Registry and compare ORAS readback with the derived filesystem.
