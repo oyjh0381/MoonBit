@@ -72,6 +72,16 @@ pub fn plan_rebase(
   let app = load_image(application, pins.application)
   let old = load_image(previous_base, pins.previous_base)
   let replacement = load_image(replacement_base, pins.replacement_base)
+  plan_inputs(app, old, replacement, pins)
+}
+
+///|
+fn plan_inputs(
+  app : ImageInput,
+  old : ImageInput,
+  replacement : ImageInput,
+  pins : RebasePins,
+) -> RebasePlan raise @model.MoonOciError {
   let platform = app.config.platform
   if old.config.platform != platform || replacement.config.platform != platform {
     raise @model.InvalidArgument("rebase inputs require one exact platform")

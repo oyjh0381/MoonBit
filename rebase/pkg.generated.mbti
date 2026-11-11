@@ -9,6 +9,8 @@ import {
 // Values
 pub fn plan_rebase(@layout.MemoryLayout, @layout.MemoryLayout, @layout.MemoryLayout, RebasePins) -> RebasePlan raise @model.MoonOciError
 
+pub fn rebase_image(@layout.MemoryLayout, @layout.MemoryLayout, @layout.MemoryLayout, RebasePins, String, replacement_name? : String) -> RebaseResult raise @model.MoonOciError
+
 // Errors
 
 // Types and methods
@@ -29,6 +31,12 @@ pub(all) struct RebasePlan {
   platform : @model.Platform
   removed_layers : Int32
   layers : Array[RebaseLayer]
+}
+
+pub(all) struct RebaseResult {
+  layout : @layout.MemoryLayout
+  manifest : @model.Descriptor
+  plan : RebasePlan
 }
 
 // Type aliases
