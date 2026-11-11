@@ -93,6 +93,19 @@ pub(all) struct FetchRequest {
   depth : Int32
 }
 
+pub(all) struct PublishEstimate {
+  body_bytes : Int64
+  largest_object : Int64
+  max_requests : Int32
+}
+
+pub(all) struct PublishLimits {
+  max_object_bytes : Int64
+  max_total_bytes : Int64
+  max_requests : Int32
+}
+pub fn PublishLimits::default() -> Self
+
 pub(all) struct PublishObject {
   digest : @model.Digest
   media_type : String
@@ -106,6 +119,7 @@ pub fn PublishPlan::blobs(Self) -> Array[PublishObject]
 pub fn PublishPlan::manifests(Self) -> Array[PublishObject]
 pub fn PublishPlan::origin(Self) -> RegistryOrigin
 pub fn PublishPlan::pin(Self) -> @model.Digest
+pub fn PublishPlan::preflight(Self, limits? : PublishLimits) -> PublishEstimate raise @model.MoonOciError
 pub fn PublishPlan::repository(Self) -> String
 pub fn PublishPlan::root(Self) -> @model.Digest
 pub fn PublishPlan::tag(Self) -> String
