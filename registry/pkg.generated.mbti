@@ -181,6 +181,14 @@ pub(all) struct ReferrerBundle {
   receipt : String
 }
 
+pub struct ReferrerSelection {
+  // private fields
+}
+pub fn ReferrerSelection::exact_listing(Self) -> Bool
+pub fn ReferrerSelection::new(Array[@model.Digest], exact_listing? : Bool) -> Self raise @model.MoonOciError
+pub fn ReferrerSelection::pins(Self) -> Array[@model.Digest]
+pub fn ReferrerSelection::resolve(Self, Array[@artifacts.ReferrerAdvertisement]) -> Array[@artifacts.ReferrerAdvertisement] raise @model.MoonOciError
+
 pub struct ReferrerSession {
   // private fields
 }
