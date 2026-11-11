@@ -8,6 +8,8 @@ import {
 }
 
 // Values
+pub fn compare_releases(@layout.MemoryLayout, @model.Digest, @layout.MemoryLayout, @model.Digest, Array[@model.Platform], limits? : @graph.WalkLimits) -> ReleaseComparison raise @model.MoonOciError
+
 pub fn coverage(@layout.MemoryLayout, @model.Digest, Array[@model.Platform], limits? : @graph.WalkLimits) -> ReleaseCoverage raise @model.MoonOciError
 
 // Errors
@@ -22,6 +24,30 @@ pub(all) enum PlatformMatch {
   Missing
   Unique(@model.Digest)
   Ambiguous(Array[@model.Digest])
+}
+
+pub(all) struct PlatformPair {
+  platform : @model.Platform
+  baseline : PlatformMatch
+  candidate : PlatformMatch
+  transition : PlatformTransition
+}
+
+pub(all) enum PlatformTransition {
+  Unavailable
+  Introduced
+  Removed
+  Unchanged
+  Updated
+  AmbiguousMatch
+}
+
+pub(all) struct ReleaseComparison {
+  baseline_index : @model.Digest
+  candidate_index : @model.Digest
+  platforms : Array[PlatformPair]
+  baseline_unknown : Int32
+  candidate_unknown : Int32
 }
 
 pub(all) struct ReleaseCoverage {
