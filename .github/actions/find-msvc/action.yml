@@ -1,0 +1,13 @@
+name: Find MSVC developer command
+description: Locate the installed Visual Studio instance with x64 C++ tools
+runs:
+  using: composite
+  steps:
+    - shell: pwsh
+      run: |
+        $vswhere = Join-Path ${env:ProgramFiles(x86)} 'Microsoft Visual Studio\Installer\vswhere.exe'
+        $command = & $vswhere -latest -products '*' -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -find 'Common7\Tools\VsDevCmd.bat'
+        if ($LASTEXITCODE -ne 0 -or -not $command -or -not (Test-Path -LiteralPath $command -PathType Leaf)) {
+          throw 'Visual Studio with x64 C++ tools was not found'
+        }
+        "MOONOCI_VS_DEV_CMD=$command" >> $env:GITHUB_ENV
