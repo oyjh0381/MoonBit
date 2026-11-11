@@ -56,6 +56,15 @@ def main():
     assert read_blob(artifact, layer) == expected
     config = json.loads(read_blob(artifact, manifest["config"]))
     assert config == {"architecture": "wasm", "os": "wasip1", "layerDigests": [digest(expected)]}
+    plan_arguments = ("registry-plan", "artifact", digest(index_bytes), "fixture",
+                      "https://registry.example", "team/modules", "release")
+    plan = json.loads(run(cli, *plan_arguments))
+    assert plan["origin"] == "https://registry.example" and plan["tag"] == "release"
+    assert plan["root"] == manifest_pin
+    assert [item["digest"] for item in plan["blobs"]] == [manifest["config"]["digest"], layer["digest"]]
+    assert [item["digest"] for item in plan["manifests"]] == [manifest_pin]
+    plan_pin = plan.pop("plan_pin")
+    assert plan_pin == digest(json.dumps(plan, separators=(",", ":"), ensure_ascii=False).encode())
     run(oras, "pull", "--oci-layout", "artifact:fixture", "--output", "consumer")
     assert (workspace / "consumer" / "module.wasm").read_bytes() == expected
 
@@ -86,6 +95,7 @@ def main():
     assert not (workspace / "invalid-layout").exists()
     result = dict(manifest=manifest_pin, module=digest(expected), bytes=len(expected),
                   oras_recovered_exact_module=True, consumed_oras_produced_layout=True,
+                  publication_plan_verified=True,
                   reproducible=True)
     print(json.dumps(result, indent=2))
 

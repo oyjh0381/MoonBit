@@ -16,8 +16,8 @@ MoonOCI needs to own. [ArtifactDock](https://mooncakes.io/docs/Hhsqoo/artifactdo
 | Review a multi-platform rollout | Define the required platform matrix and compare verified source and candidate releases. Report missing or ambiguous matches and per-platform content changes | Compare with an independent OCI reader using distinct platform variants and shared layers. Exercise a missing required platform and a no-change release |
 
 The offline and Wasm workflows are usable through the current CLI. Registry
-publication currently has a portable plan and upload-path validation. HTTP
-execution and external verification are separate implementation milestones.
+publication currently has a portable plan, a local CLI command and upload-path
+validation. HTTP execution and external verification are separate milestones.
 The rollout matrix is a design target.
 
 For registry publication, send blobs through the standard POST/PUT session,
@@ -29,6 +29,13 @@ after the final registry write. Previously uploaded content can remain after a
 failure, so retries must reconcile by digest before continuing. Registry tag
 concurrency requires a separate documented server contract. [OCI Distribution
 1.1.1](https://github.com/opencontainers/distribution-spec/blob/v1.1.1/spec.md)
+
+```text
+moonoci registry-plan artifact EXPECTED_INDEX_PIN fixture https://registry.example team/modules release
+```
+
+This command performs bounded local reads and emits the ordered plan with its
+review digest. It makes no connection to the registry.
 
 The publication planner visits each reachable metadata digest once and each
 strong edge once. It uses digest sets for deduplication, with separate

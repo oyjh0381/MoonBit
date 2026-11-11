@@ -54,6 +54,7 @@ async fn main {
         @stdio.stdout.write(@wasmartifact.inspection_json(observation) + "\n")
       }
       "registry-pull" => registry_pull_command(args)
+      "registry-plan" => registry_plan_command(args)
       "statement-verify" => {
         require_arity(
           args, 6, "usage: moonoci statement-verify INPUT ATTACHMENT SUBJECT PREDICATE_TYPE",
@@ -683,6 +684,7 @@ async fn print_usage() -> Unit {
       #|  moonoci wasm-pack INPUT_WASM REF OUTPUT_LAYOUT [COMPONENT_JSON]
       #|  moonoci wasm-inspect INPUT EXPECTED_INDEX_PIN REF
       #|  moonoci wasm-export INPUT EXPECTED_INDEX_PIN REF OUTPUT_WASM
+      #|  moonoci registry-plan INPUT EXPECTED_INDEX_PIN REF ORIGIN REPOSITORY TAG [--allow-http]
       #|  Retention MODE: closure | referrers | complete
       #|  moonoci transfer-batch SESSION EXPECTED_PIN MAX_CHUNKS MAX_BYTES
       #|  moonoci transfer-recover-chunk SESSION EXPECTED_PIN INDEX
