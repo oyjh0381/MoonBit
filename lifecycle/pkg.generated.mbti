@@ -38,6 +38,7 @@ pub fn ContentCatalog::source_index(Self) -> @model.Digest
 pub fn ContentCatalog::store_pin(Self) -> @model.Digest
 pub fn ContentCatalog::stored_blobs(Self) -> Int32
 pub fn ContentCatalog::stored_bytes(Self) -> Int64
+pub fn ContentCatalog::upload_closure(Self, String) -> UploadClosure raise @model.MoonOciError
 
 pub struct RetentionPlan {
   // private fields
@@ -54,6 +55,12 @@ pub(all) struct RetentionPolicy {
   include_subjects : Bool
 }
 pub fn RetentionPolicy::default() -> Self
+
+pub(all) struct UploadClosure {
+  root : @model.Descriptor
+  blobs : Array[@model.Descriptor]
+  manifests : Array[@model.Descriptor]
+}
 
 // Type aliases
 
