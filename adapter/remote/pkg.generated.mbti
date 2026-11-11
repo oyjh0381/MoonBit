@@ -11,7 +11,7 @@ import {
 }
 
 // Values
-pub async fn admit_registry_release(String, String, String, @model.Digest, @model.Digest, Array[@policy.ArtifactRequirement], release_policy? : @policy.ReleasePolicy, statement? : StatementRequirement, options? : RegistryOptions, discovery_limits? : @registry.DiscoveryLimits, cache? : @layout.MemoryLayout, bearer_token? : String) -> RegistryAdmissionResult
+pub async fn admit_registry_release(String, String, String, @model.Digest, @model.Digest, Array[@policy.ArtifactRequirement], release_policy? : @policy.ReleasePolicy, statement? : StatementRequirement, selection? : @registry.ReferrerSelection, options? : RegistryOptions, discovery_limits? : @registry.DiscoveryLimits, cache? : @layout.MemoryLayout, bearer_token? : String) -> RegistryAdmissionResult
 
 pub fn bundle_receipt_json(BundlePublicationReceipt) -> String
 
@@ -29,7 +29,7 @@ pub async fn publish_registry_bundle(@registry.BundlePublicationPlan, @model.Dig
 
 pub async fn pull_registry(String, String, String, @model.Digest, options? : RegistryOptions, cache? : @layout.MemoryLayout, bearer_token? : String) -> RegistryPullResult
 
-pub async fn pull_with_referrers(String, String, String, @model.Digest, @model.Digest, artifact_type? : String, options? : RegistryOptions, discovery_limits? : @registry.DiscoveryLimits, cache? : @layout.MemoryLayout, bearer_token? : String) -> RegistryBundleResult
+pub async fn pull_with_referrers(String, String, String, @model.Digest, @model.Digest, artifact_type? : String, selection? : @registry.ReferrerSelection, options? : RegistryOptions, discovery_limits? : @registry.DiscoveryLimits, cache? : @layout.MemoryLayout, bearer_token? : String) -> RegistryBundleResult
 
 // Errors
 

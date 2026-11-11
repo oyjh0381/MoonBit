@@ -32,6 +32,7 @@ async fn bundle_impl(
   expected : @model.Digest,
   subject : @model.Digest,
   artifact_type : String?,
+  selection : @registry.ReferrerSelection?,
   discovery_limits : @registry.DiscoveryLimits,
   cache : @layout.MemoryLayout?,
 ) -> RegistryBundleResult {
@@ -53,11 +54,15 @@ async fn bundle_impl(
   let discovery = discover_impl(
     transport, repository, subject, artifact_type, discovery_limits,
   )
+  let advertisements = match selection {
+    None => discovery.advertisements
+    Some(approved) => approved.resolve(discovery.advertisements)
+  }
   let pool = @layout.MemoryLayout::new()
   pool.set_index(base.index())
   let mut cached_bytes = cache_verified_closure(pool, base, limits, 0L)
   let fetched : Array[@layout.MemoryLayout] = []
-  for advertisement in discovery.advertisements {
+  for advertisement in advertisements {
     let root = advertisement.descriptor
     let session = @registry.PullSession::new(
       repository,
@@ -79,11 +84,11 @@ async fn bundle_impl(
     base,
     @digest.sha256(base.index()),
     subject,
-    discovery.advertisements,
+    advertisements,
     fetched,
     limits~,
   )
-  let report : Json = {
+  let report : Map[String, Json] = {
     "schema": Json::string("moonoci.registry-bundle.v1"),
     "trusted_source_root": Json::string(expected.to_string()),
     "http_requests": Json::number(transport.requests.to_double()),
@@ -95,13 +100,22 @@ async fn bundle_impl(
     "discovery": @codec.parse_json_document(@utf8.encode(discovery.statistics)),
     "bundle": @codec.parse_json_document(@utf8.encode(bundle.receipt)),
   }
-  { layout: bundle.layout, statistics: report.stringify(), }
+  if selection is Some(approved) {
+    report["attachment_selection"] = {
+      "exact_listing": Json::boolean(approved.exact_listing()),
+      "advertised": Json::number(discovery.advertisements.length().to_double()),
+      "selected": Json::number(advertisements.length().to_double()),
+    }
+  }
+  { layout: bundle.layout, statistics: Json::object(report).stringify(), }
 }
 
 ///|
 /// Pull a pinned release plus verified immediate referrers of one local metadata
 /// subject. One transport shares auth/request/accepted-entity budgets, retry policy and
 /// one total timeout. Does not recursively discover referrers-of-referrers.
+/// With a selection, resolve the entire bounded listing before fetching any
+/// attachment and acquire only those whose manifests match the selected pins.
 pub async fn pull_with_referrers(
   origin : String,
   repository : String,
@@ -109,17 +123,23 @@ pub async fn pull_with_referrers(
   expected : @model.Digest,
   subject : @model.Digest,
   artifact_type? : String,
+  selection? : @registry.ReferrerSelection,
   options~ : RegistryOptions = RegistryOptions::default(),
   discovery_limits~ : @registry.DiscoveryLimits = @registry.DiscoveryLimits::default(),
   cache? : @layout.MemoryLayout,
   bearer_token? : String,
 ) -> RegistryBundleResult {
+  if selection is Some(_) && artifact_type is Some(_) {
+    raise @model.InvalidArgument(
+      "referrer pin selection cannot use an artifact type filter",
+    )
+  }
   let transport = RegistryTransport::new(origin, options, bearer_token)
   discovery_limits.validate()
   @async.with_timeout(options.total_timeout_ms, () => {
     bundle_impl(
-      transport, repository, reference, expected, subject, artifact_type, discovery_limits,
-      cache,
+      transport, repository, reference, expected, subject, artifact_type, selection,
+      discovery_limits, cache,
     )
   }) catch {
     @async.TimeoutError =>

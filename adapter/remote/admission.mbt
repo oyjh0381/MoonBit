@@ -61,6 +61,7 @@ pub async fn admit_registry_release(
   requirements : Array[@policy.ArtifactRequirement],
   release_policy? : @policy.ReleasePolicy,
   statement? : StatementRequirement,
+  selection? : @registry.ReferrerSelection,
   options~ : RegistryOptions = RegistryOptions::default(),
   discovery_limits~ : @registry.DiscoveryLimits = @registry.DiscoveryLimits::default(),
   cache? : @layout.MemoryLayout,
@@ -75,6 +76,12 @@ pub async fn admit_registry_release(
   if statement is Some(requirement) {
     ignore(@model.Digest::parse(requirement.attachment.to_string()))
     @artifacts.validate_statement_predicate_type(requirement.predicate_type)
+    if selection is Some(approved) &&
+      !approved.pins().contains(requirement.attachment) {
+      raise @model.InvalidArgument(
+        "Statement digest is outside the approved referrer set",
+      )
+    }
   }
   let requirements = requirements.copy()
   let release_policy = release_policy.map(policy => {
@@ -92,6 +99,7 @@ pub async fn admit_registry_release(
     reference,
     expected,
     subject,
+    selection?,
     options~,
     discovery_limits~,
     cache?,
