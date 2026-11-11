@@ -18,6 +18,8 @@ pub fn blob_path(String, @model.Digest) -> String raise @model.MoonOciError
 
 pub fn blob_upload_path(String) -> String raise @model.MoonOciError
 
+pub fn bundle_publication_json(BundlePublicationPlan) -> String
+
 pub fn check_publication_written(Int32, Array[@model.KeyValue], @model.Digest) -> Unit raise @model.MoonOciError
 
 pub fn check_response_head(Int32, Array[@model.KeyValue], Int32, expected_size? : Int64) -> Unit raise @model.MoonOciError
@@ -37,6 +39,8 @@ pub fn manifest_media_type(Array[@model.KeyValue]) -> String raise @model.MoonOc
 pub fn manifest_path(String, String) -> String raise @model.MoonOciError
 
 pub fn parse_bearer_challenge(String) -> BearerChallenge raise @model.MoonOciError
+
+pub fn plan_bundle_publication(@lifecycle.ContentCatalog, String, RegistryOrigin, String, String, Array[@model.Digest]) -> BundlePublicationPlan raise @model.MoonOciError
 
 pub fn plan_publication(@lifecycle.ContentCatalog, String, RegistryOrigin, String, String) -> PublishPlan raise @model.MoonOciError
 
@@ -75,6 +79,13 @@ pub struct BearerChallenge {
 pub fn BearerChallenge::realm(Self) -> String
 pub fn BearerChallenge::token_request(Self, RegistryOrigin, String, allowed_realms? : Array[RegistryOrigin], allow_http? : Bool) -> RegistryUrl raise @model.MoonOciError
 
+pub struct BundlePublicationPlan {
+  // private fields
+}
+pub fn BundlePublicationPlan::attachments(Self) -> Array[PublicationAttachment]
+pub fn BundlePublicationPlan::pin(Self) -> @model.Digest
+pub fn BundlePublicationPlan::publication(Self) -> PublishPlan
+
 pub(all) struct DiscoveryLimits {
   max_pages : Int32
   max_entries : Int32
@@ -91,6 +102,11 @@ pub(all) struct FetchRequest {
   size : Int64?
   media_type : String?
   depth : Int32
+}
+
+pub(all) struct PublicationAttachment {
+  object : PublishObject
+  artifact_type : String
 }
 
 pub(all) struct PublishEstimate {
