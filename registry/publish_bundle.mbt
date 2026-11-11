@@ -81,6 +81,14 @@ pub fn BundlePublicationPlan::publication(
 }
 
 ///|
+pub fn BundlePublicationPlan::with_mount_source(
+  self : BundlePublicationPlan,
+  source : String,
+) -> BundlePublicationPlan raise @model.MoonOciError {
+  { ..self, publication: self.publication.with_mount_source(source), }
+}
+
+///|
 pub fn BundlePublicationPlan::attachments(
   self : BundlePublicationPlan,
 ) -> Array[PublicationAttachment] {

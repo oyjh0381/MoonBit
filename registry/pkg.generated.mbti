@@ -97,6 +97,7 @@ pub fn BundlePublicationPlan::pin(Self) -> @model.Digest
 pub fn BundlePublicationPlan::preflight(Self, limits? : PublishLimits, discovery? : DiscoveryLimits) -> PublishEstimate raise @model.MoonOciError
 pub fn BundlePublicationPlan::publication(Self) -> PublishPlan
 pub fn BundlePublicationPlan::referrer_lock(Self) -> ReferrerLock
+pub fn BundlePublicationPlan::with_mount_source(Self, String) -> Self raise @model.MoonOciError
 
 pub(all) struct DiscoveryLimits {
   max_pages : Int32
@@ -145,12 +146,14 @@ pub struct PublishPlan {
 }
 pub fn PublishPlan::blobs(Self) -> Array[PublishObject]
 pub fn PublishPlan::manifests(Self) -> Array[PublishObject]
+pub fn PublishPlan::mount_source(Self) -> String?
 pub fn PublishPlan::origin(Self) -> RegistryOrigin
 pub fn PublishPlan::pin(Self) -> @model.Digest
 pub fn PublishPlan::preflight(Self, limits? : PublishLimits) -> PublishEstimate raise @model.MoonOciError
 pub fn PublishPlan::repository(Self) -> String
 pub fn PublishPlan::root(Self) -> @model.Digest
 pub fn PublishPlan::tag(Self) -> String
+pub fn PublishPlan::with_mount_source(Self, String) -> Self raise @model.MoonOciError
 
 pub(all) struct PullLimits {
   max_objects : Int32

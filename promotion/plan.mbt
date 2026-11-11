@@ -166,6 +166,16 @@ pub fn PromotionPlan::bundle(
 }
 
 ///|
+pub fn PromotionPlan::with_mount_source(
+  self : PromotionPlan,
+  source : String,
+) -> PromotionPlan raise @model.MoonOciError {
+  let publication = self.publication.with_mount_source(source)
+  let bundle = self.bundle.map(plan => plan.with_mount_source(source))
+  { ..self, publication, bundle, }
+}
+
+///|
 fn review_fields(plan : PromotionPlan) -> Map[String, Json] {
   let fields : Map[String, Json] = {
     "schema": "moonoci.promotion.v1",

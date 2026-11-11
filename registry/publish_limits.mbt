@@ -25,7 +25,9 @@ pub(all) struct PublishEstimate {
 
 ///|
 /// Budget one HEAD per object, two more requests per missing blob, and
-/// one PUT per missing child manifest. The tag gets two HEAD checks,
+/// one PUT per missing child manifest. A mount replaces the upload POST,
+/// and a successful mount replaces the PUT with a destination HEAD.
+/// The tag gets two HEAD checks,
 /// at most one PUT, and one GET of the exact root manifest.
 pub fn PublishPlan::preflight(
   self : PublishPlan,

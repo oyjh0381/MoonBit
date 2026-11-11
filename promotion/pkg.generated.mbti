@@ -23,6 +23,7 @@ pub struct PromotionPlan {
 pub fn PromotionPlan::bundle(Self) -> @registry.BundlePublicationPlan?
 pub fn PromotionPlan::pin(Self) -> @model.Digest
 pub fn PromotionPlan::publication(Self) -> @registry.PublishPlan
+pub fn PromotionPlan::with_mount_source(Self, String) -> Self raise @model.MoonOciError
 
 // Type aliases
 

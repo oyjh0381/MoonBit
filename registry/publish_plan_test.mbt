@@ -18,6 +18,12 @@ test "publication plan binds source membership and the exact destination" {
     catalog, "latest", origin, "team/app", "candidate",
   )
   assert_eq(plan.pin(), repeated.pin())
+  let mounted = plan.with_mount_source("team/base")
+  assert_eq(mounted.mount_source(), Some("team/base"))
+  assert_true(plan.pin() != mounted.pin())
+  assert_true(mounted.pin() != plan.with_mount_source("team/cache").pin())
+  assert_eq(mounted.preflight().max_requests, plan.preflight().max_requests)
+  assert_eq(mounted.preflight().body_bytes, plan.preflight().body_bytes)
   assert_true(plan.pin() != moved.pin())
   assert_eq(plan.root(), fixture.report.manifest.digest)
   let manifests = plan.manifests()

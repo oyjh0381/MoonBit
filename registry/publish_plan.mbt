@@ -11,6 +11,7 @@ pub struct PublishPlan {
   priv origin : RegistryOrigin
   priv repository : String
   priv tag : String
+  priv mount_source : String?
   priv source_reference : String
   priv source_index : @model.Digest
   priv source_store : @model.Digest
@@ -50,6 +51,7 @@ pub fn plan_publication(
     origin,
     repository,
     tag,
+    mount_source: None,
     source_reference,
     source_index: catalog.source_index(),
     source_store: catalog.store_pin(),
@@ -72,6 +74,26 @@ pub fn PublishPlan::repository(self : PublishPlan) -> String {
 ///|
 pub fn PublishPlan::tag(self : PublishPlan) -> String {
   self.tag
+}
+
+///|
+pub fn PublishPlan::mount_source(self : PublishPlan) -> String? {
+  self.mount_source
+}
+
+///|
+/// Allow cross-repository reuse from one explicitly reviewed repository.
+pub fn PublishPlan::with_mount_source(
+  self : PublishPlan,
+  source : String,
+) -> PublishPlan raise @model.MoonOciError {
+  validate_repository(source)
+  if source == self.repository {
+    raise @model.InvalidArgument(
+      "blob mount source must differ from the destination repository",
+    )
+  }
+  { ..self, mount_source: Some(source), }
 }
 
 ///|
@@ -103,7 +125,7 @@ fn describe_objects(objects : Array[PublishObject]) -> Json {
 
 ///|
 fn publication_fields(plan : PublishPlan) -> Map[String, Json] {
-  {
+  let fields : Map[String, Json] = {
     "schema": "moonoci.registry-publication.v1",
     "origin": Json::string(plan.origin.url()),
     "repository": Json::string(plan.repository),
@@ -115,6 +137,10 @@ fn publication_fields(plan : PublishPlan) -> Map[String, Json] {
     "blobs": describe_objects(plan.blobs),
     "manifests": describe_objects(plan.manifests),
   }
+  if plan.mount_source is Some(source) {
+    fields["mount_source"] = Json::string(source)
+  }
+  fields
 }
 
 ///|
