@@ -2,11 +2,18 @@
 package "oyjh0381/moonoci/wasmartifact"
 
 import {
+  "oyjh0381/moonoci/artifacts",
   "oyjh0381/moonoci/model",
 }
 
 // Values
+pub let config_media_type : String
+
 pub fn inspect_binary(Bytes) -> BinarySummary raise @model.MoonOciError
+
+pub let layer_media_type : String
+
+pub fn pack(Bytes, String, component? : ComponentMetadata) -> @artifacts.ArtifactBundle raise @model.MoonOciError
 
 // Errors
 
@@ -19,6 +26,12 @@ pub(all) enum BinaryKind {
 pub(all) struct BinarySummary {
   kind : BinaryKind
   sections : Int32
+}
+
+pub(all) struct ComponentMetadata {
+  imports : Array[String]
+  exports : Array[String]
+  target : String?
 }
 
 // Type aliases
