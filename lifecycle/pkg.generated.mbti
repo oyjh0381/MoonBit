@@ -30,6 +30,7 @@ pub struct ContentCatalog {
   // private fields
 }
 pub fn ContentCatalog::metadata_count(Self) -> Int32
+pub fn ContentCatalog::resolve_reference(Self, String) -> @model.Descriptor raise @model.MoonOciError
 pub fn ContentCatalog::retain(Self, Array[@model.Digest], policy? : RetentionPolicy) -> RetentionPlan raise @model.MoonOciError
 pub fn ContentCatalog::snapshot(Self) -> @layout.MemoryLayout
 pub fn ContentCatalog::source_index(Self) -> @model.Digest
