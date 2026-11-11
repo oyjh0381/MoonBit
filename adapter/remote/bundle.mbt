@@ -43,6 +43,25 @@ async fn bundle_impl(
     expected,
     limits~,
   )
+  async fn resolve_attachments() -> (
+    RegistryDiscoveryResult,
+    Array[@artifacts.ReferrerAdvertisement],
+  ) {
+    let discovery = discover_impl(
+      transport, repository, subject, artifact_type, discovery_limits,
+    )
+    let advertisements = match selection {
+      None => discovery.advertisements
+      Some(approved) => approved.resolve(discovery.advertisements)
+    }
+    (discovery, advertisements)
+  }
+
+  let preflight = if selection is Some(_) {
+    Some(resolve_attachments())
+  } else {
+    None
+  }
   let base = drain_registry_pull(transport, repository, session, cache)
   ignore(
     @artifacts.resolve_subject(base, subject, limits={
@@ -51,12 +70,9 @@ async fn bundle_impl(
       max_metadata_bytes: limits.max_total_bytes,
     }),
   )
-  let discovery = discover_impl(
-    transport, repository, subject, artifact_type, discovery_limits,
-  )
-  let advertisements = match selection {
-    None => discovery.advertisements
-    Some(approved) => approved.resolve(discovery.advertisements)
+  let (discovery, advertisements) = match preflight {
+    Some(resolved) => resolved
+    None => resolve_attachments()
   }
   let pool = @layout.MemoryLayout::new()
   pool.set_index(base.index())
@@ -115,7 +131,7 @@ async fn bundle_impl(
 /// subject. One transport shares auth/request/accepted-entity budgets, retry policy and
 /// one total timeout. Does not recursively discover referrers-of-referrers.
 /// With a selection, resolve the entire bounded listing before fetching any
-/// attachment and acquire only those whose manifests match the selected pins.
+/// image or attachment content and acquire only the explicitly selected referrers.
 pub async fn pull_with_referrers(
   origin : String,
   repository : String,

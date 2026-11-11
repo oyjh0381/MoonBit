@@ -329,6 +329,13 @@ def main():
         assert cache_statistics['accepted_network_bytes'] == '0'
         assert cache_statistics['discovery']['pages'] == 2
         assert cache_statistics['http_requests'] == 4  # 401, token, two listing pages; no content GETs.
+        before = len(state['requests'])
+        bundle('missing-pinned-referrer', '--attachment-pins', pin(b'unlisted'), status=5)
+        preflight_paths = [path for _, path, _ in state['requests'][before:]]
+        referrers_path = f'/v2/{REPOSITORY}/referrers/{images[0]["digest"]}'
+        assert preflight_paths.count(referrers_path) >= 2
+        assert all(path in (referrers_path, '/token') for path in preflight_paths)
+
         for mode in ('wrong-type', 'wrong-size', 'wrong-annotations'):
             state['listing_mode'] = mode
             bundle('bundle-' + mode, status=4)
@@ -489,6 +496,7 @@ def main():
         auth_loop_bounded=True, optional_digest_header=True, bounded_transient_retries=True, artifact_gate_consumed=True,
         paginated_referrers=True, local_type_filter=True, foreign_and_looping_pages_refused=True,
         verified_referrer_bundle=True, bundle_cache_content_requests=0, forged_advertisements_refused=True,
+        absent_pinned_referrer_sent_no_content_requests=True,
         operator_resource_profiles=True, invalid_quotas_refused_before_http=True,
         admission_before_publication=True, missing_required_attachment_blocks_output=True,
         composed_all_platform_policy=True, bad_policy_refused_before_http=True,

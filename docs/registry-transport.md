@@ -228,8 +228,10 @@ It binds only loopback and forwards only to the fixture's exact authority.
 1–128 manifest digests with \`--attachment-pins\`. Use the attachment digests
 from the approved publication plan. The client follows the full bounded
 Referrers API listing, checks that every approved digest is advertised,
-and fetches only those manifests and their payloads. Image content and
-each attachment's actual subject association are still verified.
+and fetches only those manifests and their payloads. If an approved digest
+is missing, the check stops before downloading any image or attachment
+content. Image content and each attachment's actual subject association
+are still verified on a successful acquisition.
 
 \`\`\`text
 moonoci registry-bundle ORIGIN REPOSITORY TAG ROOT ROOT OUTPUT --attachment-pins SBOM_PIN,PROOF_PIN
