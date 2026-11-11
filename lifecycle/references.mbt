@@ -6,30 +6,76 @@ pub fn ContentCatalog::resolve_reference(
   self : ContentCatalog,
   name : String,
 ) -> @model.Descriptor raise @model.MoonOciError {
-  if name == "" {
-    raise @model.InvalidArgument("empty OCI layout reference")
+  self.resolve_references([name])[0]
+}
+
+///|
+/// Build a reviewable copy plan from root names. Names that refer to the same
+/// immutable manifest share one content closure. All original aliases of
+/// the retained digest remain advertised, as in digest-based retention.
+pub fn ContentCatalog::retain_references(
+  self : ContentCatalog,
+  names : Array[String],
+  policy~ : RetentionPolicy = RetentionPolicy::default(),
+) -> RetentionPlan raise @model.MoonOciError {
+  if names.is_empty() || names.length() > self.root_values.length() {
+    raise @model.InvalidArgument(
+      "reference retention needs a nonempty bounded selection",
+    )
   }
-  let mut found : @model.Descriptor? = None
+  let seen : Map[String, Bool] = Map([])
+  let roots : Array[@model.Digest] = []
+  for descriptor in self.resolve_references(names) {
+    let digest = descriptor.digest.to_string()
+    if !seen.contains(digest) {
+      seen[digest] = true
+      roots.push(descriptor.digest)
+    }
+  }
+  self.retain(roots, policy~)
+}
+
+///|
+fn ContentCatalog::resolve_references(
+  self : ContentCatalog,
+  names : Array[String],
+) -> Array[@model.Descriptor] raise @model.MoonOciError {
+  let requested : Map[String, @model.Descriptor?] = Map([])
+  for name in names {
+    if name == "" || requested.contains(name) {
+      raise @model.InvalidArgument("empty or repeated OCI layout reference")
+    }
+    requested[name] = None
+  }
   for value in self.root_values {
     let descriptor = @codec.decode_descriptor(value)
-    if descriptor.annotations.any(annotation => {
-        annotation.key == @model.annotation_ref_name && annotation.value == name
-      }) {
-      match found {
-        Some(previous) =>
-          if previous.digest != descriptor.digest ||
-            previous.media_type != descriptor.media_type ||
-            previous.size != descriptor.size ||
-            previous.platform != descriptor.platform {
-            raise @model.InvalidOci("ambiguous OCI layout reference: " + name)
-          }
-        None => found = Some(descriptor)
+    for annotation in descriptor.annotations {
+      if annotation.key == @model.annotation_ref_name {
+        let name = annotation.value
+        match requested.get(name) {
+          Some(Some(previous)) =>
+            if !same_reference_target(previous, descriptor) {
+              raise @model.InvalidOci("ambiguous OCI layout reference: " + name)
+            }
+          Some(None) => requested[name] = Some(descriptor)
+          None => ()
+        }
       }
     }
   }
-  match found {
-    Some(descriptor) => descriptor
-    None =>
-      raise @model.InvalidArgument("unknown OCI layout reference: " + name)
-  }
+  names.map(name => {
+    match requested[name] {
+      Some(descriptor) => descriptor
+      None =>
+        raise @model.InvalidArgument("unknown OCI layout reference: " + name)
+    }
+  })
+}
+
+///|
+fn same_reference_target(a : @model.Descriptor, b : @model.Descriptor) -> Bool {
+  a.digest == b.digest &&
+  a.media_type == b.media_type &&
+  a.size == b.size &&
+  a.platform == b.platform
 }

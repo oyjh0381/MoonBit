@@ -32,6 +32,7 @@ pub struct ContentCatalog {
 pub fn ContentCatalog::metadata_count(Self) -> Int32
 pub fn ContentCatalog::resolve_reference(Self, String) -> @model.Descriptor raise @model.MoonOciError
 pub fn ContentCatalog::retain(Self, Array[@model.Digest], policy? : RetentionPolicy) -> RetentionPlan raise @model.MoonOciError
+pub fn ContentCatalog::retain_references(Self, Array[String], policy? : RetentionPolicy) -> RetentionPlan raise @model.MoonOciError
 pub fn ContentCatalog::snapshot(Self) -> @layout.MemoryLayout
 pub fn ContentCatalog::source_index(Self) -> @model.Digest
 pub fn ContentCatalog::store_pin(Self) -> @model.Digest

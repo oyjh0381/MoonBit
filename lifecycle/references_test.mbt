@@ -22,6 +22,17 @@ test "resolve exact root names from the verified snapshot" {
   built.layout.set_index(b"invalid")
   assert_eq(catalog.resolve_reference("stable"), stable)
   assert_eq(catalog.resolve_reference("candidate"), candidate)
+  let plan = catalog.retain_references(["stable", "candidate"])
+  assert_eq(plan.pin(), catalog.retain([stable.digest]).pin())
+  assert_eq(plan.materialize().index(), catalog.snapshot().index())
+  let duplicate = try {
+    ignore(catalog.retain_references(["stable", "stable"]))
+    false
+  } catch {
+    @model.InvalidArgument(_) => true
+    _ => false
+  }
+  assert_true(duplicate)
   let missing = try {
     ignore(catalog.resolve_reference("Stable"))
     false
