@@ -55,6 +55,8 @@ async fn main {
       }
       "registry-pull" => registry_pull_command(args)
       "registry-plan" => registry_plan_command(args)
+      "rebase-plan" => rebase_command(args, false)
+      "rebase" => rebase_command(args, true)
       "rollout-check" => {
         require_arity(
           args, 5, "usage: moonoci rollout-check BASE CANDIDATE POLICY_JSON",
@@ -728,6 +730,8 @@ async fn print_usage() -> Unit {
       #|  moonoci config-diff BASE TARGET OS ARCH
       #|  moonoci upgrade-check BASE TARGET OS ARCH BASE_PIN TARGET_PIN
       #|  moonoci rollout-check BASE CANDIDATE POLICY_JSON
+      #|  moonoci rebase-plan APP OLD_BASE NEW_BASE APP_PIN OLD_PIN NEW_PIN
+      #|  moonoci rebase APP OLD_BASE NEW_BASE APP_PIN OLD_PIN NEW_PIN REF OUTPUT [NEW_BASE_NAME]
       #|  moonoci merge OUTPUT INPUT INPUT [INPUT...]
       #|  moonoci select INPUT OUTPUT OS ARCH
       #|  moonoci delta BASE TARGET

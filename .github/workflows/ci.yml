@@ -49,6 +49,8 @@ jobs:
         run: python scripts/policy_chain.py --binary _build/native/release/build/cmd/moonoci/moonoci.exe
       - name: Multi-platform rollout consumer
         run: python scripts/rollout_chain.py --binary _build/native/release/build/cmd/moonoci/moonoci.exe
+      - name: OCI base replacement consumer
+        run: python scripts/rebase_chain.py --binary _build/native/release/build/cmd/moonoci/moonoci.exe
       - name: Prepare downstream release archive
         run: moon package
       - name: Isolated release consumer (Linux)

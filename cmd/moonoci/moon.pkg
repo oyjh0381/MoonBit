@@ -12,6 +12,7 @@ import {
   "oyjh0381/moonoci/registry",
   "oyjh0381/moonoci/wasmartifact",
   "oyjh0381/moonoci/rollout",
+  "oyjh0381/moonoci/rebase",
   "oyjh0381/moonoci/builder",
   "oyjh0381/moonoci/codec",
   "moonbitlang/async",

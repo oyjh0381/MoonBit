@@ -15,11 +15,13 @@ MoonOCI needs to own. [ArtifactDock](https://mooncakes.io/docs/Hhsqoo/artifactdo
 | Publish reviewed layouts to a Registry | Derive the upload order from the verified catalog. Bind repository, tag, source and object order to a review digest. Upload missing content and publish the tag after its dependencies | Test against a local OCI Registry, verify through an independent client, and retry after a controlled failed upload. Check that an incorrect review digest causes zero requests |
 | Review a multi-platform rollout | Define the required platform matrix and compare verified source and candidate releases. Report missing or ambiguous matches and per-platform content changes | Compare with an independent OCI reader using distinct platform variants and shared layers. Exercise a missing required platform and a no-change release |
 | Embed OCI object verification in a C host | Link the MoonOCI Native static archive to verify pinned objects already in caller-owned memory | Build and run a C executable against the archive. Compare to independently computed SHA-256 digests and reject malformed or changed objects |
+| Replace an image base while preserving application layers | Verify the old DiffID prefix, splice in the replacement layers, and produce a new verified OCI layout | Read the derived image independently. Verify exact app-layer reuse, updated base contents and preserved whiteouts |
 
 The offline, Wasm and Registry publication workflows are usable through the
 current CLI. The portable `rollout` package also provides coverage, two-release
 comparison and a rollout policy decision. See [Multi-platform rollout review](rollout-review.md).
 Native applications can link the [C verification library](c-host.md).
+Release tools can preview and apply an [OCI base replacement](rebase.md).
 
 For registry publication, send blobs through the standard POST/PUT session,
 send child manifests before their parent, and publish the selected root under

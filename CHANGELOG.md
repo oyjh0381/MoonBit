@@ -9,6 +9,7 @@ All notable changes to MoonOCI are documented here. The format follows Keep a Ch
 - Package, inspect and export single-layer Wasm OCI artifacts with ORAS interoperability.
 - Publish reviewed OCI layouts with bounded upload sessions, existing-content reuse and exact tag readback.
 - Check multi-platform upgrades with per-platform approvals and embed pinned OCI object verification in a Native C host.
+- Preview and replace pinned OCI base layers while retaining application layers and runtime configuration.
 
 ## [0.2.0] - 2026-11-07
 
