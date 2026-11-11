@@ -4,6 +4,7 @@ import {
   "oyjh0381/moonoci/codec",
   "oyjh0381/moonoci/digest",
   "oyjh0381/moonoci/layout",
+  "oyjh0381/moonoci/lifecycle",
   "oyjh0381/moonoci/graph",
   "moonbitlang/core/string",
   "moonbitlang/core/encoding/utf8",

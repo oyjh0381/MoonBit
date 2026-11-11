@@ -67,6 +67,8 @@ separate evidence requirements; configured CI is not an executed result.
 
 The development branch also supports packaging compiled MoonBit WebAssembly
 binaries as [single-layer Wasm OCI artifacts](docs/wasm-artifacts.md).
+See [release workflows](docs/release-workflows.md) for the offline and registry
+workflow design and validation targets.
 
 ## Scope
 

@@ -4,6 +4,7 @@ package "oyjh0381/moonoci/registry"
 import {
   "oyjh0381/moonoci/artifacts",
   "oyjh0381/moonoci/layout",
+  "oyjh0381/moonoci/lifecycle",
   "oyjh0381/moonoci/model",
 }
 
@@ -33,6 +34,10 @@ pub fn manifest_media_type(Array[@model.KeyValue]) -> String raise @model.MoonOc
 pub fn manifest_path(String, String) -> String raise @model.MoonOciError
 
 pub fn parse_bearer_challenge(String) -> BearerChallenge raise @model.MoonOciError
+
+pub fn plan_publication(@lifecycle.ContentCatalog, String, RegistryOrigin, String, String) -> PublishPlan raise @model.MoonOciError
+
+pub fn publication_json(PublishPlan) -> String
 
 pub fn pull_statistics(PullSession) -> Json
 
@@ -82,6 +87,23 @@ pub(all) struct FetchRequest {
   media_type : String?
   depth : Int32
 }
+
+pub(all) struct PublishObject {
+  digest : @model.Digest
+  media_type : String
+  data : Bytes
+}
+
+pub struct PublishPlan {
+  // private fields
+}
+pub fn PublishPlan::blobs(Self) -> Array[PublishObject]
+pub fn PublishPlan::manifests(Self) -> Array[PublishObject]
+pub fn PublishPlan::origin(Self) -> RegistryOrigin
+pub fn PublishPlan::pin(Self) -> @model.Digest
+pub fn PublishPlan::repository(Self) -> String
+pub fn PublishPlan::root(Self) -> @model.Digest
+pub fn PublishPlan::tag(Self) -> String
 
 pub(all) struct PullLimits {
   max_objects : Int32
