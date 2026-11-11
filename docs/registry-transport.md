@@ -246,3 +246,23 @@ be in the selected set.
 
 The ArtifactDock consumer exercised both modes with and without a later
 attachment. Selection avoided 66,198 accepted network bytes in that fixture.
+
+### Pass a reviewed lock between systems
+
+\`registry-plan-bundle\` returns \`referrerLock\`, and
+\`registry-promote-bundle-plan\` returns it under \`bundle.referrerLock\`.
+The lock contains the exact release root, subject and approved attachment
+digests. Save its \`document\` string as UTF-8 bytes without a BOM or appended
+newline. Convey its \`pin\` through the same trusted channel as the release
+approval. The receiver verifies this pin before parsing the file and compares
+its root and subject with the requested release before connecting.
+
+\`\`\`text
+moonoci registry-bundle ORIGIN REPOSITORY TAG ROOT SUBJECT OUTPUT --referrer-lock LOCK_FILE --referrer-lock-pin LOCK_PIN
+\`\`\`
+
+The lock covers content identity across repositories. The receiver still
+chooses and validates its Registry origin. To reject extra advertisements,
+add \`--exact-referrers\`. The ArtifactDock consumer writes the exact lock
+bytes from the promotion plan, rejects edits to those bytes, and reuses
+the same document after restarting the server on a new port.

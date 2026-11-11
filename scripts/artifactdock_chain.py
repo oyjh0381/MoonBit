@@ -57,12 +57,18 @@ def main():
     with launch("publisher") as origin:
         target = (baseline, candidate, policy, "candidate", origin, REPO, "reviewed", evidence)
         review = json.loads(run("registry-promote-bundle-plan", *target, "--allow-http"))
+        lock = review["bundle"]["referrerLock"]
+        lock_path = work / "reviewed-referrers.json"
+        lock_path.write_bytes(lock["document"].encode("utf-8"))
+        assert pin(lock_path.read_bytes()) == lock["pin"]
+        assert json.loads(lock["document"])["attachments"] == [evidence]
+        lock_args = ("--referrer-lock", lock_path, "--referrer-lock-pin", lock["pin"])
         receipt = json.loads(run("registry-promote-bundle", *target, review["promotionPin"], "--allow-http"))
         assert receipt["publication"]["root"] == root and receipt["publication"]["tag_written"]
         assert receipt["bundle"]["verifiedAttachments"] == 1
         exact = json.loads(run("registry-bundle", origin, REPO, "reviewed", root, root,
                                work / "exact-referrers", "--allow-http",
-                               "--attachment-pins", evidence, "--exact-referrers"))
+                               *lock_args, "--exact-referrers"))
         assert exact["attachment_selection"] == dict(advertised=1, selected=1, exact_listing=True)
 
         additional = work / "additional.json"
@@ -79,10 +85,20 @@ def main():
 
     reconstructed = work / "admitted"
     refused = work / "refused"
+    # This origin has been stopped. A malformed or differently scoped lock
+    # must be refused locally rather than falling through to connection setup.
+    tampered = work / "tampered-lock.json"
+    tampered.write_bytes(lock_path.read_bytes() + b"\n")
+    run("registry-bundle", origin, REPO, "reviewed", root, root, refused, "--allow-http",
+        "--referrer-lock", tampered, "--referrer-lock-pin", lock["pin"], status=5)
+    run("registry-bundle", origin, REPO, "reviewed", pin(b"other"), root, refused,
+        "--allow-http", *lock_args, status=5)
+    assert not refused.exists()
+
     with launch("consumer") as origin:
         source = (origin, REPO, "reviewed", root, root)
         requirements = ("--allow-http", "--require-artifact", STATEMENT_MEDIA,
-                        "--statement-digest", evidence, "--attachment-pins", evidence)
+                        "--statement-digest", evidence, *lock_args)
         run("registry-admit", *source, refused, *requirements,
             "--statement-predicate", PREDICATE + "-incorrect", status=5)
         assert not refused.exists()
@@ -112,7 +128,8 @@ def main():
     print(json.dumps(dict(root=root, statement_manifest=evidence, restored_objects=len(recovered),
                           persistent_restart=True, predicate_mismatch_refused=True,
                           admitted_bytes_identical=True, exact_listing_refused_extra=True,
-                          missing_pin_refused=True, avoided_network_bytes=avoided_bytes), indent=2))
+                          missing_pin_refused=True, avoided_network_bytes=avoided_bytes,
+                          pinned_lock_roundtrip=True, modified_or_mismatched_lock_refused=True), indent=2))
 
 
 if __name__ == "__main__":
