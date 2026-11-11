@@ -83,8 +83,8 @@ pub async fn publish_registry_bundle(
 }
 
 ///|
-pub fn bundle_receipt_json(receipt : BundlePublicationReceipt) -> String {
-  let result : Json = {
+pub fn bundle_receipt_value(receipt : BundlePublicationReceipt) -> Json {
+  {
     "schema": "moonoci.registry-bundle-receipt.v1",
     "bundlePin": Json::string(receipt.bundle_pin.to_string()),
     "verifiedAttachments": Json::number(
@@ -93,5 +93,9 @@ pub fn bundle_receipt_json(receipt : BundlePublicationReceipt) -> String {
     "listingPages": Json::number(receipt.listing_pages.to_double()),
     "publication": publication_receipt_value(receipt.publication),
   }
-  result.stringify()
+}
+
+///|
+pub fn bundle_receipt_json(receipt : BundlePublicationReceipt) -> String {
+  bundle_receipt_value(receipt).stringify()
 }

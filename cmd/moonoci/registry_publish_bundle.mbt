@@ -4,17 +4,14 @@ async fn registry_bundle_publish_command(
   apply : Bool,
 ) -> Unit {
   let start = if apply { 10 } else { 9 }
-  if args.length() < start || args[8].length() > 128 * 72 {
+  if args.length() < start {
     raise @model.InvalidArgument(
       "usage: moonoci registry-{plan,publish}-bundle INPUT INDEX_PIN REF ORIGIN REPO TAG ATTACHMENT_PINS [BUNDLE_PIN] [--allow-http] [--ca-file FILE]",
     )
   }
   let options = parse_publish_options(args, start)
   let expected = if apply { Some(@model.Digest::parse(args[9])) } else { None }
-  let pins : Array[@model.Digest] = []
-  for value in args[8].split(",") {
-    pins.push(@model.Digest::parse(value.to_owned()))
-  }
+  let pins = parse_attachment_pins(args[8])
   let index_pin = @model.Digest::parse(args[3])
   let origin = @registry.RegistryOrigin::parse(
     args[5],
@@ -43,4 +40,21 @@ async fn registry_bundle_publish_command(
       @stdio.stdout.write(@remote.bundle_receipt_json(receipt) + "\n")
     }
   }
+}
+
+///|
+fn parse_attachment_pins(
+  value : String,
+) -> Array[@model.Digest] raise @model.MoonOciError {
+  if value.length() > 128 * 72 {
+    raise @model.InvalidArgument("attachment digest list exceeds 128 entries")
+  }
+  let pins : Array[@model.Digest] = []
+  for item in value.split(",") {
+    if pins.length() == 128 {
+      raise @model.InvalidArgument("attachment digest list exceeds 128 entries")
+    }
+    pins.push(@model.Digest::parse(item.to_owned()))
+  }
+  pins
 }

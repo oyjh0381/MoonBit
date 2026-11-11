@@ -60,6 +60,10 @@ async fn main {
       "wrap-release" => wrap_release_command(args)
       "registry-promote-plan" => registry_promotion_command(args, false)
       "registry-promote" => registry_promotion_command(args, true)
+      "registry-promote-bundle-plan" =>
+        registry_promotion_command(args, false, bundled=true)
+      "registry-promote-bundle" =>
+        registry_promotion_command(args, true, bundled=true)
       "rebase-plan" => rebase_command(args, false)
       "rebase" => rebase_command(args, true)
       "rollout-check" => {
@@ -714,6 +718,8 @@ async fn print_usage() -> Unit {
       #|  moonoci wrap-release INPUT INDEX_PIN REF OUTPUT
       #|  moonoci registry-promote-plan BASE CANDIDATE POLICY REF ORIGIN REPOSITORY TAG [--allow-http]
       #|  moonoci registry-promote BASE CANDIDATE POLICY REF ORIGIN REPOSITORY TAG PROMOTION_PIN [--allow-http] [--ca-file FILE]
+      #|  moonoci registry-promote-bundle-plan BASE CANDIDATE POLICY REF ORIGIN REPOSITORY TAG ATTACHMENT_PINS [--allow-http]
+      #|  moonoci registry-promote-bundle BASE CANDIDATE POLICY REF ORIGIN REPOSITORY TAG ATTACHMENT_PINS PROMOTION_PIN [--allow-http] [--ca-file FILE]
       #|  Retention MODE: closure | referrers | complete
       #|  moonoci transfer-batch SESSION EXPECTED_PIN MAX_CHUNKS MAX_BYTES
       #|  moonoci transfer-recover-chunk SESSION EXPECTED_PIN INDEX

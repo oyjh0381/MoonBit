@@ -20,6 +20,8 @@ pub fn blob_upload_path(String) -> String raise @model.MoonOciError
 
 pub fn bundle_publication_json(BundlePublicationPlan) -> String
 
+pub fn bundle_publication_value(BundlePublicationPlan) -> @json.Json
+
 pub fn check_publication_subject(Array[@model.KeyValue], @model.Digest) -> Unit raise @model.MoonOciError
 
 pub fn check_publication_written(Int32, Array[@model.KeyValue], @model.Digest) -> Unit raise @model.MoonOciError

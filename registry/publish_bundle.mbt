@@ -126,9 +126,14 @@ pub fn BundlePublicationPlan::pin(
 }
 
 ///|
-pub fn bundle_publication_json(plan : BundlePublicationPlan) -> String {
+pub fn bundle_publication_value(plan : BundlePublicationPlan) -> Json {
   let fields = bundle_publication_fields(plan)
   fields["bundlePin"] = Json::string(plan.pin().to_string())
   fields["publication"] = Json::object(publication_fields(plan.publication))
-  Json::object(fields).stringify()
+  Json::object(fields)
+}
+
+///|
+pub fn bundle_publication_json(plan : BundlePublicationPlan) -> String {
+  bundle_publication_value(plan).stringify()
 }

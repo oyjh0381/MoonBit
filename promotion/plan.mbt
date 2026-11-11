@@ -190,5 +190,8 @@ pub fn PromotionPlan::pin(self : PromotionPlan) -> @model.Digest {
 pub fn review_json(plan : PromotionPlan) -> String {
   let fields = review_fields(plan)
   fields["promotionPin"] = Json::string(plan.pin().to_string())
+  if plan.bundle is Some(bundle) {
+    fields["bundle"] = @registry.bundle_publication_value(bundle)
+  }
   Json::object(fields).stringify()
 }
