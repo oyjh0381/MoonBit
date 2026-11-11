@@ -1,0 +1,36 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "oyjh0381/moonoci/rollout"
+
+import {
+  "oyjh0381/moonoci/graph",
+  "oyjh0381/moonoci/layout",
+  "oyjh0381/moonoci/model",
+}
+
+// Values
+pub fn coverage(@layout.MemoryLayout, @model.Digest, Array[@model.Platform], limits? : @graph.WalkLimits) -> ReleaseCoverage raise @model.MoonOciError
+
+// Errors
+
+// Types and methods
+pub(all) struct PlatformCoverage {
+  platform : @model.Platform
+  match_result : PlatformMatch
+}
+
+pub(all) enum PlatformMatch {
+  Missing
+  Unique(@model.Digest)
+  Ambiguous(Array[@model.Digest])
+}
+
+pub(all) struct ReleaseCoverage {
+  index_pin : @model.Digest
+  required : Array[PlatformCoverage]
+  unknown_descriptors : Int32
+  non_images : Int32
+}
+
+// Type aliases
+
+// Traits

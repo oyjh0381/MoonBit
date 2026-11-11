@@ -16,7 +16,9 @@ MoonOCI needs to own. [ArtifactDock](https://mooncakes.io/docs/Hhsqoo/artifactdo
 | Review a multi-platform rollout | Define the required platform matrix and compare verified source and candidate releases. Report missing or ambiguous matches and per-platform content changes | Compare with an independent OCI reader using distinct platform variants and shared layers. Exercise a missing required platform and a no-change release |
 
 The offline, Wasm and Registry publication workflows are usable through the
-current CLI. The rollout matrix is a design target.
+current CLI. The portable `rollout.coverage` API reports missing, unique and
+ambiguous exact platform matches under a trusted layout index digest. The
+two-release comparison and decision workflow remain design targets.
 
 For registry publication, send blobs through the standard POST/PUT session,
 send child manifests before their parent, and publish the selected root under
