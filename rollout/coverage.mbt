@@ -45,6 +45,19 @@ pub fn coverage(
   required : Array[@model.Platform],
   limits~ : @graph.WalkLimits = @graph.WalkLimits::default(),
 ) -> ReleaseCoverage raise @model.MoonOciError {
+  coverage_from_walk(
+    @graph.walk_pinned(source, expected_index, limits~),
+    expected_index,
+    required,
+  )
+}
+
+///|
+fn coverage_from_walk(
+  walk : @graph.IndexWalk,
+  expected_index : @model.Digest,
+  required : Array[@model.Platform],
+) -> ReleaseCoverage raise @model.MoonOciError {
   if required.is_empty() || required.length() > 256 {
     raise @model.InvalidArgument("rollout requires between 1 and 256 platforms")
   }
@@ -60,7 +73,6 @@ pub fn coverage(
     targets[key] = Map([])
     key
   })
-  let walk = @graph.walk_pinned(source, expected_index, limits~)
   for image in walk.images {
     if targets.get(platform_key(image.platform)) is Some(matches) {
       let digest = image.descriptor.digest

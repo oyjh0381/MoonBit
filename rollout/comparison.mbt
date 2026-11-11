@@ -53,12 +53,20 @@ pub fn compare_releases(
 ) -> ReleaseComparison raise @model.MoonOciError {
   let before = coverage(baseline, baseline_pin, required, limits~)
   let after = coverage(candidate, candidate_pin, required, limits~)
+  pair_coverage(before, after)
+}
+
+///|
+fn pair_coverage(
+  before : ReleaseCoverage,
+  after : ReleaseCoverage,
+) -> ReleaseComparison {
   let platforms = []
-  for i, platform in required {
-    let left = before.required[i].match_result
+  for i, row in before.required {
+    let left = row.match_result
     let right = after.required[i].match_result
     platforms.push({
-      platform,
+      platform: row.platform,
       baseline: left,
       candidate: right,
       transition: classify(left, right),
