@@ -88,3 +88,18 @@ test "OCI reader accepts tar -C root . paths while keeping aliases unique" {
     assert_true(rejected)
   }
 }
+
+///|
+test "tar octal fields reject digits after a field terminator" {
+  assert_eq(read_octal(b" 00007 \x00", 0, 8, "mode"), 7L)
+  for field in [b"1 2", b"1\x002", b"\x001"] {
+    let rejected = try {
+      ignore(read_octal(field, 0, field.length(), "size"))
+      false
+    } catch {
+      @model.InvalidTar(_) => true
+      _ => false
+    }
+    assert_true(rejected)
+  }
+}

@@ -75,10 +75,11 @@ fn read_tar_impl(
     if content_start > data.length() || size > data.length() - content_start {
       raise @model.InvalidTar("truncated tar entry payload")
     }
-    let next = content_start + padded_size(size)
-    if next > data.length() {
+    let padding = (tar_block_size - size % tar_block_size) % tar_block_size
+    if padding > data.length() - content_start - size {
       raise @model.InvalidTar("truncated tar entry padding")
     }
+    let next = content_start + size + padding
     let typeflag = data[offset + 156]
     if typeflag == b'x' {
       let records = parse_pax(data, content_start, size)
@@ -203,15 +204,6 @@ fn read_tar_impl(
 }
 
 ///|
-fn padded_size(size : Int32) -> Int32 {
-  if size % tar_block_size == 0 {
-    size
-  } else {
-    size + tar_block_size - size % tar_block_size
-  }
-}
-
-///|
 fn block_is_zero(data : Bytes, offset : Int32) -> Bool {
   for i in 0..<tar_block_size {
     if data[offset + i] != b'\x00' {
@@ -249,12 +241,17 @@ fn read_octal(
 ) -> Int64 raise @model.MoonOciError {
   let mut value = 0L
   let mut seen = false
+  let mut terminated = false
   for i in 0..<width {
     let byte = data[offset + i]
-    if byte == b'\x00' || byte == b' ' {
+    if byte == b'\x00' || (byte == b' ' && seen) {
+      terminated = true
       continue
     }
-    if byte < b'0' || byte > b'7' {
+    if byte == b' ' {
+      continue
+    }
+    if terminated || byte < b'0' || byte > b'7' {
       raise @model.InvalidTar("invalid octal tar " + field)
     }
     let digit = (byte - b'0').to_int64()
