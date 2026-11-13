@@ -715,6 +715,7 @@ async fn print_usage() -> Unit {
       #|  moonoci wasm-export INPUT EXPECTED_INDEX_PIN REF OUTPUT_WASM
       #|  moonoci registry-plan INPUT EXPECTED_INDEX_PIN REF ORIGIN REPOSITORY TAG [--allow-http]
       #|  moonoci registry-publish INPUT EXPECTED_INDEX_PIN REF ORIGIN REPOSITORY TAG PLAN_PIN [--allow-http] [--ca-file FILE]
+      #|    Publication plans and writes accept --mount-from SOURCE_REPOSITORY
       #|  moonoci registry-plan-bundle INPUT INDEX_PIN REF ORIGIN REPO TAG ATTACHMENT_PINS [--allow-http]
       #|  moonoci registry-publish-bundle INPUT INDEX_PIN REF ORIGIN REPO TAG ATTACHMENT_PINS BUNDLE_PIN [--allow-http] [--ca-file FILE]
       #|  moonoci wrap-release INPUT INDEX_PIN REF OUTPUT

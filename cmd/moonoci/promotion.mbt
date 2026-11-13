@@ -31,7 +31,7 @@ async fn registry_promotion_command(
       "usage: moonoci registry-promote[-bundle][-plan] BASE CANDIDATE POLICY REF ORIGIN REPOSITORY TAG [ATTACHMENT_PINS] [PROMOTION_PIN] [--allow-http] [--ca-file FILE]",
     )
   }
-  let options = parse_publish_options(args, start)
+  let (options, mount_source) = parse_publish_options(args, start)
   let expected = if apply {
     Some(@model.Digest::parse(args[pin_position]))
   } else {
@@ -65,6 +65,10 @@ async fn registry_promotion_command(
       args[7],
       args[8],
     )
+  }
+  let review = match mount_source {
+    Some(source) => review.with_mount_source(source)
+    None => review
   }
   match expected {
     Some(pin) => {

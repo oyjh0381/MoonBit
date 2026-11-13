@@ -46,6 +46,8 @@ pub(all) struct PublicationReceipt {
   review_pin : @model.Digest
   requests : Int32
   uploaded_blobs : Int32
+  mounted_blobs : Int32
+  mounted_bytes : Int64
   reused_blobs : Int32
   uploaded_manifests : Int32
   reused_manifests : Int32

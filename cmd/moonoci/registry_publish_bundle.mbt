@@ -9,7 +9,7 @@ async fn registry_bundle_publish_command(
       "usage: moonoci registry-{plan,publish}-bundle INPUT INDEX_PIN REF ORIGIN REPO TAG ATTACHMENT_PINS [BUNDLE_PIN] [--allow-http] [--ca-file FILE]",
     )
   }
-  let options = parse_publish_options(args, start)
+  let (options, mount_source) = parse_publish_options(args, start)
   let expected = if apply { Some(@model.Digest::parse(args[9])) } else { None }
   let pins = parse_attachment_pins(args[8])
   let index_pin = @model.Digest::parse(args[3])
@@ -26,6 +26,10 @@ async fn registry_bundle_publish_command(
     args[7],
     pins,
   )
+  let bundle = match mount_source {
+    Some(source) => bundle.with_mount_source(source)
+    None => bundle
+  }
   match expected {
     None =>
       @stdio.stdout.write(@registry.bundle_publication_json(bundle) + "\n")

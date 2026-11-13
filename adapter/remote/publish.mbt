@@ -26,6 +26,8 @@ pub(all) struct PublicationReceipt {
   review_pin : @model.Digest
   requests : Int32
   uploaded_blobs : Int32
+  mounted_blobs : Int32
+  mounted_bytes : Int64
   reused_blobs : Int32
   uploaded_manifests : Int32
   reused_manifests : Int32
@@ -162,29 +164,64 @@ async fn PublishTransport::put(
 }
 
 ///|
+priv enum BlobPublication {
+  Existing
+  Mounted
+  Uploaded
+}
+
+///|
 async fn PublishTransport::upload_blob(
   self : PublishTransport,
   object : @registry.PublishObject,
-) -> Bool {
+) -> BlobPublication {
   let origin = self.plan.origin()
   let repository = self.plan.repository()
   let present = origin.request_url(
     @registry.blob_path(repository, object.digest),
   )
   if self.exists(present, object, false) {
-    return false
+    return Existing
   }
-  let start = origin.request_url(@registry.blob_upload_path(repository))
-  let response = self.request_head(start, @http.Post, false)
-  let finish = @registry.finalize_blob_upload(
-    origin,
-    repository,
-    response.status,
-    response.headers,
-    object.digest,
-  )
+  let finish = match self.plan.mount_source() {
+    None => {
+      let start = origin.request_url(@registry.blob_upload_path(repository))
+      let response = self.request_head(start, @http.Post, false)
+      @registry.finalize_blob_upload(
+        origin,
+        repository,
+        response.status,
+        response.headers,
+        object.digest,
+      )
+    }
+    Some(source) => {
+      let start = origin.request_url(
+        @registry.blob_mount_path(repository, source, object.digest),
+      )
+      let response = self.request_head(start, @http.Post, false)
+      match
+        @registry.finish_blob_mount(
+          origin,
+          repository,
+          response.status,
+          response.headers,
+          object.digest,
+        ) {
+        Some(session) => session
+        None => {
+          if !self.exists(present, object, false) {
+            raise @model.InvalidOci(
+              "mounted blob is absent from the destination repository",
+            )
+          }
+          return Mounted
+        }
+      }
+    }
+  }
   self.put(finish, object, false)
-  true
+  Uploaded
 }
 
 ///|
@@ -204,9 +241,16 @@ async fn PublishTransport::publish(
   // Reject an existing different tag before creating any upload sessions.
   ignore(self.exists(tag_url, root, true))
   let mut uploaded_blobs = 0
+  let mut mounted_blobs = 0
+  let mut mounted_bytes = 0L
   for object in blobs {
-    if self.upload_blob(object) {
-      uploaded_blobs += 1
+    match self.upload_blob(object) {
+      Existing => ()
+      Uploaded => uploaded_blobs += 1
+      Mounted => {
+        mounted_blobs += 1
+        mounted_bytes += object.data.length().to_int64()
+      }
     }
   }
   let mut uploaded_manifests = 0
@@ -233,7 +277,9 @@ async fn PublishTransport::publish(
     review_pin,
     requests: self.requests,
     uploaded_blobs,
-    reused_blobs: blobs.length() - uploaded_blobs,
+    mounted_blobs,
+    mounted_bytes,
+    reused_blobs: blobs.length() - uploaded_blobs - mounted_blobs,
     uploaded_manifests,
     reused_manifests: manifests.length() - 1 - uploaded_manifests,
     uploaded_bytes: self.uploaded_bytes,
@@ -351,6 +397,8 @@ pub fn publication_receipt_value(receipt : PublicationReceipt) -> Json {
     "review_pin": Json::string(receipt.review_pin.to_string()),
     "requests": Json::number(receipt.requests.to_double()),
     "uploaded_blobs": Json::number(receipt.uploaded_blobs.to_double()),
+    "mounted_blobs": Json::number(receipt.mounted_blobs.to_double()),
+    "mounted_bytes": Json::string(receipt.mounted_bytes.to_string()),
     "reused_blobs": Json::number(receipt.reused_blobs.to_double()),
     "uploaded_manifests": Json::number(receipt.uploaded_manifests.to_double()),
     "reused_manifests": Json::number(receipt.reused_manifests.to_double()),

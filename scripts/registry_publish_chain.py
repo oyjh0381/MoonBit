@@ -48,7 +48,8 @@ def build_layout(run, work):
 
 def fixture():
     state = dict(blobs={}, manifests={}, tags={}, sessions=set(), requests=[],
-                 next_session=0, failed=False, successful_blobs=0, corrupt_readback=False)
+                 next_session=0, failed=False, successful_blobs=0, corrupt_readback=False,
+                 mount_source={}, mount_attempts=[], pretend_mount=False)
 
     class Registry(BaseHTTPRequestHandler):
         protocol_version = "HTTP/1.1"
@@ -99,8 +100,19 @@ def fixture():
             self.reply(404)
 
         def do_POST(self):
-            assert self.observe_request().path == UPLOAD
+            url = self.observe_request()
+            assert url.path == UPLOAD
             assert self.headers["Content-Length"] == "0"
+            query = parse_qs(url.query)
+            if query:
+                assert query["from"] == ["team/base"] and set(query) == {"from", "mount"}
+                digest = query["mount"][0]
+                state["mount_attempts"].append(digest)
+                if digest in state["mount_source"]:
+                    if not state["pretend_mount"]:
+                        state["blobs"][digest] = state["mount_source"][digest]
+                    self.reply(201, location=PREFIX + "/blobs/" + digest)
+                    return
             state["next_session"] += 1
             session = "session-" + str(state["next_session"])
             state["sessions"].add(session)
@@ -267,6 +279,29 @@ def main():
     handler, state = fixture()
     with serve(handler) as origin:
         result = {"loopback_fixture": exercise(origin, "oracle-fixture", state)}
+    handler, state = fixture()
+    state["failed"] = True
+    with serve(handler) as origin:
+        params = (layout, index_pin, "candidate", origin, REPO, "stable")
+        flags = ("--allow-http", "--mount-from", "team/base")
+        plan = json.loads(run("registry-plan", *params, *flags))
+        digest = max(plan["blobs"], key=lambda item: int(item["size"]))["digest"]
+        body = expected[digest.removeprefix("sha256:")]
+        state["mount_source"][digest] = body
+        run("registry-publish", *params, plan["plan_pin"], "--allow-http", status=5)
+        assert not state["requests"]
+        execute = ("registry-publish", *params, plan["plan_pin"], *flags)
+        state["pretend_mount"] = True
+        run(*execute, status=4)
+        assert not state["tags"]
+        state["pretend_mount"] = False
+        state["mount_attempts"].clear()
+        receipt = json.loads(run(*execute))
+        assert receipt["mounted_blobs"] == 1 and int(receipt["mounted_bytes"]) == len(body)
+        assert receipt["uploaded_blobs"] + receipt["reused_blobs"] == 2
+        assert state["next_session"] == 2 and not state["sessions"]
+        assert state["tags"]["stable"] == root_pin
+        result["cross_repository_mount"] = receipt
     if args.zot:
         with run_zot(args.zot.resolve(strict=True), work) as origin:
             result["zot"] = exercise(origin, "oracle-zot")
