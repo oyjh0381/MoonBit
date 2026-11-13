@@ -64,11 +64,11 @@ fn read_tar_impl(
     } else {
       prefix + "/" + header_name
     }
-    let mode = read_octal(data, offset + 100, 8, "mode").to_int()
-    let uid = read_octal(data, offset + 108, 8, "uid").to_int()
-    let gid = read_octal(data, offset + 116, 8, "gid").to_int()
-    let size64 = read_octal(data, offset + 124, 12, "size")
-    let mtime = read_octal(data, offset + 136, 12, "mtime")
+    let mode = read_tar_int(data, offset + 100, 8, "mode")
+    let uid = read_tar_int(data, offset + 108, 8, "uid")
+    let gid = read_tar_int(data, offset + 116, 8, "gid")
+    let size64 = read_tar_number(data, offset + 124, 12, "size")
+    let mtime = read_tar_number(data, offset + 136, 12, "mtime")
     if size64 > data.length().to_int64() {
       raise @model.InvalidTar("tar entry size exceeds archive length")
     }
@@ -237,6 +237,44 @@ fn validate_checksum(
   if actual != expected {
     raise @model.InvalidTar("tar header checksum mismatch")
   }
+}
+
+///|
+fn read_tar_int(
+  data : Bytes,
+  offset : Int32,
+  width : Int32,
+  field : String,
+) -> Int32 raise @model.MoonOciError {
+  let value = read_tar_number(data, offset, width, field)
+  if value > 2147483647L {
+    raise @model.ResourceLimitExceeded("tar Int32 field overflow: " + field)
+  }
+  value.to_int()
+}
+
+///|
+// GNU tar uses a leading 0x80 marker for a positive base-256 value.
+fn read_tar_number(
+  data : Bytes,
+  offset : Int32,
+  width : Int32,
+  field : String,
+) -> Int64 raise @model.MoonOciError {
+  if data[offset] != b'\x80' {
+    return read_octal(data, offset, width, field)
+  }
+  let mut value = 0L
+  for i in 1..<width {
+    let digit = data[offset + i].to_int64()
+    if value > (0x7fffffffffffffffL - digit) / 256L {
+      raise @model.ResourceLimitExceeded(
+        "tar base-256 field overflow: " + field,
+      )
+    }
+    value = value * 256L + digit
+  }
+  value
 }
 
 ///|

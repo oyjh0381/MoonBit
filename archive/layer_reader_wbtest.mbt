@@ -121,3 +121,27 @@ test "layer tar rejects hidden records beyond or between end blocks" {
     assert_true(rejected)
   }
 }
+
+///|
+test "GNU base-256 numbers preserve large IDs and reject truncation" {
+  let uid = b"\x80\x00\x00\x00\x00\x20\x00\x00"
+  assert_eq(read_tar_int(uid, 0, 8, "uid"), 2097152)
+  let too_large = b"\x80\x00\x00\x00\x80\x00\x00\x00"
+  let refused = try {
+    ignore(read_tar_int(too_large, 0, 8, "uid"))
+    false
+  } catch {
+    @model.ResourceLimitExceeded(_) => true
+    _ => false
+  }
+  assert_true(refused)
+  let overflow = b"\x80\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
+  let refused = try {
+    ignore(read_tar_number(overflow, 0, 12, "size"))
+    false
+  } catch {
+    @model.ResourceLimitExceeded(_) => true
+    _ => false
+  }
+  assert_true(refused)
+}
