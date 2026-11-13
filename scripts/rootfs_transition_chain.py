@@ -75,7 +75,7 @@ def main():
     layers = [
         dict(source=str(base)),
         dict(source=str(replace), remove=["/app"], compression="gzip"),
-        dict(source=str(reset), opaque=["/"]),
+        dict(source=str(reset), opaque=["/"], metadata=dict(uid=2147483647, gid=2097152)),
     ]
     for count, expected_paths in [(2, {"app", "keep"}), (3, {"app", "boot"})]:
         target = work / f"layout-{count}"
@@ -92,6 +92,8 @@ def main():
             assert entry["kind"] == "file" and oracle["kind"] == "0"
             assert entry["content_digest"] == "sha256:" + oracle["sha256"]
             assert int(entry["bytes"]) == oracle["bytes"]
+            if count == 3:
+                assert entry["uid"] == 2147483647 and entry["gid"] == 2097152
             assert all(entry[key] == oracle[key] for key in ("layer_digest", "layer_index", "mode", "uid", "gid"))
     for label, tar_format, uid, gid in [("ustar", tarfile.USTAR_FORMAT, 0, 0),
                                        ("gnu", tarfile.GNU_FORMAT, 2097152, 2097153)]:
@@ -107,7 +109,7 @@ def main():
         assert tool["gid"] == files["bin/tool"]["gid"] == gid
     print(json.dumps(dict(layer_counts=[2, 3], independently_verified_files=6,
                           same_path_whiteout=True, whole_root_opacity=True,
-                          independent_tar_producer=True)))
+                          independent_tar_producer=True, deterministic_pax_owners=True)))
 
 
 if __name__ == "__main__":

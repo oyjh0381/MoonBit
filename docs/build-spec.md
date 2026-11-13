@@ -43,6 +43,9 @@ Whiteouts affect lower layers. Use the same path in the layer source and
 Use \`"opaque": ["/"]\` to hide the entire lower filesystem while retaining
 the files added by the current layer. The \`verify\` command checks that
 filesystem transitions can be applied as well as verifying layer digests.
+The builder preserves numeric owner IDs up to 2,147,483,647, using a PAX
+header when a value exceeds the USTAR octal field. The layer reader also
+accepts positive GNU base-256 numeric fields and conventional \`./\` paths.
 
 Metadata fields are `mode`, `uid`, `gid`, `mtime`, and `preserveMtime`. Defaults normalize ownership to `0:0`, mtime to `0`, regular files to mode `0644`, directories to `0755`, and symlinks to `0777`. Explicit `mode`, `uid`, `gid`, and `mtime` override those values. Native mode and ownership preservation are outside the v1 schema; mtime preservation is supported.
 
