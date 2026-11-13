@@ -45,7 +45,7 @@ pub fn build_image(
   let layer_descriptors : Array[@model.Descriptor] = []
   let diff_ids : Array[@model.Digest] = []
   let history : Array[@model.History] = []
-  let mut rootfs : Array[@model.RootfsEntry] = []
+  let rootfs = RootfsNode::empty()
   for layer_index, layer in request.layers {
     let transitions = declared_rootfs_transitions(layer)
     let tar_entries = layer.entries.copy()
@@ -66,7 +66,7 @@ pub fn build_image(
       comment: None,
       empty_layer: false,
     })
-    rootfs = apply_rootfs_transitions(rootfs, transitions, layer_index)
+    rootfs.apply(transitions, layer_index)
   }
   let config : @model.ImageConfig = {
     created: request.created,
@@ -109,7 +109,7 @@ pub fn build_image(
       blobs_written: layout.blob_count(),
       bytes_written: layout.blob_bytes(),
     },
-    rootfs,
+    rootfs: rootfs.snapshot(),
   }
 }
 

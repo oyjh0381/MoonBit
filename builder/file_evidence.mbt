@@ -18,15 +18,14 @@ pub fn inventory_from_manifest(
   descriptor : @model.Descriptor,
 ) -> Array[FileEvidence] raise @model.MoonOciError {
   let manifest = require_root_manifest(source, descriptor)
-  let mut rootfs : Array[@model.RootfsEntry] = []
+  let rootfs = RootfsNode::empty()
   let mut evidence : Map[String, FileEvidence] = Map([])
   for layer_index, layer in manifest.layers {
     let interpretation = interpret_layer_blob(
       layer.media_type,
       source.require_blob(layer),
     )
-    rootfs = apply_rootfs_transitions(
-      rootfs,
+    rootfs.apply(
       archived_rootfs_transitions(interpretation.entries),
       layer_index,
     )
@@ -35,7 +34,7 @@ pub fn inventory_from_manifest(
       entries[entry.path] = entry
     }
     let next : Map[String, FileEvidence] = Map([])
-    for final_entry in rootfs {
+    for final_entry in rootfs.snapshot() {
       if final_entry.layer_index == layer_index {
         let declared = match entries.get(final_entry.path) {
           Some(entry) => entry
@@ -65,5 +64,5 @@ pub fn inventory_from_manifest(
     }
     evidence = next
   }
-  rootfs.map(entry => evidence[entry.path])
+  rootfs.snapshot().map(entry => evidence[entry.path])
 }

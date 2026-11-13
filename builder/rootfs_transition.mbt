@@ -96,11 +96,11 @@ fn validate_whiteout_marker(
 }
 
 ///|
-fn apply_rootfs_transitions(
-  current : Array[@model.RootfsEntry],
+fn RootfsNode::apply(
+  root : RootfsNode,
   transitions : Array[RootfsTransition],
   layer_index : Int32,
-) -> Array[@model.RootfsEntry] raise @model.MoonOciError {
+) -> Unit raise @model.MoonOciError {
   let opaque_paths : Array[String] = []
   let removed_paths : Array[String] = []
   let additions : Array[@archive.TarEntry] = []
@@ -114,10 +114,6 @@ fn apply_rootfs_transitions(
   opaque_paths.sort_by((a, b) => @pathing.compare_utf8(a, b))
   removed_paths.sort_by((a, b) => @pathing.compare_utf8(a, b))
   additions.sort_by((a, b) => @pathing.compare_utf8(a.path, b.path))
-  let root = RootfsNode::empty()
-  for entry in current {
-    root.ensure_path(entry.path).entry = Some(entry)
-  }
   for path in opaque_paths {
     if path.is_empty() {
       root.children.clear()
@@ -153,6 +149,10 @@ fn apply_rootfs_transitions(
       layer_index,
     })
   }
+}
+
+///|
+fn RootfsNode::snapshot(root : RootfsNode) -> Array[@model.RootfsEntry] {
   let result : Array[@model.RootfsEntry] = []
   let pending = [root]
   while pending.pop() is Some(node) {

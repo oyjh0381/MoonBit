@@ -305,15 +305,14 @@ pub fn rootfs_from_manifest(
   descriptor : @model.Descriptor,
 ) -> Array[@model.RootfsEntry] raise @model.MoonOciError {
   let manifest = require_root_manifest(layout, descriptor)
-  let mut rootfs : Array[@model.RootfsEntry] = []
+  let rootfs = RootfsNode::empty()
   for layer_index, descriptor in manifest.layers {
     let interpretation = interpret_layer_blob(
       descriptor.media_type,
       layout.require_blob(descriptor),
     )
     let transitions = archived_rootfs_transitions(interpretation.entries)
-    rootfs = apply_rootfs_transitions(rootfs, transitions, layer_index)
+    rootfs.apply(transitions, layer_index)
   }
-  rootfs.sort_by((a, b) => @pathing.compare_utf8(a.path, b.path))
-  rootfs
+  rootfs.snapshot()
 }
