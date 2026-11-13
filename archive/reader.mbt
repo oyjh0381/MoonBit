@@ -53,7 +53,9 @@ fn read_tar_impl(
       offset += tar_block_size
       continue
     }
-    zero_blocks = 0
+    if zero_blocks != 0 {
+      raise @model.InvalidTar("tar has an isolated zero end block")
+    }
     validate_checksum(data, offset)
     let header_name = read_text(data, offset, 100, "name")
     let prefix = read_text(data, offset + 345, 155, "prefix")
@@ -195,6 +197,11 @@ fn read_tar_impl(
   }
   if zero_blocks < 2 {
     raise @model.InvalidTar("tar is missing two zero end blocks")
+  }
+  for index in offset..<data.length() {
+    if data[index] != b'\x00' {
+      raise @model.InvalidTar("tar has nonzero data after the end marker")
+    }
   }
   if pending_path is Some(_) || pending_link is Some(_) {
     raise @model.InvalidTar("dangling tar extension record")

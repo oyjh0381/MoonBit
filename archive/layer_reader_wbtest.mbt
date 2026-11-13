@@ -103,3 +103,21 @@ test "tar octal fields reject digits after a field terminator" {
     assert_true(rejected)
   }
 }
+
+///|
+test "layer tar rejects hidden records beyond or between end blocks" {
+  let tar = layer_headers([("visible", b'0', "")])
+  let hidden = layer_headers([("hidden", b'0', "")])
+  let zero = layer_headers([])
+  assert_eq(read_layer_tar(tar + zero).length(), 1)
+  for wire in [tar + hidden, zero[:512].to_owned() + hidden] {
+    let rejected = try {
+      ignore(read_layer_tar(wire))
+      false
+    } catch {
+      @model.InvalidTar(_) => true
+      _ => false
+    }
+    assert_true(rejected)
+  }
+}
