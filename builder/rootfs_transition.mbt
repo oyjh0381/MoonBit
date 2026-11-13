@@ -7,13 +7,23 @@ priv enum RootfsTransition {
 }
 
 ///|
+fn has_whiteout_segment(path : String) -> Bool {
+  for segment in path.split("/") {
+    if segment.has_prefix(".wh.") {
+      return true
+    }
+  }
+  false
+}
+
+///|
 fn declared_rootfs_transitions(
   layer : LayerBuildRequest,
 ) -> Array[RootfsTransition] raise @model.MoonOciError {
   let transitions : Array[RootfsTransition] = []
   for path in layer.remove {
     let normalized = @pathing.normalize_spec_path(path)
-    if @pathing.is_whiteout_path(normalized) {
+    if has_whiteout_segment(normalized) {
       raise @model.InvalidArgument(
         "cannot remove a reserved whiteout path: " + normalized,
       )
@@ -26,10 +36,15 @@ fn declared_rootfs_transitions(
     } else {
       @pathing.normalize_spec_path(path)
     }
+    if has_whiteout_segment(normalized) {
+      raise @model.InvalidArgument(
+        "cannot mark a reserved whiteout path opaque: " + normalized,
+      )
+    }
     transitions.push(Opaque(normalized))
   }
   for entry in layer.entries {
-    if @pathing.is_whiteout_path(entry.path) {
+    if has_whiteout_segment(entry.path) {
       raise @model.InvalidArgument(
         "layer additions must not use reserved Whiteout paths: " + entry.path,
       )
@@ -47,6 +62,13 @@ fn archived_rootfs_transitions(
   for entry in entries {
     let segments = entry.path.split("/").map(part => part.to_owned()).collect()
     let basename = segments[segments.length() - 1]
+    for i in 0..<(segments.length() - 1) {
+      if segments[i].has_prefix(".wh.") {
+        raise @model.InvalidOci(
+          "layer path descends from a reserved whiteout name: " + entry.path,
+        )
+      }
+    }
     if basename == ".wh..wh..opq" {
       validate_whiteout_marker(entry)
       let directory = if segments.length() == 1 {

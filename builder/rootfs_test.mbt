@@ -114,3 +114,23 @@ test "a valid layer digest cannot mask an invalid parent entry" {
   assert_eq(report.layers_checked, 1)
   assert_eq(report.manifests_checked, 0)
 }
+
+///|
+test "whiteout names cannot become implicit filesystem directories" {
+  let entries = [@archive.TarEntry::file(".wh.old/child", b"entry")]
+  assert_false(
+    @builder.verify_memory(layout_from_layer_entries(entries)).is_valid(),
+  )
+  let refused = try {
+    ignore(
+      @builder.build_single_layer(
+        @builder.default_single_layer_request(entries),
+      ),
+    )
+    false
+  } catch {
+    @model.InvalidArgument(_) => true
+    _ => false
+  }
+  assert_true(refused)
+}
