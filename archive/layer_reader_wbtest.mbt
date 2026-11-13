@@ -60,3 +60,31 @@ test "OCI directory suffix normalization cannot admit duplicate or unsafe entry 
     assert_true(rejected)
   }
 }
+
+///|
+test "OCI reader accepts tar -C root . paths while keeping aliases unique" {
+  let entries = read_layer_tar(
+    layer_headers([
+      ("./", b'5', ""),
+      ("./bin/", b'5', ""),
+      ("./bin/tool", b'0', ""),
+    ]),
+  )
+  assert_eq(entries.map(entry => entry.path), ["bin", "bin/tool"])
+  for
+    names in [
+      ["./", "."],
+      ["./bin", "bin"],
+      ["./../bin", "file"],
+      ["././bin", "file"],
+    ] {
+    let kind = if names[0] == "./" { b'5' } else { b'0' }
+    let rejected = try {
+      ignore(read_layer_tar(layer_headers(names.map(name => (name, kind, "")))))
+      false
+    } catch {
+      _ => true
+    }
+    assert_true(rejected)
+  }
+}

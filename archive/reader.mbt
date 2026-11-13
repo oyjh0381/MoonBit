@@ -15,7 +15,8 @@ pub fn read_tar(
 
 ///|
 /// Read an OCI filesystem changeset for in-memory interpretation. Directory
-/// names may have a trailing slash. Symlink targets are opaque container
+/// names may have a trailing slash and paths may start with ./ . A root
+/// directory header is consumed without emitting a named entry. Symlink targets are opaque container
 /// metadata and must never be resolved on the host filesystem.
 pub fn read_layer_tar(
   data : Bytes,
@@ -43,6 +44,7 @@ fn read_tar_impl(
   let entries : Array[TarEntry] = []
   let mut offset = 0
   let mut zero_blocks = 0
+  let mut root_header_seen = false
   let mut pending_path : String? = None
   let mut pending_link : String? = None
   while offset + tar_block_size <= data.length() && zero_blocks < 2 {
@@ -99,6 +101,26 @@ fn read_tar_impl(
       )
     } else {
       let raw_path = pending_path.unwrap_or(header_path)
+      if layer && typeflag == b'5' && (raw_path == "." || raw_path == "./") {
+        if root_header_seen ||
+          size != 0 ||
+          pending_link.unwrap_or(read_text(data, offset + 157, 100, "linkname")) !=
+          "" {
+          raise @model.InvalidTar(
+            "invalid or duplicate OCI root directory header",
+          )
+        }
+        root_header_seen = true
+        pending_path = None
+        pending_link = None
+        offset = next
+        continue
+      }
+      let raw_path = if layer && raw_path.has_prefix("./") {
+        raw_path[2:].to_owned()
+      } else {
+        raw_path
+      }
       let raw_path = if layer && typeflag == b'5' && raw_path.has_suffix("/") {
         raw_path[0:raw_path.length() - 1].to_owned()
       } else {
