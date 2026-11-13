@@ -100,6 +100,7 @@ fn RootfsNode::apply(
   root : RootfsNode,
   transitions : Array[RootfsTransition],
   layer_index : Int32,
+  evidence_layer? : @model.Digest,
 ) -> Unit raise @model.MoonOciError {
   let opaque_paths : Array[String] = []
   let removed_paths : Array[String] = []
@@ -140,29 +141,51 @@ fn RootfsNode::apply(
       Directory => "directory"
       Symlink => "symlink"
     }
-    node.entry = Some({
+    let observed : @model.RootfsEntry = {
       path: entry.path,
       kind,
       mode: entry.mode,
       size: entry.size(),
       link_target: entry.link_target,
       layer_index,
+    }
+    node.entry = Some(observed)
+    node.evidence = evidence_layer.map(layer_digest => {
+      entry: observed,
+      layer_digest,
+      content_digest: if entry.kind == Regular {
+        Some(@digest.sha256(entry.data))
+      } else {
+        None
+      },
+      uid: entry.uid,
+      gid: entry.gid,
+      mtime: entry.mtime,
     })
   }
 }
 
 ///|
-fn RootfsNode::snapshot(root : RootfsNode) -> Array[@model.RootfsEntry] {
-  let result : Array[@model.RootfsEntry] = []
+fn[T] RootfsNode::collect(
+  root : RootfsNode,
+  value : (RootfsNode) -> T?,
+) -> Array[T] {
+  let result : Array[T] = []
   let pending = [root]
   while pending.pop() is Some(node) {
-    if node.entry is Some(entry) {
+    if value(node) is Some(entry) {
       result.push(entry)
     }
     for _, child in node.children {
       pending.push(child)
     }
   }
+  result
+}
+
+///|
+fn RootfsNode::snapshot(root : RootfsNode) -> Array[@model.RootfsEntry] {
+  let result = root.collect(node => node.entry)
   result.sort_by((a, b) => @pathing.compare_utf8(a.path, b.path))
   result
 }
@@ -170,12 +193,13 @@ fn RootfsNode::snapshot(root : RootfsNode) -> Array[@model.RootfsEntry] {
 ///|
 priv struct RootfsNode {
   mut entry : @model.RootfsEntry?
+  mut evidence : FileEvidence?
   children : Map[String, RootfsNode]
 }
 
 ///|
 fn RootfsNode::empty() -> RootfsNode {
-  { entry: None, children: Map([]), }
+  { entry: None, evidence: None, children: Map([]), }
 }
 
 ///|

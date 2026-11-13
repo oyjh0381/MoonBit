@@ -19,7 +19,6 @@ pub fn inventory_from_manifest(
 ) -> Array[FileEvidence] raise @model.MoonOciError {
   let manifest = require_root_manifest(source, descriptor)
   let rootfs = RootfsNode::empty()
-  let mut evidence : Map[String, FileEvidence] = Map([])
   for layer_index, layer in manifest.layers {
     let interpretation = interpret_layer_blob(
       layer.media_type,
@@ -28,41 +27,10 @@ pub fn inventory_from_manifest(
     rootfs.apply(
       archived_rootfs_transitions(interpretation.entries),
       layer_index,
+      evidence_layer=layer.digest,
     )
-    let entries : Map[String, @archive.TarEntry] = Map([])
-    for entry in interpretation.entries {
-      entries[entry.path] = entry
-    }
-    let next : Map[String, FileEvidence] = Map([])
-    for final_entry in rootfs.snapshot() {
-      if final_entry.layer_index == layer_index {
-        let declared = match entries.get(final_entry.path) {
-          Some(entry) => entry
-          None =>
-            raise @model.InvalidOci(
-              "file provenance missing from contributing layer",
-            )
-        }
-        next[final_entry.path] = {
-          entry: final_entry,
-          layer_digest: layer.digest,
-          content_digest: if declared.kind == @archive.Regular {
-            Some(@digest.sha256(declared.data))
-          } else {
-            None
-          },
-          uid: declared.uid,
-          gid: declared.gid,
-          mtime: declared.mtime,
-        }
-      } else {
-        match evidence.get(final_entry.path) {
-          Some(prior) => next[final_entry.path] = prior
-          None => raise @model.InvalidOci("inherited file provenance missing")
-        }
-      }
-    }
-    evidence = next
   }
-  rootfs.snapshot().map(entry => evidence[entry.path])
+  let evidence = rootfs.collect(node => node.evidence)
+  evidence.sort_by((a, b) => @pathing.compare_utf8(a.entry.path, b.entry.path))
+  evidence
 }
