@@ -98,7 +98,11 @@ fn parse_layer(value : Json) -> LayerSpec raise @model.MoonOciError {
     @pathing.normalize_spec_path(path)
   })
   let opaque_dirs = optional_string_array(object, "opaque").map(path => {
-    @pathing.normalize_spec_path(path)
+    if path == "/" {
+      "/"
+    } else {
+      @pathing.normalize_spec_path(path)
+    }
   })
   let exclude = optional_string_array(object, "exclude")
   for pattern in exclude {
