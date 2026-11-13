@@ -81,6 +81,7 @@ test "archived whiteout does not hide its same-layer replacement" {
   assert_eq(entries.length(), 1)
   assert_eq(entries[0].path, "same")
   assert_eq(entries[0].size, 5L)
+  assert_true(@builder.verify_memory(layout).is_valid())
 }
 
 ///|
@@ -88,9 +89,28 @@ test "Root Filesystem rejects non-empty Whiteout markers" {
   let layout = layout_from_layer_entries([
     @archive.TarEntry::file(".wh.removed", b"not-empty"),
   ])
-  let mut raised = false
-  ignore(@builder.rootfs_from_layout(layout)) catch {
-    _ => raised = true
+  let report = @builder.verify_memory(layout)
+  assert_false(report.is_valid())
+  assert_eq(report.findings.length(), 1)
+  assert_true(report.findings[0].object_path.unwrap().has_suffix(".layers[0]"))
+  let raised = try {
+    ignore(@builder.rootfs_from_layout(layout))
+    false
+  } catch {
+    @model.InvalidOci(_) => true
+    _ => false
   }
   assert_true(raised)
+}
+
+///|
+test "a valid layer digest cannot mask an invalid parent entry" {
+  let layout = layout_from_layer_entries([
+    @archive.TarEntry::file("parent", b"file"),
+    @archive.TarEntry::file("parent/child", b"child"),
+  ])
+  let report = @builder.verify_memory(layout)
+  assert_false(report.is_valid())
+  assert_eq(report.layers_checked, 1)
+  assert_eq(report.manifests_checked, 0)
 }

@@ -145,6 +145,7 @@ fn verify_manifest_branch(
       }
     None => ()
   }
+  let mut rootfs = Some(RootfsNode::empty())
   for layer_index, layer in manifest.layers {
     let layer_path = manifest_path + ".layers[" + layer_index.to_string() + "]"
     require_media_type(
@@ -155,6 +156,7 @@ fn verify_manifest_branch(
       error => {
         push_verification_error(findings, error, layer_path + ".mediaType")
         branch_valid = false
+        rootfs = None
         continue
       }
     }
@@ -166,6 +168,7 @@ fn verify_manifest_branch(
       }
       None => {
         branch_valid = false
+        rootfs = None
         continue
       }
     }
@@ -173,7 +176,20 @@ fn verify_manifest_branch(
       error => {
         push_verification_error(findings, error, layer_path)
         branch_valid = false
+        rootfs = None
         continue
+      }
+    }
+    if rootfs is Some(tree) {
+      tree.apply(
+        archived_rootfs_transitions(interpretation.entries),
+        layer_index,
+      ) catch {
+        error => {
+          push_verification_error(findings, error, layer_path)
+          branch_valid = false
+          rootfs = None
+        }
       }
     }
     let expected_diff_id = match config {
