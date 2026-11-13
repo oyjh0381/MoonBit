@@ -12,7 +12,7 @@ from independent_layout import observe
 from registry_publish_chain import ROOT
 
 
-def external_tar_layout(source, target):
+def external_tar_layout(source, target, tar_format):
     """Create a one-layer image whose tar was produced by CPython."""
     (target / "blobs/sha256").mkdir(parents=True)
     (target / "oci-layout").write_bytes((source / "oci-layout").read_bytes())
@@ -29,7 +29,7 @@ def external_tar_layout(source, target):
     manifest = read(index["manifests"][0])
     config = read(manifest["config"])
     stream = io.BytesIO()
-    with tarfile.open(fileobj=stream, mode="w", format=tarfile.USTAR_FORMAT) as tar:
+    with tarfile.open(fileobj=stream, mode="w", format=tar_format) as tar:
         for name in (".", "./bin"):
             directory = tarfile.TarInfo(name)
             directory.type = tarfile.DIRTYPE
@@ -39,6 +39,9 @@ def external_tar_layout(source, target):
         member = tarfile.TarInfo("./bin/tool")
         member.size = len(payload)
         member.mode = 0o755
+        if tar_format == tarfile.GNU_FORMAT:
+            member.uid = 2097152
+            member.gid = 2097153
         tar.addfile(member, io.BytesIO(payload))
     original = manifest["layers"][0]
     manifest["layers"] = [write(original, stream.getvalue())]
@@ -90,14 +93,19 @@ def main():
             assert entry["content_digest"] == "sha256:" + oracle["sha256"]
             assert int(entry["bytes"]) == oracle["bytes"]
             assert all(entry[key] == oracle[key] for key in ("layer_digest", "layer_index", "mode", "uid", "gid"))
-    external = work / "external"
-    external_tar_layout(work / "layout-2", external)
-    assert run("verify", external).startswith("valid: manifests=1")
-    inventory = json.loads(run("files", external, "linux", "amd64"))["entries"]
-    files = observe(external)["images"][0]["files"]
-    assert {item["path"] for item in inventory} == set(files) == {"bin", "bin/tool"}
-    assert inventory[1]["content_digest"] == "sha256:" + files["bin/tool"]["sha256"]
-    print(json.dumps(dict(layer_counts=[2, 3], independently_verified_files=5,
+    for label, tar_format, uid, gid in [("ustar", tarfile.USTAR_FORMAT, 0, 0),
+                                       ("gnu", tarfile.GNU_FORMAT, 2097152, 2097153)]:
+        external = work / label
+        external_tar_layout(work / "layout-2", external, tar_format)
+        assert run("verify", external).startswith("valid: manifests=1")
+        inventory = json.loads(run("files", external, "linux", "amd64"))["entries"]
+        files = observe(external)["images"][0]["files"]
+        assert {item["path"] for item in inventory} == set(files) == {"bin", "bin/tool"}
+        tool = next(entry for entry in inventory if entry["path"] == "bin/tool")
+        assert tool["content_digest"] == "sha256:" + files["bin/tool"]["sha256"]
+        assert tool["uid"] == files["bin/tool"]["uid"] == uid
+        assert tool["gid"] == files["bin/tool"]["gid"] == gid
+    print(json.dumps(dict(layer_counts=[2, 3], independently_verified_files=6,
                           same_path_whiteout=True, whole_root_opacity=True,
                           independent_tar_producer=True)))
 
