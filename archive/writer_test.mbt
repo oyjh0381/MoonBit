@@ -68,3 +68,21 @@ fn bytes_contains(haystack : Bytes, needle : Bytes) -> Bool {
   }
   false
 }
+
+///|
+test "large deterministic owners round-trip through PAX without affecting the next entry" {
+  let large = {
+    ..@archive.TarEntry::file("first", b"large"),
+    uid: 2147483647,
+    gid: 2097152,
+  }
+  let small = {
+    ..@archive.TarEntry::file("second", b"small"),
+    uid: 12,
+    gid: 13,
+  }
+  let wire = @archive.write_tar([small, large])
+  assert_eq(wire, @archive.write_tar([large, small]))
+  assert_eq(@archive.read_layer_tar(wire), [large, small])
+  assert_eq(@archive.read_tar(wire), [large, small])
+}

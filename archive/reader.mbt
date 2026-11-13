@@ -47,6 +47,8 @@ fn read_tar_impl(
   let mut root_header_seen = false
   let mut pending_path : String? = None
   let mut pending_link : String? = None
+  let mut pending_uid : Int32? = None
+  let mut pending_gid : Int32? = None
   while offset + tar_block_size <= data.length() && zero_blocks < 2 {
     if block_is_zero(data, offset) {
       zero_blocks += 1
@@ -92,6 +94,10 @@ fn read_tar_impl(
           pending_path = Some(record.value)
         } else if record.key == "linkpath" {
           pending_link = Some(record.value)
+        } else if record.key == "uid" {
+          pending_uid = Some(parse_pax_owner(record.value))
+        } else if record.key == "gid" {
+          pending_gid = Some(parse_pax_owner(record.value))
         }
       }
     } else if typeflag == b'L' {
@@ -116,6 +122,8 @@ fn read_tar_impl(
         root_header_seen = true
         pending_path = None
         pending_link = None
+        pending_uid = None
+        pending_gid = None
         offset = next
         continue
       }
@@ -179,8 +187,8 @@ fn read_tar_impl(
         path,
         kind,
         mode,
-        uid,
-        gid,
+        uid: pending_uid.unwrap_or(uid),
+        gid: pending_gid.unwrap_or(gid),
         mtime,
         data: payload,
         link_target,
@@ -192,6 +200,8 @@ fn read_tar_impl(
       }
       pending_path = None
       pending_link = None
+      pending_uid = None
+      pending_gid = None
     }
     offset = next
   }
@@ -203,7 +213,10 @@ fn read_tar_impl(
       raise @model.InvalidTar("tar has nonzero data after the end marker")
     }
   }
-  if pending_path is Some(_) || pending_link is Some(_) {
+  if pending_path is Some(_) ||
+    pending_link is Some(_) ||
+    pending_uid is Some(_) ||
+    pending_gid is Some(_) {
     raise @model.InvalidTar("dangling tar extension record")
   }
   validate_unique_paths(entries)
@@ -237,6 +250,25 @@ fn validate_checksum(
   if actual != expected {
     raise @model.InvalidTar("tar header checksum mismatch")
   }
+}
+
+///|
+fn parse_pax_owner(text : String) -> Int32 raise @model.MoonOciError {
+  if text.is_empty() {
+    raise @model.InvalidTar("PAX owner ID is empty")
+  }
+  let mut value = 0
+  for ch in text {
+    if ch < '0' || ch > '9' {
+      raise @model.InvalidTar("PAX owner ID must be unsigned decimal")
+    }
+    let digit = ch.to_int() - '0'.to_int()
+    if value > (2147483647 - digit) / 10 {
+      raise @model.ResourceLimitExceeded("PAX owner ID exceeds Int32")
+    }
+    value = value * 10 + digit
+  }
+  value
 }
 
 ///|

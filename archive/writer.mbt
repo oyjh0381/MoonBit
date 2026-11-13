@@ -72,6 +72,8 @@ fn write_entry(
   if link_bytes.length() > 100 {
     pax_records.push(pax_record("linkpath", link))
   }
+  let uid = pax_owner_field("uid", entry.uid, pax_records)
+  let gid = pax_owner_field("gid", entry.gid, pax_records)
   if pax_records.length() > 0 {
     let pax_data = @utf8.encode(pax_records.join(""))
     let pax_header = make_header(
@@ -102,8 +104,8 @@ fn write_entry(
   let header = make_header(
     header_path,
     entry.mode,
-    entry.uid,
-    entry.gid,
+    uid,
+    gid,
     entry.size(),
     entry.mtime,
     typeflag,
@@ -114,6 +116,20 @@ fn write_entry(
     append_bytes(output, entry.data)
     append_padding(output, entry.data.length())
   }
+}
+
+///|
+fn pax_owner_field(
+  key : String,
+  value : Int32,
+  records : Array[String],
+) -> Int32 {
+  // The USTAR field holds seven octal digits plus its terminator.
+  if value <= 0o7777777 {
+    return value
+  }
+  records.push(pax_record(key, value.to_string()))
+  0
 }
 
 ///|
