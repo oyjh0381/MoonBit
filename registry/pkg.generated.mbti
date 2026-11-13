@@ -16,6 +16,8 @@ pub fn assemble_referrer_bundle(@layout.MemoryLayout, @model.Digest, @model.Dige
 
 pub fn bearer_authorization(String) -> String raise @model.MoonOciError
 
+pub fn blob_mount_path(String, String, @model.Digest) -> String raise @model.MoonOciError
+
 pub fn blob_path(String, @model.Digest) -> String raise @model.MoonOciError
 
 pub fn blob_upload_path(String) -> String raise @model.MoonOciError
@@ -39,6 +41,8 @@ pub fn decode_referrer_lock(Bytes, @model.Digest) -> ReferrerLock raise @model.M
 pub fn encode_query_value(String) -> String
 
 pub fn finalize_blob_upload(RegistryOrigin, String, Int32, Array[@model.KeyValue], @model.Digest) -> RegistryUrl raise @model.MoonOciError
+
+pub fn finish_blob_mount(RegistryOrigin, String, Int32, Array[@model.KeyValue], @model.Digest) -> RegistryUrl? raise @model.MoonOciError
 
 pub fn manifest_headers() -> Array[@model.KeyValue]
 

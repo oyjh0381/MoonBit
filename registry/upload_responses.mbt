@@ -59,3 +59,34 @@ pub fn check_publication_written(
   }
   check_reported_digest(headers, expected)
 }
+
+///|
+/// Resolve a mount result. A 202 carries the already-created upload session.
+/// A 201 still requires a caller check at the canonical destination blob path.
+pub fn finish_blob_mount(
+  origin : RegistryOrigin,
+  repository : String,
+  status : Int32,
+  headers : Array[@model.KeyValue],
+  digest : @model.Digest,
+) -> RegistryUrl? raise @model.MoonOciError {
+  match status {
+    202 =>
+      Some(finalize_blob_upload(origin, repository, status, headers, digest))
+    201 => {
+      guard single_header(headers, "location") is Some(location) &&
+        !location.is_empty() else {
+        raise @model.InvalidOci("registry blob mount lacks Location")
+      }
+      if single_header(headers, "docker-content-digest") is Some(value) &&
+        @model.Digest::parse(value) != digest {
+        raise @model.DigestMismatch("registry mounted a different blob digest")
+      }
+      None
+    }
+    _ =>
+      raise @model.IoFailure(
+        "registry blob mount returned HTTP " + status.to_string(),
+      )
+  }
+}

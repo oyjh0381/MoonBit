@@ -87,12 +87,7 @@ pub fn PublishPlan::with_mount_source(
   self : PublishPlan,
   source : String,
 ) -> PublishPlan raise @model.MoonOciError {
-  validate_repository(source)
-  if source == self.repository {
-    raise @model.InvalidArgument(
-      "blob mount source must differ from the destination repository",
-    )
-  }
+  validate_mount_source(self.repository, source)
   { ..self, mount_source: Some(source), }
 }
 

@@ -8,6 +8,36 @@ pub fn blob_upload_path(
 }
 
 ///|
+fn validate_mount_source(
+  repository : String,
+  source : String,
+) -> Unit raise @model.MoonOciError {
+  validate_repository(source)
+  if source == repository {
+    raise @model.InvalidArgument(
+      "blob mount source must differ from the destination repository",
+    )
+  }
+}
+
+///|
+/// Request a mount from another repository on the destination Registry.
+pub fn blob_mount_path(
+  repository : String,
+  source : String,
+  digest : @model.Digest,
+) -> String raise @model.MoonOciError {
+  let endpoint = blob_upload_path(repository)
+  validate_mount_source(repository, source)
+  ignore(@model.Digest::parse(digest.to_string()))
+  endpoint +
+  "?mount=" +
+  encode_query_value(digest.to_string()) +
+  "&from=" +
+  encode_query_value(source)
+}
+
+///|
 fn valid_upload_id(id : StringView) -> Bool {
   if id.is_empty() || id == "." || id == ".." || id.length() > 255 {
     return false
