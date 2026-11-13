@@ -66,6 +66,15 @@ def main():
         receipt = json.loads(run("registry-promote-bundle", *target, review["promotionPin"], "--allow-http"))
         assert receipt["publication"]["root"] == root and receipt["publication"]["tag_written"]
         assert receipt["bundle"]["verifiedAttachments"] == 1
+        mirror = REPO + "-mirror"
+        mirror_target = (baseline, candidate, policy, "candidate", origin, mirror, "reviewed", evidence)
+        mount = ("--allow-http", "--mount-from", REPO)
+        mirror_review = json.loads(run("registry-promote-bundle-plan", *mirror_target, *mount))
+        mirror_receipt = json.loads(run("registry-promote-bundle", *mirror_target,
+                                        mirror_review["promotionPin"], *mount))
+        mirrored = mirror_receipt["publication"]
+        assert mirrored["uploaded_blobs"] == 0 and mirrored["mounted_blobs"] == 5
+        assert int(mirrored["mounted_bytes"]) > 0 and mirrored["tag_written"]
         exact = json.loads(run("registry-bundle", origin, REPO, "reviewed", root, root,
                                work / "exact-referrers", "--allow-http",
                                *lock_args, "--exact-referrers"))
@@ -113,6 +122,10 @@ def main():
         all_referrers = json.loads(run("registry-bundle", *source, work / "all-referrers", "--allow-http"))
         assert admitted["attachment_selection"] == dict(advertised=2, selected=1, exact_listing=False)
         assert admitted["bundle"]["referrers"] == [evidence]
+        mirror_source = (origin, mirror, "reviewed", root, root)
+        mirror_output = work / "mirror"
+        run("registry-admit", *mirror_source, mirror_output, *requirements,
+            "--statement-predicate", PREDICATE, "--exact-referrers")
         assert set(all_referrers["bundle"]["referrers"]) == {evidence, extra}
         avoided_bytes = (int(all_referrers["accepted_network_bytes"])
                          - int(admitted["accepted_network_bytes"]))
@@ -123,9 +136,10 @@ def main():
 
     expected = read_blobs(candidate)
     recovered = read_blobs(reconstructed)
-    assert recovered == expected
+    assert recovered == expected == read_blobs(mirror_output)
     assert all(pin(value) == "sha256:" + name for name, value in recovered.items())
     print(json.dumps(dict(root=root, statement_manifest=evidence, restored_objects=len(recovered),
+                          mounted_blobs=mirrored["mounted_blobs"], mounted_bytes=mirrored["mounted_bytes"],
                           persistent_restart=True, predicate_mismatch_refused=True,
                           admitted_bytes_identical=True, exact_listing_refused_extra=True,
                           missing_pin_refused=True, avoided_network_bytes=avoided_bytes,

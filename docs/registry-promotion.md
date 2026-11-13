@@ -80,3 +80,17 @@ The admission command rejected an incorrect predicate type without writing
 the destination. With the correct type and manifest pin, it restored nine
 objects. Each object matched the original bytes and its SHA-256 path.
 The test uses loopback and checks the Statement's subject binding.
+
+## Reuse blobs from another repository
+
+Pass `--mount-from SOURCE_REPOSITORY` when generating and applying a
+publication or promotion plan, with or without attachments. The plan pin
+binds the named source to the same Registry as the destination. A successful
+mount is checked with a destination HEAD for exact digest and size. If the
+Registry responds with an upload session, the client completes that session
+with the local verified blob. The receipt separates mounted, uploaded and
+already-present blobs. The worst-case body budget still covers a full upload.
+
+The ArtifactDock consumer promotes the same release into two repositories,
+mounts five blobs totaling 2,784 bytes, then restarts the server and verifies
+the same nine object bytes from both repositories.
