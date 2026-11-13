@@ -11,39 +11,28 @@ fn declared_rootfs_transitions(
   layer : LayerBuildRequest,
 ) -> Array[RootfsTransition] raise @model.MoonOciError {
   let transitions : Array[RootfsTransition] = []
-  let removed_paths : Array[String] = []
-  let opaque_paths : Array[String] = []
   for path in layer.remove {
     let normalized = @pathing.normalize_spec_path(path)
-    removed_paths.push(normalized)
+    if @pathing.is_whiteout_path(normalized) {
+      raise @model.InvalidArgument(
+        "cannot remove a reserved whiteout path: " + normalized,
+      )
+    }
     transitions.push(Remove(normalized))
   }
   for path in layer.opaque_dirs {
-    let normalized = @pathing.normalize_spec_path(path)
-    opaque_paths.push(normalized)
-    transitions.push(Opaque(normalized))
-  }
-  for removed in removed_paths {
-    for opaque_path in opaque_paths {
-      if removed == opaque_path {
-        raise @model.InvalidArgument(
-          "layer cannot remove and mark the same path opaque: " + removed,
-        )
-      }
+    let normalized = if path == "/" {
+      ""
+    } else {
+      @pathing.normalize_spec_path(path)
     }
+    transitions.push(Opaque(normalized))
   }
   for entry in layer.entries {
     if @pathing.is_whiteout_path(entry.path) {
       raise @model.InvalidArgument(
         "layer additions must not use reserved Whiteout paths: " + entry.path,
       )
-    }
-    for removed in removed_paths {
-      if entry.path == removed {
-        raise @model.InvalidArgument(
-          "layer cannot add and remove the same path: " + removed,
-        )
-      }
     }
     transitions.push(Add(entry))
   }
@@ -55,9 +44,6 @@ fn archived_rootfs_transitions(
   entries : Array[@archive.TarEntry],
 ) -> Array[RootfsTransition] raise @model.MoonOciError {
   let transitions : Array[RootfsTransition] = []
-  let additions : Array[String] = []
-  let removals : Array[String] = []
-  let opaques : Array[String] = []
   for entry in entries {
     let segments = entry.path.split("/").map(part => part.to_owned()).collect()
     let basename = segments[segments.length() - 1]
@@ -68,7 +54,6 @@ fn archived_rootfs_transitions(
       } else {
         segments[0:segments.length() - 1].to_owned().join("/")
       }
-      opaques.push(directory)
       transitions.push(Opaque(directory))
     } else if basename.has_prefix(".wh.") {
       validate_whiteout_marker(entry)
@@ -83,28 +68,15 @@ fn archived_rootfs_transitions(
         "/" +
         target_name
       }
-      removals.push(target)
+      ignore(@pathing.normalize_archive_path(target))
+      if @pathing.is_whiteout_path(target) {
+        raise @model.InvalidOci(
+          "whiteout cannot target a reserved path: " + target,
+        )
+      }
       transitions.push(Remove(target))
     } else {
-      additions.push(entry.path)
       transitions.push(Add(entry))
-    }
-  }
-  for removed in removals {
-    for added in additions {
-      if removed == added {
-        raise @model.InvalidOci(
-          "Layer contains conflicting add and Whiteout transitions: " + removed,
-        )
-      }
-    }
-    for opaque_path in opaques {
-      if removed == opaque_path {
-        raise @model.InvalidOci(
-          "Layer contains conflicting Whiteout and Opaque transitions: " +
-          removed,
-        )
-      }
     }
   }
   transitions

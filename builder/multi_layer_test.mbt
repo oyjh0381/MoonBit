@@ -68,9 +68,19 @@ test "whiteout and opaque markers are physically present in layer tar" {
 }
 
 ///|
-test "layer cannot add and remove the same path" {
+test "replace a lower directory with a file using an explicit whiteout" {
   let request : @builder.ImageBuildRequest = {
     layers: [
+      {
+        entries: [
+          @archive.TarEntry::directory("same"),
+          @archive.TarEntry::file("same/old", b"old"),
+          @archive.TarEntry::file("kept", b"kept"),
+        ],
+        remove: [],
+        opaque_dirs: [],
+        compression: @model.Uncompressed,
+      },
       {
         entries: [@archive.TarEntry::file("same", b"value")],
         remove: ["same"],
@@ -85,11 +95,38 @@ test "layer cannot add and remove the same path" {
     reference: "invalid",
     annotations: [],
   }
-  let mut raised = false
-  ignore(@builder.build_image(request)) catch {
-    _ => raised = true
-  }
-  assert_true(raised)
+  let result = @builder.build_image(request)
+  assert_eq(result.rootfs.map(entry => entry.path), ["kept", "same"])
+  assert_eq(result.rootfs, @builder.rootfs_from_layout(result.layout))
+}
+
+///|
+test "root opacity leaves same-layer additions visible" {
+  let defaults = @builder.default_single_layer_request([])
+  let result = @builder.build_image({
+    layers: [
+      {
+        entries: [@archive.TarEntry::file("old/child", b"lower")],
+        remove: [],
+        opaque_dirs: [],
+        compression: @model.Uncompressed,
+      },
+      {
+        entries: [@archive.TarEntry::file("new", b"upper")],
+        remove: [],
+        opaque_dirs: ["/"],
+        compression: @model.Uncompressed,
+      },
+    ],
+    platform: defaults.platform,
+    runtime: defaults.runtime,
+    created: None,
+    author: None,
+    reference: "opaque-root",
+    annotations: [],
+  })
+  assert_eq(result.rootfs.map(entry => entry.path), ["new"])
+  assert_eq(result.rootfs, @builder.rootfs_from_layout(result.layout))
 }
 
 ///|

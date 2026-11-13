@@ -72,16 +72,15 @@ fn layout_from_layer_entries(
 }
 
 ///|
-test "Root Filesystem rejects conflicting archived transitions" {
+test "archived whiteout does not hide its same-layer replacement" {
   let layout = layout_from_layer_entries([
     @archive.TarEntry::whiteout("same"),
     @archive.TarEntry::file("same", b"value"),
   ])
-  let mut raised = false
-  ignore(@builder.rootfs_from_layout(layout)) catch {
-    _ => raised = true
-  }
-  assert_true(raised)
+  let entries = @builder.rootfs_from_layout(layout)
+  assert_eq(entries.length(), 1)
+  assert_eq(entries[0].path, "same")
+  assert_eq(entries[0].size, 5L)
 }
 
 ///|

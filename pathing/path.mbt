@@ -105,7 +105,11 @@ pub fn whiteout_path(input : String) -> String raise @model.MoonOciError {
 ///|
 /// Return the OCI opaque marker path for a rootfs directory.
 pub fn opaque_whiteout_path(input : String) -> String raise @model.MoonOciError {
-  normalize_spec_path(input) + "/.wh..wh..opq"
+  if input == "/" {
+    ".wh..wh..opq"
+  } else {
+    normalize_spec_path(input) + "/.wh..wh..opq"
+  }
 }
 
 ///|
