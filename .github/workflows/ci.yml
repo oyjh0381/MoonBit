@@ -36,6 +36,8 @@ jobs:
         run: |
           call "%MOONOCI_VS_DEV_CMD%" -arch=amd64 -host_arch=amd64 || exit /b 1
           moon build --target native --release --deny-warn
+      - name: Independent multilayer filesystem observer
+        run: python scripts/rootfs_transition_chain.py --binary _build/native/release/build/cmd/moonoci/moonoci.exe
       - name: Restartable delivery consumer
         run: python scripts/resume_chain.py --binary _build/native/release/build/cmd/moonoci/moonoci.exe
       - name: C static archive consumer (Linux)

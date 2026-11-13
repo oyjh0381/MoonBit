@@ -38,6 +38,12 @@ Every layer object requires `source`, the Native directory containing additions 
 
 `remove` and `opaque` paths accept one leading `/` for convenience. Absolute host paths, drive-letter paths, UNC paths, backslashes, empty segments, `.` and `..` segments are rejected.
 
+Whiteouts affect lower layers. Use the same path in the layer source and
+\`remove\` to explicitly discard its lower contents before adding a replacement.
+Use \`"opaque": ["/"]\` to hide the entire lower filesystem while retaining
+the files added by the current layer. The \`verify\` command checks that
+filesystem transitions can be applied as well as verifying layer digests.
+
 Metadata fields are `mode`, `uid`, `gid`, `mtime`, and `preserveMtime`. Defaults normalize ownership to `0:0`, mtime to `0`, regular files to mode `0644`, directories to `0755`, and symlinks to `0777`. Explicit `mode`, `uid`, `gid`, and `mtime` override those values. Native mode and ownership preservation are outside the v1 schema; mtime preservation is supported.
 
 ## Runtime configuration
