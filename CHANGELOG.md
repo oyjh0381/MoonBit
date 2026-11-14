@@ -2,6 +2,14 @@
 
 All notable changes to MoonOCI are documented here. The format follows Keep a Changelog and versions follow Semantic Versioning.
 
+## [0.4.0] - 2026-11-14
+
+- Verify OCI filesystem transitions alongside layer digests, including same-layer whiteout replacements and whole-root opacity.
+- Reuse the root filesystem trie across layers and retain file provenance through final enumeration.
+- Read dot-root tar paths and GNU base-256 fields, preserve large owner IDs in deterministic PAX layers, and validate tar record boundaries.
+- Bind whole-release rollout approval to explicit Registry attachments and export a digest-pinned referrer lock for selective admission.
+- Reuse blobs across repositories with validated upload fallback and verify persistent publication and admission through ArtifactDock.
+
 ## [0.3.0] - 2026-11-12
 
 - Build and test the development branch with MoonBit 0.10.20 and Async 0.22.9. Adapt HTTP headers and shield failed transfer cleanup under the new cancellation semantics.

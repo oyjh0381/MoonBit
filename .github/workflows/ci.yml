@@ -57,13 +57,13 @@ jobs:
         run: moon package
       - name: Isolated release consumer (Linux)
         if: runner.os == 'Linux'
-        run: python scripts/downstream_chain.py --archive _build/publish/oyjh0381-moonoci-0.3.0.zip
+        run: python scripts/downstream_chain.py --archive _build/publish/oyjh0381-moonoci-0.4.0.zip
       - name: Isolated release consumer (Windows)
         if: runner.os == 'Windows'
         shell: cmd
         run: |
           call "%MOONOCI_VS_DEV_CMD%" -arch=amd64 -host_arch=amd64 || exit /b 1
-          python scripts/downstream_chain.py --archive _build/publish/oyjh0381-moonoci-0.3.0.zip
+          python scripts/downstream_chain.py --archive _build/publish/oyjh0381-moonoci-0.4.0.zip
       - name: Independently checked transfer workload
         run: python scripts/transfer_benchmark.py --binary _build/native/release/build/cmd/moonoci/moonoci.exe --size-mib 16 --runs 1
       - run: python scripts/setup_oras.py

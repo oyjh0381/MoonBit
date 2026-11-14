@@ -7,7 +7,7 @@ existing registry cache. The development checkout supplies the harness only.
 
 ```text
 moon package
-python scripts/downstream_chain.py --archive _build/publish/oyjh0381-moonoci-0.3.0.zip
+python scripts/downstream_chain.py --archive _build/publish/oyjh0381-moonoci-0.4.0.zip
 ```
 
 Run with MoonBit 0.10.20 and a Native C build environment. A wrapper command can

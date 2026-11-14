@@ -15,10 +15,14 @@ review-bound Registry publication and explicit OCI attachment publication. It
 also packages MoonBit Wasm as OCI artifacts and exposes a Native C verification
 interface. See [release workflows](docs/release-workflows.md).
 
+Version 0.4.0 adds approved attachment selection and portable referrer locks,
+cross-repository blob mounts, and broader OCI filesystem layer support, including
+same-layer whiteout replacements and large numeric owner IDs.
+
 Install the published module with:
 
 ```text
-moon add oyjh0381/moonoci@0.3.0
+moon add oyjh0381/moonoci@0.4.0
 ```
 
 ```mbt check

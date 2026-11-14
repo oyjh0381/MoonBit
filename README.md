@@ -79,7 +79,7 @@ MoonOCI v0.1 builds one platform image per invocation and writes OCI Image Spec 
 Add the published library to a MoonBit project:
 
 ```text
-moon add oyjh0381/moonoci@0.3.0
+moon add oyjh0381/moonoci@0.4.0
 ```
 
 The reusable packages include `oyjh0381/moonoci/archive`, `builder`, `codec`, `digest`, `layout`, `model`, `pathing`, and `spec`. The Native CLI is built and run from this source repository.

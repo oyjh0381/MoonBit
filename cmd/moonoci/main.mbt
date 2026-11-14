@@ -650,7 +650,7 @@ async fn main {
         @native.archive_layout_file(args[2], args[3])
         @stdio.stdout.write("wrote " + args[3] + "\n")
       }
-      "version" | "--version" | "-V" => @stdio.stdout.write("moonoci 0.3.0\n")
+      "version" | "--version" | "-V" => @stdio.stdout.write("moonoci 0.4.0\n")
       "help" | "--help" | "-h" => print_usage()
       command => raise @model.InvalidArgument("unknown command: " + command)
     }
