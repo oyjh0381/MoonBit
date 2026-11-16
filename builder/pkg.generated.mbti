@@ -21,6 +21,8 @@ pub fn default_single_layer_request(Array[@archive.TarEntry]) -> SingleLayerRequ
 
 pub fn inventory_from_manifest(@layout.MemoryLayout, @model.Descriptor) -> Array[FileEvidence] raise @model.MoonOciError
 
+pub fn layer_chain_from_manifest(@layout.MemoryLayout, @model.Descriptor) -> Array[LayerIdentity] raise @model.MoonOciError
+
 pub fn layer_chain_ids(Array[@model.Digest]) -> Array[@model.Digest] raise @model.MoonOciError
 
 pub let max_imported_layer_tar_bytes : Int32
@@ -86,6 +88,12 @@ pub(all) struct LayerBuildRequest {
 pub fn LayerBuildRequest::equal(Self, Self) -> Bool
 pub fn LayerBuildRequest::not_equal(Self, Self) -> Bool
 pub fn LayerBuildRequest::to_repr(Self) -> @debug.Repr
+
+pub(all) struct LayerIdentity {
+  descriptor : @model.Descriptor
+  diff_id : @model.Digest
+  chain_id : @model.Digest
+}
 
 #derive(Eq, @debug.Debug)
 pub(all) enum LayerInput {

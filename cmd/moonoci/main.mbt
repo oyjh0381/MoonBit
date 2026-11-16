@@ -441,6 +441,31 @@ async fn main {
           }),
         )
       }
+      "layer-chain" => {
+        require_arity(args, 5, "usage: moonoci layer-chain INPUT OS ARCH")
+        let source = @native.load_bounded_layout(args[2])
+        let descriptor = @distribution.select(source, {
+          os: args[3],
+          architecture: args[4],
+          variant: None,
+          os_version: None,
+        })
+        let layers = @builder.layer_chain_from_manifest(source, descriptor)
+        let result : Json = {
+          "schema": "moonoci.layer-chain.v1",
+          "manifest": Json::string(descriptor.digest.to_string()),
+          "layers": Json::array(
+            layers.map(layer => {
+              "blob": Json::string(layer.descriptor.digest.to_string()),
+              "mediaType": Json::string(layer.descriptor.media_type),
+              "storedBytes": Json::string(layer.descriptor.size.to_string()),
+              "diffId": Json::string(layer.diff_id.to_string()),
+              "chainId": Json::string(layer.chain_id.to_string()),
+            }),
+          ),
+        }
+        @stdio.stdout.write(result.stringify() + "\n")
+      }
       "files" => {
         require_arity(args, 5, "usage: moonoci files INPUT OS ARCH")
         let source = @native.load_layout(args[2])
@@ -744,6 +769,7 @@ async fn print_usage() -> Unit {
       #|  moonoci tree INPUT
       #|  moonoci flatten INPUT OUTPUT [--images-only]
       #|  moonoci tree-select INPUT OUTPUT OS ARCH
+      #|  moonoci layer-chain INPUT OS ARCH
       #|  moonoci files INPUT OS ARCH
       #|  moonoci diff BASE TARGET OS ARCH
       #|  moonoci config-diff BASE TARGET OS ARCH
