@@ -78,6 +78,7 @@ fn parse_layer(value : Json) -> LayerSpec raise @model.MoonOciError {
     object,
     [
       "source", "compression", "remove", "opaque", "exclude", "ignoreFile", "metadata",
+      "hardlinks",
     ],
     "layer",
   )
@@ -114,8 +115,19 @@ fn parse_layer(value : Json) -> LayerSpec raise @model.MoonOciError {
       )
     }
   }
+  let hardlinks : Array[@model.KeyValue] = optional_string_map(
+    object, "hardlinks",
+  ).map(link => {
+    let path = @pathing.normalize_archive_path(link.key)
+    let target = @pathing.normalize_archive_path(link.value)
+    if path == target {
+      raise @model.InvalidBuildSpec("hardlink cannot target itself: " + path)
+    }
+    { key: path, value: target, }
+  })
   {
     source,
+    hardlinks,
     compression,
     remove,
     opaque_dirs,

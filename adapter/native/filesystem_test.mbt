@@ -16,10 +16,13 @@ async test "Native adapter collects sorted normalized files and exclusions" {
     opaque_dirs: [],
     exclude: ["*.tmp"],
     ignore_file: None,
+    hardlinks: [{ key: "copy.txt", value: "z.txt", }],
     metadata: @spec.default_metadata_spec(),
   }
   let entries = @native.collect_layer_source(root, layer)
-  assert_eq(entries.map(entry => entry.path), ["sub", "sub/a.txt", "z.txt"])
+  assert_eq(entries.map(entry => entry.path), [
+    "sub", "sub/a.txt", "z.txt", "copy.txt",
+  ])
   for entry in entries {
     assert_eq(entry.uid, 0)
     assert_eq(entry.gid, 0)

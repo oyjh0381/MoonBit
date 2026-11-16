@@ -96,3 +96,25 @@ fn assert_spec_fails(data : Bytes) -> Unit raise {
   }
   assert_true(raised)
 }
+
+///|
+test "build specification validates declared hardlink paths" {
+  let spec = @spec.parse_build_spec(
+    (
+      #|{"schemaVersion":1,"layers":[{"source":"files","hardlinks":{"bin/alias":"bin/tool"}}]}
+    )
+    |> @utf8.encode,
+  )
+  assert_eq(spec.layers[0].hardlinks, [{ key: "bin/alias", value: "bin/tool", }])
+  for
+    declaration in [
+      (
+        #|{"schemaVersion":1,"layers":[{"source":"files","hardlinks":{"alias":"../file"}}]}
+      ),
+      (
+        #|{"schemaVersion":1,"layers":[{"source":"files","hardlinks":{"alias":"alias"}}]}
+      ),
+    ] {
+    assert_spec_fails(@utf8.encode(declaration))
+  }
+}

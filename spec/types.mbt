@@ -19,6 +19,7 @@ pub(all) struct LayerSpec {
   opaque_dirs : Array[String]
   exclude : Array[String]
   ignore_file : String?
+  hardlinks : Array[@model.KeyValue]
   metadata : MetadataSpec
 }
 

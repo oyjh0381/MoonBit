@@ -36,6 +36,9 @@ pub async fn collect_layer_source(
   }
   let entries : Array[@archive.TarEntry] = []
   collect_directory(source, "", patterns, layer.metadata, entries)
+  for link in layer.hardlinks {
+    entries.push(@archive.TarEntry::hardlink(link.key, link.value))
+  }
   entries
 }
 
