@@ -30,6 +30,7 @@ pub(all) struct TarEntry {
 pub fn TarEntry::directory(String, mode? : Int32) -> Self raise @model.MoonOciError
 pub fn TarEntry::equal(Self, Self) -> Bool
 pub fn TarEntry::file(String, Bytes, mode? : Int32) -> Self raise @model.MoonOciError
+pub fn TarEntry::hardlink(String, String) -> Self raise @model.MoonOciError
 pub fn TarEntry::not_equal(Self, Self) -> Bool
 pub fn TarEntry::opaque_marker(String) -> Self raise @model.MoonOciError
 pub fn TarEntry::size(Self) -> Int64

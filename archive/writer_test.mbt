@@ -86,3 +86,34 @@ test "large deterministic owners round-trip through PAX without affecting the ne
   assert_eq(@archive.read_layer_tar(wire), [large, small])
   assert_eq(@archive.read_tar(wire), [large, small])
 }
+
+///|
+test "tar writer orders hardlink dependencies independently of input order" {
+  let original = @archive.TarEntry::file("z/data", b"payload")
+  let direct = @archive.TarEntry::hardlink("b", original.path)
+  let chain = @archive.TarEntry::hardlink("a", direct.path)
+  let tar = @archive.write_tar([chain, original, direct])
+  assert_eq(tar, @archive.write_tar([direct, chain, original]))
+  assert_eq(@archive.read_layer_tar(tar), [original, direct, chain])
+}
+
+///|
+test "tar writer rejects missing and cyclic hardlink targets" {
+  for
+    entries in [
+      [@archive.TarEntry::hardlink("first", "second")],
+      [
+        @archive.TarEntry::hardlink("first", "second"),
+        @archive.TarEntry::hardlink("second", "first"),
+      ],
+    ] {
+    let denied = try {
+      ignore(@archive.write_tar(entries))
+      false
+    } catch {
+      @model.InvalidTar(_) => true
+      _ => false
+    }
+    assert_true(denied)
+  }
+}

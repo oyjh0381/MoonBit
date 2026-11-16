@@ -66,6 +66,11 @@ pub fn build_image(
       comment: None,
       empty_layer: false,
     })
+    let transitions = if tar_entries.any(entry => entry.kind == Hardlink) {
+      archived_rootfs_transitions(@archive.read_layer_tar(layer_tar))
+    } else {
+      transitions
+    }
     rootfs.apply(transitions, layer_index)
   }
   let config : @model.ImageConfig = {

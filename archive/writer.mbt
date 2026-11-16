@@ -7,9 +7,16 @@ pub fn write_tar(entries : Array[TarEntry]) -> Bytes raise @model.MoonOciError {
   let sorted = entries.copy()
   sorted.sort_by((a, b) => @pathing.compare_utf8(a.path, b.path))
   validate_unique_paths(sorted)
-  let output : Array[Byte] = []
   for entry in sorted {
     validate_entry(entry)
+  }
+  let ordered = if sorted.any(entry => entry.kind == Hardlink) {
+    hardlink_tar_order(sorted)
+  } else {
+    sorted
+  }
+  let output : Array[Byte] = []
+  for entry in ordered {
     write_entry(output, entry)
   }
   append_zeros(output, tar_block_size * 2)
@@ -45,8 +52,12 @@ fn validate_entry(entry : TarEntry) -> Unit raise @model.MoonOciError {
           "directory tar entry must not contain data or a link target",
         )
       }
-    Hardlink =>
-      raise @model.Unsupported("hardlink tar writing is not supported")
+    Hardlink => {
+      guard entry.data.is_empty() && entry.link_target is Some(target) else {
+        raise @model.InvalidTar("hardlink must have a target and zero data")
+      }
+      ignore(@pathing.normalize_archive_path(target))
+    }
     Symlink => {
       if entry.data.length() != 0 {
         raise @model.InvalidTar("symlink tar entry must not contain data")

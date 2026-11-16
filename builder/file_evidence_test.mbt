@@ -54,3 +54,28 @@ test "symlink evidence never hashes or follows its target" {
   assert_eq(inventory[1].entry.link_target, Some("data"))
   assert_eq(inventory[1].content_digest, None)
 }
+
+///|
+test "image build, verification and inventory agree on a hardlink chain" {
+  let file = @archive.TarEntry::file("last", b"same", mode=0o640)
+  let direct = @archive.TarEntry::hardlink("first", file.path)
+  let chain = @archive.TarEntry::hardlink("second", direct.path)
+  let request = @builder.default_single_layer_request([chain, direct, file])
+  let image = @builder.build_single_layer({
+    ..request,
+    compression: @model.Gzip,
+  })
+  assert_true(@builder.verify_memory(image.layout).is_valid())
+  let observed = @builder.inventory_from_manifest(
+    image.layout,
+    image.report.manifest,
+  )
+  assert_eq(observed.map(item => item.entry.kind), [
+    "hardlink", "file", "hardlink",
+  ])
+  for item in observed {
+    assert_eq(item.content_digest, Some(@digest.sha256(b"same")))
+    assert_eq(item.entry.size, 4L)
+    assert_eq(item.entry.mode, 0o640)
+  }
+}
