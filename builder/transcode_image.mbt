@@ -18,7 +18,13 @@ pub fn transcode_image(
   expected : @model.Digest,
   compression : @model.Compression,
   positions? : Array[Int32],
+  max_result_layer_bytes~ : Int64 = 0x7fffffffffffffffL,
 ) -> ImageTranscode raise @model.MoonOciError {
+  if max_result_layer_bytes < 0L {
+    raise @model.InvalidArgument(
+      "transcode layer byte limit cannot be negative",
+    )
+  }
   let index = @codec.decode_index(source.index())
   let matches = index.manifests.filter(item => item.digest == expected)
   guard matches is [descriptor] else {
@@ -109,11 +115,17 @@ pub fn transcode_image(
       )
       converted_layers += 1
     }
-    ignore(result.put_blob(converted.media_type, converted.data))
     let output_key = converted.digest.to_string()
     if !seen_output.contains(output_key) {
+      let size = converted.data.length().to_int64()
+      if size > max_result_layer_bytes - result_layer_bytes {
+        raise @model.ResourceLimitExceeded(
+          "transcode output exceeds the layer storage budget",
+        )
+      }
       seen_output[output_key] = true
-      result_layer_bytes += converted.data.length().to_int64()
+      result_layer_bytes += size
+      ignore(result.put_blob(converted.media_type, converted.data))
     }
   }
   let manifest_data = if converted_layers == 0 {

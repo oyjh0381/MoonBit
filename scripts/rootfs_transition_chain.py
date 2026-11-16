@@ -172,9 +172,18 @@ def transcode_existing_image(run, work):
         assert error.returncode == 5 and not encoded.exists()
     else:
         raise AssertionError("changed transcode selection matched the preview")
+    budget = int(preview["resultLayerBytes"])
+    try:
+        run("transcode-image", source, manifest, "gzip", encoded,
+            "--max-layer-bytes", str(budget - 1))
+    except subprocess.CalledProcessError as error:
+        assert error.returncode == 5 and not encoded.exists()
+    else:
+        raise AssertionError("output exceeding the storage budget was accepted")
     receipt = json.loads(run("transcode-image", source, manifest, "gzip", encoded,
                              "--expect-index", preview["resultIndex"],
-                             "--expect-source-index", preview["sourceIndex"]))
+                             "--expect-source-index", preview["sourceIndex"],
+                             "--max-layer-bytes", str(budget)))
     assert receipt["written"] and receipt["resultIndex"] == preview["resultIndex"]
     assert receipt["convertedLayers"] == len(expected["layers"])
     assert receipt["sourceManifest"] == manifest

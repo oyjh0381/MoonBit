@@ -146,3 +146,7 @@ any change in the derived index before writing the layout.
 For reviewed inputs, pass `--expect-source-index DIGEST` to pin the original
 index metadata as well as the selected manifest. The receipt records both
 the source and derived index digests.
+
+Set `--max-layer-bytes BYTES` to cap the sum of the output's unique stored
+layer blobs. The receipt shows the original and output layer byte totals.
+These totals exclude the config, manifest, index and layout marker.

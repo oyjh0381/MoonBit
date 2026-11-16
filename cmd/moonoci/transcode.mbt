@@ -7,6 +7,7 @@ async fn transcode_image_command(args : Array[String]) -> Unit {
   }
   let mut positions : Array[Int32]? = None
   let mut expected_source_index : @model.Digest? = None
+  let mut max_result_layer_bytes : Int64? = None
   let mut expected_index : @model.Digest? = None
   let mut dry_run = false
   let mut offset = 6
@@ -24,6 +25,11 @@ async fn transcode_image_command(args : Array[String]) -> Unit {
       "--expect-index" if offset + 1 < args.length() && expected_index is None => {
         offset += 1
         expected_index = Some(@model.Digest::parse(args[offset]))
+      }
+      "--max-layer-bytes" if offset + 1 < args.length() &&
+        max_result_layer_bytes is None => {
+        offset += 1
+        max_result_layer_bytes = Some(registry_byte_argument(args[offset]))
       }
       "--dry-run" if !dry_run => dry_run = true
       _ => raise @model.InvalidArgument("invalid or duplicate transcode option")
@@ -52,6 +58,7 @@ async fn transcode_image_command(args : Array[String]) -> Unit {
     expected,
     compression,
     positions?,
+    max_result_layer_bytes?,
   )
   let index_pin = @digest.sha256(result.layout.index())
   if expected_index is Some(pin) && pin != index_pin {
