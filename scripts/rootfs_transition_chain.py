@@ -83,6 +83,7 @@ def import_external_layer(run, work, base, upper):
     diff_id = "sha256:" + hashlib.sha256(raw).hexdigest()
     blob_pin = "sha256:" + hashlib.sha256(compressed).hexdigest()
     configs = []
+    chains = []
     for imported, storage, name in [
         (dict(sourceTar=dict(path=str(raw_path), diffId=diff_id)), raw, "raw"),
         (dict(sourceTar=dict(path=str(gzip_path), diffId=diff_id, blobDigest=blob_pin,
@@ -103,6 +104,16 @@ def import_external_layer(run, work, base, upper):
         assert (blobs / stored["digest"].split(":")[1]).read_bytes() == storage
         config = json.loads((blobs / configs[-1].split(":")[1]).read_bytes())
         assert config["rootfs"]["diff_ids"][1] == diff_id
+        report = json.loads(run("layer-chain", target, "linux", "amd64"))
+        assert report["manifest"] == index["manifests"][0]["digest"]
+        previous = None
+        for row, descriptor, diff in zip(report["layers"], manifest["layers"],
+                                         config["rootfs"]["diff_ids"], strict=True):
+            previous = (diff if previous is None else
+                        "sha256:" + hashlib.sha256((previous + " " + diff).encode("ascii")).hexdigest())
+            assert row["blob"] == descriptor["digest"]
+            assert row["diffId"] == diff and row["chainId"] == previous
+        chains.append(report["layers"])
         expected = observe(target)["images"][0]["files"]
         actual = {item["path"]: item for item in
                   json.loads(run("files", target, "linux", "amd64"))["entries"]}
@@ -112,6 +123,8 @@ def import_external_layer(run, work, base, upper):
                 assert actual[name]["content_digest"] == "sha256:" + reference["sha256"]
         assert actual["tool-copy"]["uid"] == 2097152
     assert configs[0] == configs[1]
+    assert chains[0][1]["blob"] != chains[1][1]["blob"]
+    assert [row["chainId"] for row in chains[0]] == [row["chainId"] for row in chains[1]]
 
     declined = work / "declined-layout"
     spec = work / "incorrect-layer-pin.json"
@@ -227,7 +240,8 @@ def main():
                           deterministic_hardlinks=True,
                           same_path_whiteout=True, whole_root_opacity=True,
                           independent_tar_producer=True, independent_gnu_hardlink=True,
-                          deterministic_pax_owners=True, pinned_tar_and_gzip_import=True)))
+                          deterministic_pax_owners=True, pinned_tar_and_gzip_import=True,
+                          compression_independent_chain_ids=True)))
 
 
 if __name__ == "__main__":

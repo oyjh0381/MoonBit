@@ -111,3 +111,8 @@ existing compressed layer. MoonOCI checks both pins and stores the exact
 compressed bytes. Omit `compression` for this form. Source archives can
 contain whiteouts and same-layer hardlinks. Put directory edits in separate
 layers. Each imported file and its expanded tar are limited to 256 MiB.
+
+Run `moonoci layer-chain IMAGE_LAYOUT linux amd64` to inspect each stored
+blob digest, uncompressed DiffID, and OCI ChainID. ChainID identifies the
+ordered prefix of filesystem changes. Storing the same tar with different
+compression changes the blob digest while preserving the ChainIDs.
