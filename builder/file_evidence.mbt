@@ -1,6 +1,6 @@
 ///|
 /// Final filesystem metadata tied to the exact contributing layer. A content
-/// digest is present only for regular files; symlinks are never followed.
+/// digest is present for regular files and their hardlinks. Symlinks are never followed.
 pub(all) struct FileEvidence {
   entry : @model.RootfsEntry
   layer_digest : @model.Digest

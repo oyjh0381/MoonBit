@@ -43,6 +43,11 @@ def external_tar_layout(source, target, tar_format):
             member.uid = 2097152
             member.gid = 2097153
         tar.addfile(member, io.BytesIO(payload))
+        if tar_format == tarfile.GNU_FORMAT:
+            linked = tarfile.TarInfo("./bin/tool-link")
+            linked.type = tarfile.LNKTYPE
+            linked.linkname = "./bin/tool"
+            tar.addfile(linked)
     original = manifest["layers"][0]
     manifest["layers"] = [write(original, stream.getvalue())]
     config["rootfs"]["diff_ids"] = [manifest["layers"][0]["digest"]]
@@ -102,7 +107,15 @@ def main():
         assert run("verify", external).startswith("valid: manifests=1")
         inventory = json.loads(run("files", external, "linux", "amd64"))["entries"]
         files = observe(external)["images"][0]["files"]
-        assert {item["path"] for item in inventory} == set(files) == {"bin", "bin/tool"}
+        expected_paths = {"bin", "bin/tool"}
+        if tar_format == tarfile.GNU_FORMAT:
+            expected_paths.add("bin/tool-link")
+            linked = next(item for item in inventory if item["path"] == "bin/tool-link")
+            oracle = files["bin/tool-link"]
+            assert linked["kind"] == "hardlink" and linked["link_target"] == "bin/tool"
+            assert linked["content_digest"] == "sha256:" + oracle["sha256"]
+            assert linked["uid"] == oracle["uid"] == uid
+        assert {item["path"] for item in inventory} == set(files) == expected_paths
         tool = next(entry for entry in inventory if entry["path"] == "bin/tool")
         assert tool["content_digest"] == "sha256:" + files["bin/tool"]["sha256"]
         assert tool["uid"] == files["bin/tool"]["uid"] == uid
@@ -140,7 +153,8 @@ def main():
     print(json.dumps(dict(layer_counts=[2, 3], independently_verified_files=6,
                           deterministic_hardlinks=True,
                           same_path_whiteout=True, whole_root_opacity=True,
-                          independent_tar_producer=True, deterministic_pax_owners=True)))
+                          independent_tar_producer=True, independent_gnu_hardlink=True,
+                          deterministic_pax_owners=True)))
 
 
 if __name__ == "__main__":
