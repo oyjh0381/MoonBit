@@ -82,12 +82,16 @@ fn parse_layer(value : Json) -> LayerSpec raise @model.MoonOciError {
     ],
     "layer",
   )
-  let (source, tar_diff_id) = match
+  let (source, tar_source) = match
     (object.get("source"), object.get("sourceTar")) {
     (Some(value), None) => (expect_string(value, "source"), None)
     (None, Some(value)) => {
       let tar = expect_object(value, "sourceTar")
-      reject_unknown(tar, ["path", "diffId"], "sourceTar")
+      reject_unknown(
+        tar,
+        ["path", "diffId", "encoding", "blobDigest"],
+        "sourceTar",
+      )
       for
         option in [
           "remove", "opaque", "exclude", "ignoreFile", "metadata", "hardlinks",
@@ -98,10 +102,34 @@ fn parse_layer(value : Json) -> LayerSpec raise @model.MoonOciError {
           )
         }
       }
-      (
-        required_string(tar, "path"),
-        Some(@model.Digest::parse(required_string(tar, "diffId"))),
-      )
+      let diff_id = @model.Digest::parse(required_string(tar, "diffId"))
+      let archive : LayerTarSource = match
+        optional_string(tar, "encoding").unwrap_or("tar") {
+        "tar" => {
+          if tar.contains("blobDigest") {
+            raise @model.InvalidBuildSpec(
+              "sourceTar blobDigest requires gzip encoding",
+            )
+          }
+          Raw(diff_id)
+        }
+        "gzip" => {
+          if object.contains("compression") {
+            raise @model.InvalidBuildSpec(
+              "gzip sourceTar preserves storage bytes and cannot be recompressed",
+            )
+          }
+          Gzip(
+            @model.Digest::parse(required_string(tar, "blobDigest")),
+            diff_id,
+          )
+        }
+        _ =>
+          raise @model.InvalidBuildSpec(
+            "sourceTar encoding must be tar or gzip",
+          )
+      }
+      (required_string(tar, "path"), Some(archive))
     }
     _ =>
       raise @model.InvalidBuildSpec(
@@ -152,7 +180,7 @@ fn parse_layer(value : Json) -> LayerSpec raise @model.MoonOciError {
   })
   {
     source,
-    tar_diff_id,
+    tar_source,
     hardlinks,
     compression,
     remove,

@@ -10,11 +10,25 @@ pub(all) struct MetadataSpec {
 }
 
 ///|
+/// An external layer source and its content-identity pins.
+#derive(Debug, Eq)
+pub(all) enum LayerTarSource {
+  Raw(@model.Digest)
+  Gzip(@model.Digest, @model.Digest)
+}
+
+///|
+pub extend LayerTarSource with @debug.Debug::{to_repr}
+
+///|
+pub extend LayerTarSource with Eq::{not_equal, equal}
+
+///|
 /// One declarative filesystem changeset in a Build Specification.
 #derive(Debug, Eq)
 pub(all) struct LayerSpec {
   source : String
-  tar_diff_id : @model.Digest?
+  tar_source : LayerTarSource?
   compression : @model.Compression
   remove : Array[String]
   opaque_dirs : Array[String]

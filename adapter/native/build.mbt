@@ -7,7 +7,7 @@ pub async fn build_from_file(spec_path : String) -> @builder.ImageBuildResult {
   let spec = @spec.parse_build_spec(@fs.read_file(spec_path).binary())
   let layers : Array[@builder.LayerInput] = []
   for layer in spec.layers {
-    let input : @builder.LayerInput = match layer.tar_diff_id {
+    let input : @builder.LayerInput = match layer.tar_source {
       None =>
         Generated({
           entries: collect_layer_source(layer.source, layer),
@@ -15,7 +15,7 @@ pub async fn build_from_file(spec_path : String) -> @builder.ImageBuildResult {
           opaque_dirs: layer.opaque_dirs,
           compression: layer.compression,
         })
-      Some(pin) => {
+      Some(archive) => {
         if @fs.kind(layer.source, follow_symlink=false) != @fs.FileKind::Regular {
           raise @model.InvalidBuildSpec(
             "sourceTar must name a regular file: " + layer.source,
@@ -25,7 +25,10 @@ pub async fn build_from_file(spec_path : String) -> @builder.ImageBuildResult {
           layer.source,
           @builder.max_imported_layer_tar_bytes,
         )
-        PinnedTar(tar, pin, layer.compression)
+        match archive {
+          Raw(pin) => PinnedTar(tar, pin, layer.compression)
+          Gzip(blob, diff_id) => PinnedGzip(tar, blob, diff_id)
+        }
       }
     }
     layers.push(input)

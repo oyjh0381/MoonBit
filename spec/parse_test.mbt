@@ -128,7 +128,7 @@ test "sourceTar requires an independent digest and forbids transforms" {
     |> @utf8.encode,
   )
   assert_eq(parsed.layers[0].source, "changes.tar")
-  assert_true(parsed.layers[0].tar_diff_id is Some(_))
+  assert_true(parsed.layers[0].tar_source is Some(Raw(_)))
   for
     layer in [
       (
@@ -148,4 +148,24 @@ test "sourceTar requires an independent digest and forbids transforms" {
       @utf8.encode("{\"schemaVersion\":1,\"layers\":[" + layer + "]}"),
     )
   }
+}
+
+///|
+test "gzip layer source requires both pins and preserves transport encoding" {
+  let pin = "sha256:" + "1".repeat(64)
+  let layer =
+    #|{"sourceTar":{"path":"layer.tgz","encoding":"gzip","blobDigest":"PIN","diffId":"PIN"}}
+  let layer = layer.replace_all(old="PIN", new=pin)
+  let parsed = @spec.parse_build_spec(
+    @utf8.encode("{\"schemaVersion\":1,\"layers\":[" + layer + "]}"),
+  )
+  assert_true(parsed.layers[0].tar_source is Some(Gzip(_, _)))
+  let before_close = layer[:layer.length() - 1].to_owned()
+  assert_spec_fails(
+    @utf8.encode(
+      "{\"schemaVersion\":1,\"layers\":[" +
+      before_close +
+      ",\"compression\":\"gzip\"}]}",
+    ),
+  )
 }

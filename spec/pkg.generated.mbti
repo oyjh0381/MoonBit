@@ -33,7 +33,7 @@ pub fn BuildSpec::to_repr(Self) -> @debug.Repr
 #derive(Eq, @debug.Debug)
 pub(all) struct LayerSpec {
   source : String
-  tar_diff_id : @model.Digest?
+  tar_source : LayerTarSource?
   compression : @model.Compression
   remove : Array[String]
   opaque_dirs : Array[String]
@@ -45,6 +45,15 @@ pub(all) struct LayerSpec {
 pub fn LayerSpec::equal(Self, Self) -> Bool
 pub fn LayerSpec::not_equal(Self, Self) -> Bool
 pub fn LayerSpec::to_repr(Self) -> @debug.Repr
+
+#derive(Eq, @debug.Debug)
+pub(all) enum LayerTarSource {
+  Raw(@model.Digest)
+  Gzip(@model.Digest, @model.Digest)
+}
+pub fn LayerTarSource::equal(Self, Self) -> Bool
+pub fn LayerTarSource::not_equal(Self, Self) -> Bool
+pub fn LayerTarSource::to_repr(Self) -> @debug.Repr
 
 #derive(Eq, @debug.Debug)
 pub(all) struct MetadataSpec {
