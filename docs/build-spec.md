@@ -94,3 +94,20 @@ The `config` object accepts `user`, `env`, `entrypoint`, `cmd`, `workingDir`, `l
   "output": { "layout": "dist/example" }
 }
 ```
+
+### Import existing layer archives
+
+A layer can use `sourceTar` instead of a source directory. For an
+uncompressed tar, set `path` and the independently obtained `diffId`.
+The optional layer `compression` determines storage while the tar bytes
+and DiffID stay identical.
+
+```json
+{"sourceTar":{"path":"base-layer.tar","diffId":"sha256:DIGEST"},"compression":"gzip"}
+```
+
+Use `encoding: "gzip"` with both `blobDigest` and `diffId` to reuse an
+existing compressed layer. MoonOCI checks both pins and stores the exact
+compressed bytes. Omit `compression` for this form. Source archives can
+contain whiteouts and same-layer hardlinks. Put directory edits in separate
+layers. Each imported file and its expanded tar are limited to 256 MiB.

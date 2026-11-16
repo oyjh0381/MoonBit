@@ -1,5 +1,6 @@
 """Compare multilayer build and file provenance with CPython's OCI observer."""
 import argparse
+import gzip
 import hashlib
 import io
 import json
@@ -55,6 +56,77 @@ def external_tar_layout(source, target, tar_format):
     manifest["config"] = write(manifest["config"], json.dumps(config).encode())
     index["manifests"] = [write(index["manifests"][0], json.dumps(manifest).encode())]
     (target / "index.json").write_bytes(json.dumps(index).encode())
+
+
+def import_external_layer(run, work, base, upper):
+    stream = io.BytesIO()
+    with tarfile.open(fileobj=stream, mode="w", format=tarfile.PAX_FORMAT) as tar:
+        whiteout = tarfile.TarInfo(".wh.keep")
+        tar.addfile(whiteout)
+        content = b"imported tool"
+        original = tarfile.TarInfo("tool")
+        original.size = len(content)
+        original.mode = 0o750
+        original.uid = 2097152
+        tar.addfile(original, io.BytesIO(content))
+        linked = tarfile.TarInfo("tool-copy")
+        linked.type = tarfile.LNKTYPE
+        linked.linkname = "tool"
+        tar.addfile(linked)
+    raw = stream.getvalue()
+    raw_path = work / "external-layer.tar"
+    raw_path.write_bytes(raw)
+    gzip_path = work / "external-layer.tar.gz"
+    # A nonzero producer timestamp demonstrates that the stored header survives.
+    compressed = gzip.compress(raw, mtime=123456)
+    gzip_path.write_bytes(compressed)
+    diff_id = "sha256:" + hashlib.sha256(raw).hexdigest()
+    blob_pin = "sha256:" + hashlib.sha256(compressed).hexdigest()
+    configs = []
+    for imported, storage, name in [
+        (dict(sourceTar=dict(path=str(raw_path), diffId=diff_id)), raw, "raw"),
+        (dict(sourceTar=dict(path=str(gzip_path), diffId=diff_id, blobDigest=blob_pin,
+                             encoding="gzip")), compressed, "gzip"),
+    ]:
+        target = work / ("mixed-" + name)
+        spec = work / ("mixed-" + name + ".json")
+        layers = [dict(source=str(base)), imported, dict(source=str(upper))]
+        spec.write_text(json.dumps(dict(schemaVersion=1, layers=layers,
+                                        output=dict(layout=str(target)))), encoding="utf-8")
+        run("build", spec)
+        assert run("verify", target).startswith("valid: manifests=1")
+        index = json.loads((target / "index.json").read_bytes())
+        blobs = target / "blobs/sha256"
+        manifest = json.loads((blobs / index["manifests"][0]["digest"].split(":")[1]).read_bytes())
+        configs.append(manifest["config"]["digest"])
+        stored = manifest["layers"][1]
+        assert (blobs / stored["digest"].split(":")[1]).read_bytes() == storage
+        config = json.loads((blobs / configs[-1].split(":")[1]).read_bytes())
+        assert config["rootfs"]["diff_ids"][1] == diff_id
+        expected = observe(target)["images"][0]["files"]
+        actual = {item["path"]: item for item in
+                  json.loads(run("files", target, "linux", "amd64"))["entries"]}
+        assert set(actual) == set(expected) == {"app", "boot", "tool", "tool-copy"}
+        for name, reference in expected.items():
+            if reference["sha256"] is not None:
+                assert actual[name]["content_digest"] == "sha256:" + reference["sha256"]
+        assert actual["tool-copy"]["uid"] == 2097152
+    assert configs[0] == configs[1]
+
+    declined = work / "declined-layout"
+    spec = work / "incorrect-layer-pin.json"
+    spec.write_text(json.dumps(dict(schemaVersion=1, layers=[dict(
+        sourceTar=dict(path=str(gzip_path), encoding="gzip", blobDigest=blob_pin,
+                       diffId="sha256:" + "0" * 64))], output=dict(layout=str(declined)))),
+        encoding="utf-8")
+    try:
+        run("build", spec)
+    except subprocess.CalledProcessError as error:
+        assert "DiffID" in error.stderr
+    else:
+        raise AssertionError("incorrect layer DiffID was accepted")
+    assert not declined.exists()
+
 
 
 def main():
@@ -150,11 +222,12 @@ def main():
                 assert item["kind"] == "hardlink" and source["kind"] == "1"
                 assert source["sha256"] == hashlib.sha256(b"original payload").hexdigest()
     assert indexes[0] == indexes[1]
+    import_external_layer(run, work, base, reset)
     print(json.dumps(dict(layer_counts=[2, 3], independently_verified_files=6,
                           deterministic_hardlinks=True,
                           same_path_whiteout=True, whole_root_opacity=True,
                           independent_tar_producer=True, independent_gnu_hardlink=True,
-                          deterministic_pax_owners=True)))
+                          deterministic_pax_owners=True, pinned_tar_and_gzip_import=True)))
 
 
 if __name__ == "__main__":
