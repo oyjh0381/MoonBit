@@ -56,7 +56,7 @@ def main():
     entries = json.loads(run(binary, 'files', projected, 'linux', 'amd64'))['entries']
     observed = {item['path']: item for item in entries}
     assert len(entries) == len(observed) == len(image['files'])
-    kinds = {'0': 'file', '2': 'symlink', '5': 'directory'}
+    kinds = {'0': 'file', '1': 'hardlink', '2': 'symlink', '5': 'directory'}
     for path, expected in image['files'].items():
         actual = observed[path]
         assert actual['kind'] == kinds[expected['kind']], path
@@ -66,6 +66,38 @@ def main():
             assert actual[key] == expected[key], (path, key)
         assert int(actual['mtime']) == expected['mtime'], path
         assert int(actual['bytes']) == expected['bytes'], path
+
+    blobs = layout / 'blobs' / 'sha256'
+    original_manifest = json.loads((blobs / ALPINE_AMD64.split(':')[1]).read_bytes())
+    original_config = json.loads((blobs / original_manifest['config']['digest'].split(':')[1]).read_bytes())
+    imported = []
+    for descriptor, diff_id in zip(original_manifest['layers'], original_config['rootfs']['diff_ids'], strict=True):
+        assert descriptor['mediaType'] in ('application/vnd.oci.image.layer.v1.tar',
+                                           'application/vnd.oci.image.layer.v1.tar+gzip')
+        spec = dict(path=str(blobs / descriptor['digest'].split(':')[1]), diffId=diff_id)
+        if descriptor['mediaType'].endswith('+gzip'):
+            spec.update(encoding='gzip', blobDigest=descriptor['digest'])
+        imported.append(dict(sourceTar=spec))
+    overlay = work / 'overlay'
+    overlay.mkdir()
+    marker = 'moonoci-import-chain.txt'
+    assert marker not in observed
+    (overlay / marker).write_text('imported Alpine base', encoding='utf-8')
+    recomposed = work / 'recomposed'
+    build_spec = work / 'recomposed.json'
+    build_spec.write_text(json.dumps(dict(
+        schemaVersion=1, ref='recomposed', created='2026-01-01T00:00:00Z',
+        layers=[*imported, dict(source=str(overlay))], output=dict(layout=str(recomposed)),
+    )), encoding='utf-8')
+    run(binary, 'build', build_spec)
+    run(binary, 'verify', recomposed)
+    new_index = json.loads((recomposed / 'index.json').read_bytes())
+    new_blobs = recomposed / 'blobs' / 'sha256'
+    new_manifest = json.loads((new_blobs / new_index['manifests'][0]['digest'].split(':')[1]).read_bytes())
+    assert new_manifest['layers'][:-1] == original_manifest['layers']
+    recomposed_files = observe(recomposed)['images'][0]['files']
+    assert recomposed_files.pop(marker)['sha256'] == hashlib.sha256(b'imported Alpine base').hexdigest()
+    assert recomposed_files == image['files']
 
     bad_pin_output = work / 'wrong-pin'
     run(binary, 'flatten-pinned', layout, 'sha256:' + '0' * 64, bad_pin_output, '--images-only', status=5)
@@ -88,7 +120,7 @@ def main():
                   kinds=dict(Counter(item['kind'] for item in entries)),
                   absolute_symlinks=sum((item['link_target'] or '').startswith('/') for item in entries),
                   acquisition='oras-registry' if args.oras else 'existing-layout',
-                  moonoci_semantic_verification=True,
+                  moonoci_semantic_verification=True, recomposed_pinned_base_layers=len(imported),
                   wrong_pin_and_corrupt_layer_refused=True, container_runtime_executed=False)
     (work / 'report.json').write_text(json.dumps(report, indent=2), encoding='utf-8')
     print(json.dumps(report, indent=2))
