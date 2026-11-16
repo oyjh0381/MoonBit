@@ -52,3 +52,52 @@ test "pinned external tar is retained and applied between generated layers" {
   }
   assert_true(rejected)
 }
+
+///|
+test "adopting an existing gzip layer retains its compressed digest and DiffID" {
+  let request = @builder.default_single_layer_request([
+    @archive.TarEntry::file("payload", b"hello"),
+  ])
+  let source = @builder.build_single_layer({
+    ..request,
+    compression: @model.Gzip,
+  })
+  let descriptor = source.report.layers[0]
+  let gzip = source.layout.require_blob(descriptor)
+  let diff_id = @codec.decode_config(
+      source.layout.require_blob(source.report.config),
+    ).diff_ids[0]
+  let image = @builder.build_image_from_layers(
+    [PinnedGzip(gzip, descriptor.digest, diff_id)],
+    request.platform,
+    request.runtime,
+    request.reference,
+  )
+  assert_eq(image.report.layers, source.report.layers)
+  assert_eq(image.layout.index(), source.layout.index())
+  assert_eq(image.layout.require_blob(descriptor), gzip)
+  let mismatch = @digest.sha256(b"wrong")
+  let first : @builder.LayerInput = PinnedGzip(gzip, mismatch, diff_id)
+  let second : @builder.LayerInput = PinnedGzip(
+    gzip,
+    descriptor.digest,
+    mismatch,
+  )
+  for layer in [first, second] {
+    let rejected = try {
+      ignore(
+        @builder.build_image_from_layers(
+          [layer],
+          request.platform,
+          request.runtime,
+          request.reference,
+        ),
+      )
+      false
+    } catch {
+      @model.DigestMismatch(_) => true
+      _ => false
+    }
+    assert_true(rejected)
+  }
+}

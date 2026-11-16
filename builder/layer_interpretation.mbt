@@ -32,7 +32,14 @@ pub fn decode_layer_blob(
   if media_type != @model.media_type_layer_gzip {
     raise @model.Unsupported("unsupported layer media type: " + media_type)
   }
-  let max_size = 512 * 1024 * 1024
+  decode_gzip_layer(data, 512 * 1024 * 1024)
+}
+
+///|
+fn decode_gzip_layer(
+  data : Bytes,
+  max_size : Int32,
+) -> Bytes raise @model.MoonOciError {
   let uncompressed = @fzip.gunzip_sync(
     FixedArray::makei(data.length(), i => data[i]),
     opts={

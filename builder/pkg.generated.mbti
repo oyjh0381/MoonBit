@@ -89,6 +89,7 @@ pub fn LayerBuildRequest::to_repr(Self) -> @debug.Repr
 pub(all) enum LayerInput {
   Generated(LayerBuildRequest)
   PinnedTar(Bytes, @model.Digest, @model.Compression)
+  PinnedGzip(Bytes, @model.Digest, @model.Digest)
 }
 pub fn LayerInput::equal(Self, Self) -> Bool
 pub fn LayerInput::not_equal(Self, Self) -> Bool

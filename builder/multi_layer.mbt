@@ -47,12 +47,13 @@ pub fn build_image(
 }
 
 ///|
-/// A generated changeset or externally produced uncompressed tar with an
-/// independent DiffID pin. Imported archives are applied in their original order.
+/// A generated changeset or an externally produced, digest-pinned layer.
+/// PinnedGzip takes the compressed blob digest followed by the tar DiffID.
 #derive(Debug, Eq)
 pub(all) enum LayerInput {
   Generated(LayerBuildRequest)
   PinnedTar(Bytes, @model.Digest, @model.Compression)
+  PinnedGzip(Bytes, @model.Digest, @model.Digest)
 }
 
 ///|
@@ -87,12 +88,9 @@ pub fn build_image_from_layers(
   let history : Array[@model.History] = []
   let rootfs = RootfsNode::empty()
   for layer_index, layer in layers {
-    let (layer_tar, diff_id, compression, transitions) = prepare_layer_input(
-      layer,
-    )
-    diff_ids.push(diff_id)
-    let (media_type, blob) = compress_layer(layer_tar, compression)
-    layer_descriptors.push(layout.put_blob(media_type, blob))
+    let prepared = prepare_layer_input(layer)
+    diff_ids.push(prepared.diff_id)
+    layer_descriptors.push(layout.put_blob(prepared.media_type, prepared.blob))
     history.push({
       created,
       created_by: Some("moonoci build layer " + layer_index.to_string()),
@@ -100,7 +98,7 @@ pub fn build_image_from_layers(
       comment: None,
       empty_layer: false,
     })
-    rootfs.apply(transitions, layer_index)
+    rootfs.apply(prepared.transitions, layer_index)
   }
   let config : @model.ImageConfig = {
     created,
@@ -186,9 +184,17 @@ pub extend ImageBuildResult with @debug.Debug::{to_repr}
 pub extend ImageBuildResult with Eq::{not_equal, equal}
 
 ///|
+priv struct PreparedLayerInput {
+  media_type : String
+  blob : Bytes
+  diff_id : @model.Digest
+  transitions : Array[RootfsTransition]
+}
+
+///|
 fn prepare_layer_input(
   input : LayerInput,
-) -> (Bytes, @model.Digest, @model.Compression, Array[RootfsTransition]) raise @model.MoonOciError {
+) -> PreparedLayerInput raise @model.MoonOciError {
   match input {
     Generated(layer) => {
       let transitions = declared_rootfs_transitions(layer)
@@ -205,22 +211,42 @@ fn prepare_layer_input(
       } else {
         transitions
       }
-      (layer_tar, @digest.sha256(layer_tar), layer.compression, transitions)
+      let (media_type, blob) = compress_layer(layer_tar, layer.compression)
+      { media_type, blob, diff_id: @digest.sha256(layer_tar), transitions, }
     }
     PinnedTar(layer_tar, expected, compression) => {
-      if layer_tar.length() > max_imported_layer_tar_bytes {
-        raise @model.ResourceLimitExceeded("imported layer tar exceeds 256 MiB")
+      let transitions = pinned_tar_transitions(layer_tar, expected)
+      let (media_type, blob) = compress_layer(layer_tar, compression)
+      { media_type, blob, diff_id: expected, transitions, }
+    }
+    PinnedGzip(blob, expected_blob, diff_id) => {
+      if blob.length() > max_imported_layer_tar_bytes {
+        raise @model.ResourceLimitExceeded("imported gzip blob exceeds 256 MiB")
       }
-      let actual = @digest.sha256(layer_tar)
-      if actual != expected {
-        raise @model.DigestMismatch(
-          "imported layer DiffID differs from its pin",
-        )
+      if @digest.sha256(blob) != expected_blob {
+        raise @model.DigestMismatch("imported gzip blob differs from its pin")
       }
-      let transitions = archived_rootfs_transitions(
-        @archive.read_layer_tar(layer_tar),
-      )
-      (layer_tar, actual, compression, transitions)
+      let layer_tar = decode_gzip_layer(blob, max_imported_layer_tar_bytes)
+      {
+        media_type: @model.media_type_layer_gzip,
+        blob,
+        diff_id,
+        transitions: pinned_tar_transitions(layer_tar, diff_id),
+      }
     }
   }
+}
+
+///|
+fn pinned_tar_transitions(
+  layer_tar : Bytes,
+  expected : @model.Digest,
+) -> Array[RootfsTransition] raise @model.MoonOciError {
+  if layer_tar.length() > max_imported_layer_tar_bytes {
+    raise @model.ResourceLimitExceeded("imported layer tar exceeds 256 MiB")
+  }
+  if @digest.sha256(layer_tar) != expected {
+    raise @model.DigestMismatch("imported layer DiffID differs from its pin")
+  }
+  archived_rootfs_transitions(@archive.read_layer_tar(layer_tar))
 }
