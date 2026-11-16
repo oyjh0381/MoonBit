@@ -69,18 +69,48 @@ pub fn transcode_image(
     annotations=descriptor.annotations,
     platform?=descriptor.platform,
   )
-  result.set_index(
-    @codec.encode_index({
-      schema_version: 2,
-      media_type: @model.media_type_index,
-      manifests: [emitted],
-      annotations: [],
-    }),
-  )
+  result.set_index(rewrite_transcode_index(source.index(), expected, emitted))
   if !verify_memory(result).is_valid() {
     raise @model.InvalidOci("derived image failed verification")
   }
   { layout: result, manifest: emitted, converted_layers, }
+}
+
+///|
+fn rewrite_transcode_index(
+  index : Bytes,
+  expected : @model.Digest,
+  emitted : @model.Descriptor,
+) -> Bytes raise @model.MoonOciError {
+  guard @codec.parse_json_document(index, preserve_number_repr=true)
+    is Object(fields) &&
+    fields.get("manifests") is Some(Array(items)) else {
+    raise @model.InvalidOci("transcode requires an OCI image index")
+  }
+  if fields.contains("subject") || fields.contains("artifactType") {
+    raise @model.Unsupported("transcode requires a plain OCI image index")
+  }
+  if items.length() == 1 && expected == emitted.digest {
+    return index
+  }
+  for item in items {
+    if item is Object(raw) &&
+      raw.get("digest") == Some(Json::string(expected.to_string())) {
+      if expected != emitted.digest {
+        replace_storage(
+          raw,
+          emitted.digest,
+          emitted.media_type,
+          emitted.size.to_int(),
+        )
+      }
+      fields["manifests"] = Json::array([item])
+      return @utf8.encode(Json::object(fields).stringify())
+    }
+  }
+  raise @model.InvalidOci(
+    "cannot find transcode source descriptor in raw index",
+  )
 }
 
 ///|
@@ -93,7 +123,7 @@ fn replace_storage(
 ) -> Unit raise @model.MoonOciError {
   if raw.contains("urls") || raw.contains("data") {
     raise @model.Unsupported(
-      "cannot rewrite layer with inline data or external URLs",
+      "cannot rewrite a descriptor with inline data or external URLs",
     )
   }
   raw["digest"] = Json::string(digest.to_string())

@@ -37,3 +37,36 @@ test "image transcode leaves config bytes and ordered filesystem identities inta
   )
   assert_eq(back.manifest.digest, image.report.manifest.digest)
 }
+
+///|
+test "transcode retains annotations and exact numeric extension values" {
+  let image = @builder.build_single_layer(
+    @builder.default_single_layer_request([
+      @archive.TarEntry::file("file", b"data"),
+    ]),
+  )
+  let layout = image.layout
+  let original = image.report.manifest
+  let index = @codec.decode_index(layout.index())
+  let encoded = @codec.encode_descriptor(original)
+  let extended = encoded[:encoded.length() - 1].to_owned() +
+    ",\"x-serial\":9007199254740993}"
+  let raw = "{\"schemaVersion\":2,\"mediaType\":\"" +
+    index.media_type +
+    "\",\"annotations\":{\"service\":\"test\"},\"manifests\":[" +
+    extended +
+    "]}"
+  layout.set_index(@utf8.encode(raw))
+  let result = @builder.transcode_image(layout, original.digest, @model.Gzip)
+  let tag = @codec.decode_index(result.layout.index())
+  assert_eq(tag.annotations, [{ key: "service", value: "test", }])
+  assert_true(
+    @utf8.decode_lossy(result.layout.index()).contains("9007199254740993"),
+  )
+  let unchanged = @builder.transcode_image(
+    layout,
+    original.digest,
+    @model.Uncompressed,
+  )
+  assert_eq(unchanged.layout.index(), layout.index())
+}
