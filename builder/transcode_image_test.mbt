@@ -111,6 +111,21 @@ test "selective transcode preserves storage of every unselected layer" {
   assert_eq(both.converted_layers, 2)
   assert_eq(rows[0].descriptor.digest, rows[2].descriptor.digest)
   assert_eq(both.layout.blob_count(), 4)
+  assert_eq(
+    both.source_layer_bytes,
+    image.report.layers[0].size + image.report.layers[1].size,
+  )
+  assert_eq(
+    both.result_layer_bytes,
+    rows[0].descriptor.size + rows[1].descriptor.size,
+  )
+  assert_eq(
+    changed.result_layer_bytes,
+    rows[0].descriptor.size +
+    image.report.layers[0].size +
+    image.report.layers[1].size,
+  )
+
   for positions in [[], [1, 1], [-1], [3]] {
     let rejected = try {
       ignore(

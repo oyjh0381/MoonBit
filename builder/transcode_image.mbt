@@ -1,9 +1,12 @@
 ///|
 /// Publishable result of a verified single-platform storage conversion.
+/// Layer byte counts sum unique stored layer blobs in the selected image.
 pub(all) struct ImageTranscode {
   layout : @layout.MemoryLayout
   manifest : @model.Descriptor
   converted_layers : Int32
+  source_layer_bytes : Int64
+  result_layer_bytes : Int64
 }
 
 ///|
@@ -55,6 +58,10 @@ pub fn transcode_image(
   let result = @layout.MemoryLayout::new()
   ignore(result.put_blob(manifest.config.media_type, config_data))
   let mut converted_layers = 0
+  let seen_input : Map[String, Bool] = Map([])
+  let seen_output : Map[String, Bool] = Map([])
+  let mut source_layer_bytes = 0L
+  let mut result_layer_bytes = 0L
   let transcoded : Map[String, LayerTranscode] = Map([])
   let target_media = match compression {
     Uncompressed => @model.media_type_layer_tar
@@ -62,26 +69,31 @@ pub fn transcode_image(
   }
   for index, layer in manifest.layers {
     let data = source.require_blob(layer)
-    if layer.media_type == target_media ||
-      (positions is Some(_) && !selected.contains(index)) {
-      ignore(result.put_blob(layer.media_type, data))
-      continue
+    let input_key = layer.digest.to_string()
+    if !seen_input.contains(input_key) {
+      seen_input[input_key] = true
+      source_layer_bytes += layer.size
     }
     let diff_id = config.diff_ids[index]
-    let key = layer.digest.to_string() + "|" + layer.media_type
-    let converted = match transcoded.get(key) {
-      Some(previous) => {
-        if previous.diff_id != diff_id {
-          raise @model.DigestMismatch(
-            "same layer blob declares conflicting DiffIDs",
-          )
+    let converted : LayerTranscode = if layer.media_type == target_media ||
+      (positions is Some(_) && !selected.contains(index)) {
+      { media_type: layer.media_type, data, digest: layer.digest, diff_id, }
+    } else {
+      let key = input_key + "|" + layer.media_type
+      match transcoded.get(key) {
+        Some(previous) => {
+          if previous.diff_id != diff_id {
+            raise @model.DigestMismatch(
+              "same layer blob declares conflicting DiffIDs",
+            )
+          }
+          previous
         }
-        previous
-      }
-      None => {
-        let next = transcode_layer_blob(layer, data, diff_id, compression)
-        transcoded[key] = next
-        next
+        None => {
+          let next = transcode_layer_blob(layer, data, diff_id, compression)
+          transcoded[key] = next
+          next
+        }
       }
     }
     if converted.digest != layer.digest ||
@@ -98,6 +110,11 @@ pub fn transcode_image(
       converted_layers += 1
     }
     ignore(result.put_blob(converted.media_type, converted.data))
+    let output_key = converted.digest.to_string()
+    if !seen_output.contains(output_key) {
+      seen_output[output_key] = true
+      result_layer_bytes += converted.data.length().to_int64()
+    }
   }
   let manifest_data = if converted_layers == 0 {
     original
@@ -114,7 +131,13 @@ pub fn transcode_image(
   if !verify_memory(result).is_valid() {
     raise @model.InvalidOci("derived image failed verification")
   }
-  { layout: result, manifest: emitted, converted_layers, }
+  {
+    layout: result,
+    manifest: emitted,
+    converted_layers,
+    source_layer_bytes,
+    result_layer_bytes,
+  }
 }
 
 ///|

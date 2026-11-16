@@ -86,6 +86,8 @@ pub(all) struct ImageTranscode {
   layout : @layout.MemoryLayout
   manifest : @model.Descriptor
   converted_layers : Int32
+  source_layer_bytes : Int64
+  result_layer_bytes : Int64
 }
 
 #derive(Eq, @debug.Debug)

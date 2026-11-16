@@ -70,6 +70,8 @@ async fn transcode_image_command(args : Array[String]) -> Unit {
     "resultIndex": Json::string(index_pin.to_string()),
     "written": Json::boolean(!dry_run),
     "convertedLayers": Json::number(result.converted_layers.to_double()),
+    "sourceLayerBytes": Json::string(result.source_layer_bytes.to_string()),
+    "resultLayerBytes": Json::string(result.result_layer_bytes.to_string()),
     "storageEncoding": Json::string(args[4]),
   }
   @stdio.stdout.write(receipt.stringify() + "\n")
