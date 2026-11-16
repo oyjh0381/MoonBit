@@ -1,6 +1,7 @@
 """Pull a pinned public OCI image with ORAS and verify it offline with MoonOCI."""
 import argparse
 from collections import Counter
+import gzip
 import hashlib
 import json
 from pathlib import Path
@@ -71,6 +72,7 @@ def main():
     original_manifest = json.loads((blobs / ALPINE_AMD64.split(':')[1]).read_bytes())
     original_config = json.loads((blobs / original_manifest['config']['digest'].split(':')[1]).read_bytes())
     imported = []
+    imported_layer_descriptors = original_manifest['layers']
     for descriptor, diff_id in zip(original_manifest['layers'], original_config['rootfs']['diff_ids'], strict=True):
         assert descriptor['mediaType'] in ('application/vnd.oci.image.layer.v1.tar',
                                            'application/vnd.oci.image.layer.v1.tar+gzip')
@@ -99,6 +101,26 @@ def main():
     assert recomposed_files.pop(marker)['sha256'] == hashlib.sha256(b'imported Alpine base').hexdigest()
     assert recomposed_files == image['files']
 
+    plain = work / 'alpine-uncompressed'
+    report = json.loads(run(binary, 'transcode-image', projected, ALPINE_AMD64, 'none', plain))
+    assert report['sourceManifest'] == ALPINE_AMD64
+    assert report['convertedLayers'] == sum('gzip' in entry['mediaType'] for entry in imported_layer_descriptors)
+    assert json.loads(run(binary, 'verify-store', plain))['valid']
+    before_chain = json.loads(run(binary, 'layer-chain', projected, 'linux', 'amd64'))['layers']
+    after_chain = json.loads(run(binary, 'layer-chain', plain, 'linux', 'amd64'))['layers']
+    for before, after in zip(before_chain, after_chain, strict=True):
+        assert before['diffId'] == after['diffId'] == after['blob']
+        assert before['chainId'] == after['chainId']
+        original_bytes = (projected / 'blobs/sha256' / before['blob'].split(':')[1]).read_bytes()
+        plain_bytes = (plain / 'blobs/sha256' / after['blob'].split(':')[1]).read_bytes()
+        assert plain_bytes == (gzip.decompress(original_bytes) if before['mediaType'].endswith('+gzip')
+                               else original_bytes)
+    plain_image, = observe(plain)['images']
+    assert plain_image['platform'] == image['platform']
+    for name, entry in image['files'].items():
+        assert {k: v for k, v in entry.items() if k != 'layer_digest'} == {
+            k: v for k, v in plain_image['files'][name].items() if k != 'layer_digest'}
+
     bad_pin_output = work / 'wrong-pin'
     run(binary, 'flatten-pinned', layout, 'sha256:' + '0' * 64, bad_pin_output, '--images-only', status=5)
     assert not bad_pin_output.exists()
@@ -121,6 +143,7 @@ def main():
                   absolute_symlinks=sum((item['link_target'] or '').startswith('/') for item in entries),
                   acquisition='oras-registry' if args.oras else 'existing-layout',
                   moonoci_semantic_verification=True, recomposed_pinned_base_layers=len(imported),
+                  independently_transcoded_public_image=True,
                   wrong_pin_and_corrupt_layer_refused=True, container_runtime_executed=False)
     (work / 'report.json').write_text(json.dumps(report, indent=2), encoding='utf-8')
     print(json.dumps(report, indent=2))
