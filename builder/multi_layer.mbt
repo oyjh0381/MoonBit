@@ -55,7 +55,7 @@ pub fn build_image(
     for path in layer.opaque_dirs {
       tar_entries.push(@archive.TarEntry::opaque_marker(path))
     }
-    let layer_tar = @archive.write_tar(tar_entries)
+    let (layer_tar, emitted) = @archive.write_tar_with_order(tar_entries)
     diff_ids.push(@digest.sha256(layer_tar))
     let (media_type, blob) = compress_layer(layer_tar, layer.compression)
     layer_descriptors.push(layout.put_blob(media_type, blob))
@@ -67,7 +67,7 @@ pub fn build_image(
       empty_layer: false,
     })
     let transitions = if tar_entries.any(entry => entry.kind == Hardlink) {
-      archived_rootfs_transitions(@archive.read_layer_tar(layer_tar))
+      archived_rootfs_transitions(emitted)
     } else {
       transitions
     }

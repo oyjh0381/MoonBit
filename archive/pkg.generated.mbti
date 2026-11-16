@@ -13,6 +13,8 @@ pub fn read_tar(Bytes, max_entries? : Int32, max_path_bytes? : Int32) -> Array[T
 
 pub fn write_tar(Array[TarEntry]) -> Bytes raise @model.MoonOciError
 
+pub fn write_tar_with_order(Array[TarEntry]) -> (Bytes, Array[TarEntry]) raise @model.MoonOciError
+
 // Errors
 
 // Types and methods

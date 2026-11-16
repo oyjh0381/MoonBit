@@ -4,6 +4,17 @@ let tar_block_size : Int32 = 512
 ///|
 /// Build a deterministic uncompressed layer tar.
 pub fn write_tar(entries : Array[TarEntry]) -> Bytes raise @model.MoonOciError {
+  let (wire, _) = write_tar_with_order(entries)
+  wire
+}
+
+///|
+/// Write a canonical tar and return the exact order of the emitted entries.
+/// Callers that apply filesystem transitions can replay it without parsing the
+/// generated archive or copying its file payloads.
+pub fn write_tar_with_order(
+  entries : Array[TarEntry],
+) -> (Bytes, Array[TarEntry]) raise @model.MoonOciError {
   let sorted = entries.copy()
   sorted.sort_by((a, b) => @pathing.compare_utf8(a.path, b.path))
   validate_unique_paths(sorted)
@@ -20,7 +31,7 @@ pub fn write_tar(entries : Array[TarEntry]) -> Bytes raise @model.MoonOciError {
     write_entry(output, entry)
   }
   append_zeros(output, tar_block_size * 2)
-  Bytes::from_array(output)
+  (Bytes::from_array(output), ordered)
 }
 
 ///|
