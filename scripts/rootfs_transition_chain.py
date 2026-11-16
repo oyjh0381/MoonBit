@@ -142,6 +142,51 @@ def import_external_layer(run, work, base, upper):
 
 
 
+def transcode_existing_image(run, work):
+    source = work / "mixed-raw"
+    expected = json.loads(run("layer-chain", source, "linux", "amd64"))
+    manifest = expected["manifest"]
+    wrong = work / "transcode-wrong"
+    try:
+        run("transcode-image", source, "sha256:" + "0" * 64, "gzip", wrong)
+    except subprocess.CalledProcessError:
+        assert not wrong.exists()
+    else:
+        raise AssertionError("bad manifest pin was accepted")
+
+    encoded = work / "transcoded-gzip"
+    receipt = json.loads(run("transcode-image", source, manifest, "gzip", encoded))
+    assert receipt["convertedLayers"] == len(expected["layers"])
+    assert receipt["sourceManifest"] == manifest
+    assert receipt["resultManifest"] != manifest
+    assert run("verify", encoded).startswith("valid: manifests=1")
+    compact = json.loads(run("layer-chain", encoded, "linux", "amd64"))
+    assert compact["manifest"] == receipt["resultManifest"]
+    original_files = observe(source)["images"][0]["files"]
+    encoded_files = observe(encoded)["images"][0]["files"]
+    # File provenance compares layer position, while stored layer digests change.
+    for files in (original_files, encoded_files):
+        for node in files.values():
+            node.pop("layer_digest")
+    assert original_files == encoded_files
+
+    for before, after in zip(expected["layers"], compact["layers"], strict=True):
+        assert before["diffId"] == after["diffId"] and before["chainId"] == after["chainId"]
+        raw = (source / "blobs/sha256" / before["blob"].split(":")[1]).read_bytes()
+        stored = (encoded / "blobs/sha256" / after["blob"].split(":")[1]).read_bytes()
+        assert gzip.decompress(stored) == raw
+
+    decoded = work / "transcoded-back"
+    restored = json.loads(run("transcode-image", encoded, compact["manifest"], "none", decoded))
+    assert restored["resultManifest"] == manifest
+    assert (decoded / "index.json").read_bytes() == (source / "index.json").read_bytes()
+    repeat = work / "transcoded-no-op"
+    unchanged = json.loads(run("transcode-image", encoded, compact["manifest"], "gzip", repeat))
+    assert unchanged["convertedLayers"] == 0
+    assert (repeat / "index.json").read_bytes() == (encoded / "index.json").read_bytes()
+
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--binary", type=Path, required=True)
@@ -236,12 +281,14 @@ def main():
                 assert source["sha256"] == hashlib.sha256(b"original payload").hexdigest()
     assert indexes[0] == indexes[1]
     import_external_layer(run, work, base, reset)
+    transcode_existing_image(run, work)
     print(json.dumps(dict(layer_counts=[2, 3], independently_verified_files=6,
                           deterministic_hardlinks=True,
                           same_path_whiteout=True, whole_root_opacity=True,
                           independent_tar_producer=True, independent_gnu_hardlink=True,
                           deterministic_pax_owners=True, pinned_tar_and_gzip_import=True,
-                          compression_independent_chain_ids=True)))
+                          compression_independent_chain_ids=True,
+                          image_transcode_roundtrip=True)))
 
 
 if __name__ == "__main__":

@@ -116,3 +116,22 @@ Run `moonoci layer-chain IMAGE_LAYOUT linux amd64` to inspect each stored
 blob digest, uncompressed DiffID, and OCI ChainID. ChainID identifies the
 ordered prefix of filesystem changes. Storing the same tar with different
 compression changes the blob digest while preserving the ChainIDs.
+
+### Transcode a verified image
+
+```text
+moonoci transcode-image INPUT MANIFEST_PIN gzip OUTPUT
+moonoci transcode-image INPUT MANIFEST_PIN none OUTPUT
+```
+
+The command selects a unique digest in the top-level OCI index and produces
+a standalone image in a new directory. It preserves config bytes, DiffIDs
+and ChainIDs. It writes new storage descriptors only where the encoding
+changes and preserves unrelated metadata fields in those descriptors. A
+changed descriptor with inline data or external URLs is rejected because
+those fields identify the prior bytes. Subject-bound artifacts require
+their own derivation.
+
+The independent filesystem consumer compares the actual decompressed tar
+bytes for each layer, then converts back and checks the original manifest
+digest. A no-op conversion retains the original manifest bytes.
