@@ -30,6 +30,7 @@ Every layer object requires `source`, the Native directory containing additions 
 | --- | --- | --- |
 | `source` | string | Layer Source directory |
 | `compression` | `none` or `gzip` | stored Blob encoding; default `none` |
+| `hardlinks` | string map | explicit archive-relative hardlink path to same-layer regular file |
 | `remove` | string array | root-relative paths encoded as Whiteouts |
 | `opaque` | string array | directories encoded with opaque markers |
 | `exclude` | string array | `*`/`?` patterns applied to portable `/` paths |
@@ -46,6 +47,13 @@ filesystem transitions can be applied as well as verifying layer digests.
 The builder preserves numeric owner IDs up to 2,147,483,647, using a PAX
 header when a value exceeds the USTAR octal field. The layer reader also
 accepts positive GNU base-256 numeric fields and conventional \`./\` paths.
+
+Declare explicit hardlinks with `{"hardlinks":{"bin/alias":"bin/tool"}}`.
+Targets must belong to the current layer and resolve to regular files. The
+writer emits each target before its links, so JSON key order has no effect
+on the output. The inventory reports the original file content and metadata
+for each alias, including after an upper layer replaces the original path.
+Cross-layer hardlink creation is outside this profile.
 
 Metadata fields are `mode`, `uid`, `gid`, `mtime`, and `preserveMtime`. Defaults normalize ownership to `0:0`, mtime to `0`, regular files to mode `0644`, directories to `0755`, and symlinks to `0777`. Explicit `mode`, `uid`, `gid`, and `mtime` override those values. Native mode and ownership preservation are outside the v1 schema; mtime preservation is supported.
 

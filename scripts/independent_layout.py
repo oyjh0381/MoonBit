@@ -24,7 +24,7 @@ def apply_tar(files, data, layer_digest, layer_index):
                 continue
             assert str(path) not in seen
             seen.add(str(path))
-            assert member.isfile() or member.isdir() or member.issym()
+            assert member.isfile() or member.isdir() or member.issym() or member.islnk()
             if path.name.startswith('.wh.'):
                 assert member.isfile() and member.size == 0
                 if path.name == '.wh..wh..opq':
@@ -37,13 +37,23 @@ def apply_tar(files, data, layer_digest, layer_index):
                     removed = str(path.parent / path.name[4:])
                     files = {p: v for p, v in files.items() if p != removed and not p.startswith(removed + '/')}
             else:
-                stream = archive.extractfile(member) if member.isfile() else None
+                stream = archive.extractfile(member) if member.isfile() or member.islnk() else None
+                payload = stream.read() if stream is not None else None
                 additions.append((str(path), dict(kind=member.type.decode(), mode=member.mode,
-                    bytes=member.size, sha256=hashlib.sha256(stream.read()).hexdigest() if stream else None,
+                    bytes=len(payload) if payload is not None else member.size,
+                    sha256=hashlib.sha256(payload).hexdigest() if payload is not None else None,
                     uid=member.uid, gid=member.gid, mtime=member.mtime,
-                    link_target=member.linkname if member.issym() else None,
+                    link_target=member.linkname if member.issym() or member.islnk() else None,
                     layer_digest=layer_digest, layer_index=layer_index)))
-        for name, metadata in sorted(additions):
+        hardlink_type = tarfile.LNKTYPE.decode()
+        if not any(row["kind"] == hardlink_type for _, row in additions):
+            additions.sort()
+        for name, metadata in additions:
+            if metadata["kind"] == hardlink_type:
+                source = files[str(PurePosixPath(metadata["link_target"]))]
+                assert metadata["sha256"] == source["sha256"]
+                for key in ("mode", "uid", "gid", "mtime"):
+                    metadata[key] = source[key]
             if metadata['kind'] != tarfile.DIRTYPE.decode():
                 files = {p: v for p, v in files.items() if p != name and not p.startswith(name + '/')}
             files[name] = metadata

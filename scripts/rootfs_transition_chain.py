@@ -107,7 +107,38 @@ def main():
         assert tool["content_digest"] == "sha256:" + files["bin/tool"]["sha256"]
         assert tool["uid"] == files["bin/tool"]["uid"] == uid
         assert tool["gid"] == files["bin/tool"]["gid"] == gid
+    hardlink_source = work / "hardlink-source"
+    hardlink_source.mkdir()
+    (hardlink_source / "z").write_bytes(b"original payload")
+    hardlink_update = work / "hardlink-update"
+    hardlink_update.mkdir()
+    (hardlink_update / "z").write_bytes(b"new target")
+    payload = dict(schemaVersion=1, layers=[
+        dict(source=str(hardlink_source), hardlinks={"a": "b", "b": "z"},
+             compression="gzip", metadata=dict(uid=47, mode=416)),
+        dict(source=str(hardlink_update)),
+    ])
+    indexes = []
+    for run_index in range(2):
+        target = work / f"hardlink-layout-{run_index}"
+        spec = work / f"hardlink-{run_index}.json"
+        spec.write_text(json.dumps(dict(payload, output=dict(layout=str(target)))), encoding="utf-8")
+        run("build", spec)
+        indexes.append((target / "index.json").read_bytes())
+        assert run("verify", target).startswith("valid: manifests=1")
+        files = observe(target)["images"][0]["files"]
+        assert set(files) == {"a", "b", "z"}
+        for item in json.loads(run("files", target, "linux", "amd64"))["entries"]:
+            source = files[item["path"]]
+            assert item["content_digest"] == "sha256:" + source["sha256"]
+            assert item["link_target"] == source["link_target"]
+            assert item["mode"] == source["mode"] and item["uid"] == source["uid"]
+            if item["path"] in {"a", "b"}:
+                assert item["kind"] == "hardlink" and source["kind"] == "1"
+                assert source["sha256"] == hashlib.sha256(b"original payload").hexdigest()
+    assert indexes[0] == indexes[1]
     print(json.dumps(dict(layer_counts=[2, 3], independently_verified_files=6,
+                          deterministic_hardlinks=True,
                           same_path_whiteout=True, whole_root_opacity=True,
                           independent_tar_producer=True, deterministic_pax_owners=True)))
 
