@@ -157,6 +157,14 @@ def transcode_existing_image(run, work):
     encoded = work / "transcoded-gzip"
     preview = json.loads(run("transcode-image", source, manifest, "gzip", encoded, "--dry-run"))
     assert not preview["written"] and not encoded.exists()
+    assert preview["sourceIndex"] == "sha256:" + hashlib.sha256((source / "index.json").read_bytes()).hexdigest()
+    try:
+        run("transcode-image", source, manifest, "gzip", encoded,
+            "--expect-source-index", "sha256:" + "0" * 64)
+    except subprocess.CalledProcessError as error:
+        assert error.returncode == 5 and not encoded.exists()
+    else:
+        raise AssertionError("incorrect source index was accepted")
     try:
         run("transcode-image", source, manifest, "gzip", encoded, "--layers", "1",
             "--expect-index", preview["resultIndex"])
@@ -165,7 +173,8 @@ def transcode_existing_image(run, work):
     else:
         raise AssertionError("changed transcode selection matched the preview")
     receipt = json.loads(run("transcode-image", source, manifest, "gzip", encoded,
-                             "--expect-index", preview["resultIndex"]))
+                             "--expect-index", preview["resultIndex"],
+                             "--expect-source-index", preview["sourceIndex"]))
     assert receipt["written"] and receipt["resultIndex"] == preview["resultIndex"]
     assert receipt["convertedLayers"] == len(expected["layers"])
     assert receipt["sourceManifest"] == manifest

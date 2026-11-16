@@ -6,6 +6,7 @@ async fn transcode_image_command(args : Array[String]) -> Unit {
     )
   }
   let mut positions : Array[Int32]? = None
+  let mut expected_source_index : @model.Digest? = None
   let mut expected_index : @model.Digest? = None
   let mut dry_run = false
   let mut offset = 6
@@ -14,6 +15,11 @@ async fn transcode_image_command(args : Array[String]) -> Unit {
       "--layers" if offset + 1 < args.length() && positions is None => {
         offset += 1
         positions = Some(parse_transcode_positions(args[offset]))
+      }
+      "--expect-source-index" if offset + 1 < args.length() &&
+        expected_source_index is None => {
+        offset += 1
+        expected_source_index = Some(@model.Digest::parse(args[offset]))
       }
       "--expect-index" if offset + 1 < args.length() && expected_index is None => {
         offset += 1
@@ -37,6 +43,10 @@ async fn transcode_image_command(args : Array[String]) -> Unit {
       raise @model.InvalidArgument("transcode compression must be none or gzip")
   }
   let source = @native.load_bounded_layout(args[2])
+  let source_index = @digest.sha256(source.index())
+  if expected_source_index is Some(pin) && pin != source_index {
+    raise @model.DigestMismatch("transcode source index differs from its pin")
+  }
   let result = @builder.transcode_image(
     source,
     expected,
@@ -54,6 +64,7 @@ async fn transcode_image_command(args : Array[String]) -> Unit {
   }
   let receipt : Json = {
     "schema": "moonoci.image-transcode.v1",
+    "sourceIndex": Json::string(source_index.to_string()),
     "sourceManifest": Json::string(expected.to_string()),
     "resultManifest": Json::string(result.manifest.digest.to_string()),
     "resultIndex": Json::string(index_pin.to_string()),
