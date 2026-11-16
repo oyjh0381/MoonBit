@@ -155,7 +155,18 @@ def transcode_existing_image(run, work):
         raise AssertionError("bad manifest pin was accepted")
 
     encoded = work / "transcoded-gzip"
-    receipt = json.loads(run("transcode-image", source, manifest, "gzip", encoded))
+    preview = json.loads(run("transcode-image", source, manifest, "gzip", encoded, "--dry-run"))
+    assert not preview["written"] and not encoded.exists()
+    try:
+        run("transcode-image", source, manifest, "gzip", encoded, "--layers", "1",
+            "--expect-index", preview["resultIndex"])
+    except subprocess.CalledProcessError as error:
+        assert error.returncode == 5 and not encoded.exists()
+    else:
+        raise AssertionError("changed transcode selection matched the preview")
+    receipt = json.loads(run("transcode-image", source, manifest, "gzip", encoded,
+                             "--expect-index", preview["resultIndex"]))
+    assert receipt["written"] and receipt["resultIndex"] == preview["resultIndex"]
     assert receipt["convertedLayers"] == len(expected["layers"])
     assert receipt["sourceManifest"] == manifest
     assert receipt["resultManifest"] != manifest

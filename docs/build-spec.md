@@ -138,3 +138,7 @@ digest. A no-op conversion retains the original manifest bytes.
 
 Append --layers with comma-separated zero-based positions to choose which
 layers to transcode. All unselected layer descriptors and blobs are retained.
+
+Use `--dry-run` to compute and verify the output without creating the target.
+Pass the reported `resultIndex` back as `--expect-index DIGEST` to reject
+any change in the derived index before writing the layout.
