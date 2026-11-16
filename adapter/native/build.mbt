@@ -5,25 +5,40 @@ pub async fn build_from_file(spec_path : String) -> @builder.ImageBuildResult {
     raise @model.IoFailure("Build Specification does not exist: " + spec_path)
   }
   let spec = @spec.parse_build_spec(@fs.read_file(spec_path).binary())
-  let layers : Array[@builder.LayerBuildRequest] = []
+  let layers : Array[@builder.LayerInput] = []
   for layer in spec.layers {
-    let entries = collect_layer_source(layer.source, layer)
-    layers.push({
-      entries,
-      remove: layer.remove,
-      opaque_dirs: layer.opaque_dirs,
-      compression: layer.compression,
-    })
+    let input : @builder.LayerInput = match layer.tar_diff_id {
+      None =>
+        Generated({
+          entries: collect_layer_source(layer.source, layer),
+          remove: layer.remove,
+          opaque_dirs: layer.opaque_dirs,
+          compression: layer.compression,
+        })
+      Some(pin) => {
+        if @fs.kind(layer.source, follow_symlink=false) != @fs.FileKind::Regular {
+          raise @model.InvalidBuildSpec(
+            "sourceTar must name a regular file: " + layer.source,
+          )
+        }
+        let tar = read_bounded_file(
+          layer.source,
+          @builder.max_imported_layer_tar_bytes,
+        )
+        PinnedTar(tar, pin, layer.compression)
+      }
+    }
+    layers.push(input)
   }
-  let result = @builder.build_image({
+  let result = @builder.build_image_from_layers(
     layers,
-    platform: spec.platform,
-    runtime: spec.runtime,
-    created: resolve_created(spec.created),
-    author: spec.author,
-    reference: spec.reference,
-    annotations: spec.annotations,
-  })
+    spec.platform,
+    spec.runtime,
+    spec.reference,
+    created?=resolve_created(spec.created),
+    author?=spec.author,
+    annotations=spec.annotations,
+  )
   write_layout(spec.output.layout, result.layout)
   result
 }

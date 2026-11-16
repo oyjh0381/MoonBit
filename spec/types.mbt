@@ -14,6 +14,7 @@ pub(all) struct MetadataSpec {
 #derive(Debug, Eq)
 pub(all) struct LayerSpec {
   source : String
+  tar_diff_id : @model.Digest?
   compression : @model.Compression
   remove : Array[String]
   opaque_dirs : Array[String]

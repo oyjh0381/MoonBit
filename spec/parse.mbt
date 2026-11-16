@@ -78,11 +78,36 @@ fn parse_layer(value : Json) -> LayerSpec raise @model.MoonOciError {
     object,
     [
       "source", "compression", "remove", "opaque", "exclude", "ignoreFile", "metadata",
-      "hardlinks",
+      "hardlinks", "sourceTar",
     ],
     "layer",
   )
-  let source = required_string(object, "source")
+  let (source, tar_diff_id) = match
+    (object.get("source"), object.get("sourceTar")) {
+    (Some(value), None) => (expect_string(value, "source"), None)
+    (None, Some(value)) => {
+      let tar = expect_object(value, "sourceTar")
+      reject_unknown(tar, ["path", "diffId"], "sourceTar")
+      for
+        option in [
+          "remove", "opaque", "exclude", "ignoreFile", "metadata", "hardlinks",
+        ] {
+        if object.contains(option) {
+          raise @model.InvalidBuildSpec(
+            "sourceTar cannot be combined with " + option,
+          )
+        }
+      }
+      (
+        required_string(tar, "path"),
+        Some(@model.Digest::parse(required_string(tar, "diffId"))),
+      )
+    }
+    _ =>
+      raise @model.InvalidBuildSpec(
+        "layer requires exactly one of source or sourceTar",
+      )
+  }
   if source == "" || source.contains_char('\u{0000}') {
     raise @model.InvalidBuildSpec(
       "layer source must not be empty or contain NUL",
@@ -127,6 +152,7 @@ fn parse_layer(value : Json) -> LayerSpec raise @model.MoonOciError {
   })
   {
     source,
+    tar_diff_id,
     hardlinks,
     compression,
     remove,

@@ -118,3 +118,34 @@ test "build specification validates declared hardlink paths" {
     assert_spec_fails(@utf8.encode(declaration))
   }
 }
+
+///|
+test "sourceTar requires an independent digest and forbids transforms" {
+  let parsed = @spec.parse_build_spec(
+    (
+      #|{"schemaVersion":1,"layers":[{"sourceTar":{"path":"changes.tar","diffId":"sha256:0000000000000000000000000000000000000000000000000000000000000000"},"compression":"gzip"}]}
+    )
+    |> @utf8.encode,
+  )
+  assert_eq(parsed.layers[0].source, "changes.tar")
+  assert_true(parsed.layers[0].tar_diff_id is Some(_))
+  for
+    layer in [
+      (
+        #|{"sourceTar":{"path":"changes.tar"}}
+      ),
+      (
+        #|{"sourceTar":{"path":"changes.tar","diffId":"bad"}}
+      ),
+      (
+        #|{"source":"files","sourceTar":{"path":"changes.tar","diffId":"bad"}}
+      ),
+      (
+        #|{"sourceTar":{"path":"changes.tar","diffId":"sha256:0000000000000000000000000000000000000000000000000000000000000000"},"remove":[]}
+      ),
+    ] {
+    assert_spec_fails(
+      @utf8.encode("{\"schemaVersion\":1,\"layers\":[" + layer + "]}"),
+    )
+  }
+}

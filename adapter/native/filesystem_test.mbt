@@ -11,6 +11,7 @@ async test "Native adapter collects sorted normalized files and exclusions" {
   @fs.write_file(root + "/skip.tmp", "skip", create_mode=CreateOrTruncate)
   let layer : @spec.LayerSpec = {
     source: root,
+    tar_diff_id: None,
     compression: @model.Compression::Uncompressed,
     remove: [],
     opaque_dirs: [],
