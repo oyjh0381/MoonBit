@@ -147,6 +147,7 @@ fn read_tar_impl(
         b'\x00' | b'0' => Regular
         b'5' => Directory
         b'2' => Symlink
+        b'1' => Hardlink
         b'S' =>
           raise @model.Unsupported("GNU sparse tar entries are not supported")
         other =>
@@ -162,7 +163,19 @@ fn read_tar_impl(
       } else {
         b""
       }
-      let link_target = if kind == Symlink {
+      let link_target = if kind == Hardlink {
+        let target = if layer && raw_link.has_prefix("./") {
+          raw_link[2:].to_owned()
+        } else {
+          raw_link
+        }
+        if @utf8.encode(target).length() > max_path_bytes {
+          raise @model.ResourceLimitExceeded(
+            "hardlink target exceeds configured limit",
+          )
+        }
+        Some(@pathing.normalize_archive_path(target))
+      } else if kind == Symlink {
         if raw_link == "" {
           raise @model.InvalidTar("symlink entry has an empty target")
         }

@@ -145,3 +145,24 @@ test "GNU base-256 numbers preserve large IDs and reject truncation" {
   }
   assert_true(refused)
 }
+
+///|
+test "OCI tar decodes hardlinks as normalized archive-relative targets" {
+  let rows = read_layer_tar(
+    layer_headers([("bin/tool", b'0', ""), ("./bin/alias", b'1', "./bin/tool")]),
+  )
+  assert_eq(rows[1].path, "bin/alias")
+  assert_eq(rows[1].kind, Hardlink)
+  assert_eq(rows[1].link_target, Some("bin/tool"))
+  assert_eq(rows[1].size(), 0L)
+  for target in ["", "/host", "../outside", "./../outside"] {
+    let rejected = try {
+      ignore(read_layer_tar(layer_headers([("alias", b'1', target)])))
+      false
+    } catch {
+      @model.InvalidPath(_) => true
+      _ => false
+    }
+    assert_true(rejected)
+  }
+}

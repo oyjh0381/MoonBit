@@ -5,6 +5,7 @@ pub(all) enum TarEntryKind {
   Regular
   Directory
   Symlink
+  Hardlink
 }
 
 ///|
@@ -96,7 +97,7 @@ pub fn TarEntry::opaque_marker(
 pub fn TarEntry::size(self : TarEntry) -> Int64 {
   match self.kind {
     Regular => self.data.length().to_int64()
-    Directory | Symlink => 0L
+    Directory | Symlink | Hardlink => 0L
   }
 }
 

@@ -45,6 +45,8 @@ fn validate_entry(entry : TarEntry) -> Unit raise @model.MoonOciError {
           "directory tar entry must not contain data or a link target",
         )
       }
+    Hardlink =>
+      raise @model.Unsupported("hardlink tar writing is not supported")
     Symlink => {
       if entry.data.length() != 0 {
         raise @model.InvalidTar("symlink tar entry must not contain data")
@@ -100,6 +102,7 @@ fn write_entry(
     Regular => b'0'
     Directory => b'5'
     Symlink => b'2'
+    Hardlink => b'1'
   }
   let header = make_header(
     header_path,

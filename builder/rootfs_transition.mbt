@@ -162,6 +162,10 @@ fn RootfsNode::apply(
       Regular => "file"
       Directory => "directory"
       Symlink => "symlink"
+      Hardlink =>
+        raise @model.Unsupported(
+          "hardlink filesystem reconstruction is not supported",
+        )
     }
     let observed : @model.RootfsEntry = {
       path: entry.path,

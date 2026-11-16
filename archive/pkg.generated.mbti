@@ -42,6 +42,7 @@ pub(all) enum TarEntryKind {
   Regular
   Directory
   Symlink
+  Hardlink
 }
 pub fn TarEntryKind::equal(Self, Self) -> Bool
 pub fn TarEntryKind::not_equal(Self, Self) -> Bool
