@@ -31,6 +31,8 @@ pub fn rootfs_from_layout(@layout.MemoryLayout) -> Array[@model.RootfsEntry] rai
 
 pub fn rootfs_from_manifest(@layout.MemoryLayout, @model.Descriptor) -> Array[@model.RootfsEntry] raise @model.MoonOciError
 
+pub fn transcode_layer_blob(@model.Descriptor, Bytes, @model.Digest, @model.Compression) -> LayerTranscode raise @model.MoonOciError
+
 pub fn verify_memory(@layout.MemoryLayout) -> @model.VerificationReport
 
 // Errors
@@ -104,6 +106,13 @@ pub(all) enum LayerInput {
 pub fn LayerInput::equal(Self, Self) -> Bool
 pub fn LayerInput::not_equal(Self, Self) -> Bool
 pub fn LayerInput::to_repr(Self) -> @debug.Repr
+
+pub(all) struct LayerTranscode {
+  media_type : String
+  data : Bytes
+  digest : @model.Digest
+  diff_id : @model.Digest
+}
 
 #derive(Eq, @debug.Debug)
 pub(all) struct SingleLayerRequest {
