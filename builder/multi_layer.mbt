@@ -35,10 +35,50 @@ pub(all) struct ImageBuildResult {
 pub fn build_image(
   request : ImageBuildRequest,
 ) -> ImageBuildResult raise @model.MoonOciError {
-  if request.reference == "" {
+  build_image_from_layers(
+    request.layers.map(layer => Generated(layer)),
+    request.platform,
+    request.runtime,
+    request.reference,
+    created?=request.created,
+    author?=request.author,
+    annotations=request.annotations,
+  )
+}
+
+///|
+/// A generated changeset or externally produced uncompressed tar with an
+/// independent DiffID pin. Imported archives are applied in their original order.
+#derive(Debug, Eq)
+pub(all) enum LayerInput {
+  Generated(LayerBuildRequest)
+  PinnedTar(Bytes, @model.Digest, @model.Compression)
+}
+
+///|
+pub extend LayerInput with @debug.Debug::{to_repr}
+
+///|
+pub extend LayerInput with Eq::{not_equal, equal}
+
+///|
+pub let max_imported_layer_tar_bytes : Int32 = 256 * 1024 * 1024
+
+///|
+/// Build a deterministic image from an ordered mix of generated and pinned tar layers.
+pub fn build_image_from_layers(
+  layers : Array[LayerInput],
+  platform : @model.Platform,
+  runtime : @model.RuntimeConfig,
+  reference : String,
+  created? : String,
+  author? : String,
+  annotations~ : Array[@model.KeyValue] = [],
+) -> ImageBuildResult raise @model.MoonOciError {
+  if reference == "" {
     raise @model.InvalidArgument("image reference must not be empty")
   }
-  if request.layers.length() == 0 {
+  if layers.length() == 0 {
     raise @model.InvalidArgument("image must contain at least one layer")
   }
   let layout = @layout.MemoryLayout::new()
@@ -46,38 +86,27 @@ pub fn build_image(
   let diff_ids : Array[@model.Digest] = []
   let history : Array[@model.History] = []
   let rootfs = RootfsNode::empty()
-  for layer_index, layer in request.layers {
-    let transitions = declared_rootfs_transitions(layer)
-    let tar_entries = layer.entries.copy()
-    for path in layer.remove {
-      tar_entries.push(@archive.TarEntry::whiteout(path))
-    }
-    for path in layer.opaque_dirs {
-      tar_entries.push(@archive.TarEntry::opaque_marker(path))
-    }
-    let (layer_tar, emitted) = @archive.write_tar_with_order(tar_entries)
-    diff_ids.push(@digest.sha256(layer_tar))
-    let (media_type, blob) = compress_layer(layer_tar, layer.compression)
+  for layer_index, layer in layers {
+    let (layer_tar, diff_id, compression, transitions) = prepare_layer_input(
+      layer,
+    )
+    diff_ids.push(diff_id)
+    let (media_type, blob) = compress_layer(layer_tar, compression)
     layer_descriptors.push(layout.put_blob(media_type, blob))
     history.push({
-      created: request.created,
+      created,
       created_by: Some("moonoci build layer " + layer_index.to_string()),
-      author: request.author,
+      author,
       comment: None,
       empty_layer: false,
     })
-    let transitions = if tar_entries.any(entry => entry.kind == Hardlink) {
-      archived_rootfs_transitions(emitted)
-    } else {
-      transitions
-    }
     rootfs.apply(transitions, layer_index)
   }
   let config : @model.ImageConfig = {
-    created: request.created,
-    author: request.author,
-    platform: request.platform,
-    runtime: request.runtime,
+    created,
+    author,
+    platform,
+    runtime,
     diff_ids,
     history,
   }
@@ -90,13 +119,13 @@ pub fn build_image(
     media_type: @model.media_type_manifest,
     config: config_descriptor,
     layers: layer_descriptors,
-    annotations: request.annotations,
+    annotations,
   }
   let manifest_descriptor = layout.put_blob(
     @model.media_type_manifest,
     @codec.encode_manifest(manifest),
-    annotations=[{ key: @model.annotation_ref_name, value: request.reference, }],
-    platform=request.platform,
+    annotations=[{ key: @model.annotation_ref_name, value: reference, }],
+    platform~,
   )
   let index : @model.ImageIndex = {
     schema_version: 2,
@@ -155,3 +184,43 @@ pub extend ImageBuildResult with @debug.Debug::{to_repr}
 
 ///|
 pub extend ImageBuildResult with Eq::{not_equal, equal}
+
+///|
+fn prepare_layer_input(
+  input : LayerInput,
+) -> (Bytes, @model.Digest, @model.Compression, Array[RootfsTransition]) raise @model.MoonOciError {
+  match input {
+    Generated(layer) => {
+      let transitions = declared_rootfs_transitions(layer)
+      let tar_entries = layer.entries.copy()
+      for path in layer.remove {
+        tar_entries.push(@archive.TarEntry::whiteout(path))
+      }
+      for path in layer.opaque_dirs {
+        tar_entries.push(@archive.TarEntry::opaque_marker(path))
+      }
+      let (layer_tar, emitted) = @archive.write_tar_with_order(tar_entries)
+      let transitions = if tar_entries.any(entry => entry.kind == Hardlink) {
+        archived_rootfs_transitions(emitted)
+      } else {
+        transitions
+      }
+      (layer_tar, @digest.sha256(layer_tar), layer.compression, transitions)
+    }
+    PinnedTar(layer_tar, expected, compression) => {
+      if layer_tar.length() > max_imported_layer_tar_bytes {
+        raise @model.ResourceLimitExceeded("imported layer tar exceeds 256 MiB")
+      }
+      let actual = @digest.sha256(layer_tar)
+      if actual != expected {
+        raise @model.DigestMismatch(
+          "imported layer DiffID differs from its pin",
+        )
+      }
+      let transitions = archived_rootfs_transitions(
+        @archive.read_layer_tar(layer_tar),
+      )
+      (layer_tar, actual, compression, transitions)
+    }
+  }
+}

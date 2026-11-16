@@ -11,6 +11,8 @@ import {
 // Values
 pub fn build_image(ImageBuildRequest) -> ImageBuildResult raise @model.MoonOciError
 
+pub fn build_image_from_layers(Array[LayerInput], @model.Platform, @model.RuntimeConfig, String, created? : String, author? : String, annotations? : Array[@model.KeyValue]) -> ImageBuildResult raise @model.MoonOciError
+
 pub fn build_single_layer(SingleLayerRequest) -> BuildResult raise @model.MoonOciError
 
 pub fn decode_layer_blob(String, Bytes) -> Bytes raise @model.MoonOciError
@@ -18,6 +20,8 @@ pub fn decode_layer_blob(String, Bytes) -> Bytes raise @model.MoonOciError
 pub fn default_single_layer_request(Array[@archive.TarEntry]) -> SingleLayerRequest
 
 pub fn inventory_from_manifest(@layout.MemoryLayout, @model.Descriptor) -> Array[FileEvidence] raise @model.MoonOciError
+
+pub let max_imported_layer_tar_bytes : Int32
 
 pub fn rootfs_from_layout(@layout.MemoryLayout) -> Array[@model.RootfsEntry] raise @model.MoonOciError
 
@@ -80,6 +84,15 @@ pub(all) struct LayerBuildRequest {
 pub fn LayerBuildRequest::equal(Self, Self) -> Bool
 pub fn LayerBuildRequest::not_equal(Self, Self) -> Bool
 pub fn LayerBuildRequest::to_repr(Self) -> @debug.Repr
+
+#derive(Eq, @debug.Debug)
+pub(all) enum LayerInput {
+  Generated(LayerBuildRequest)
+  PinnedTar(Bytes, @model.Digest, @model.Compression)
+}
+pub fn LayerInput::equal(Self, Self) -> Bool
+pub fn LayerInput::not_equal(Self, Self) -> Bool
+pub fn LayerInput::to_repr(Self) -> @debug.Repr
 
 #derive(Eq, @debug.Debug)
 pub(all) struct SingleLayerRequest {
