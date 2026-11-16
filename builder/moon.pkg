@@ -1,5 +1,6 @@
 import {
   "moonbitlang/core/debug",
+  "moonbitlang/core/encoding/utf8",
   "oyjh0381/moonoci/model",
   "oyjh0381/moonoci/archive",
   "oyjh0381/moonoci/codec",
@@ -11,5 +12,4 @@ import {
 
 import {
   "moonbitlang/x/codec/base64",
-  "moonbitlang/core/encoding/utf8",
 } for "test"

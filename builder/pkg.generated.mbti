@@ -21,6 +21,8 @@ pub fn default_single_layer_request(Array[@archive.TarEntry]) -> SingleLayerRequ
 
 pub fn inventory_from_manifest(@layout.MemoryLayout, @model.Descriptor) -> Array[FileEvidence] raise @model.MoonOciError
 
+pub fn layer_chain_ids(Array[@model.Digest]) -> Array[@model.Digest] raise @model.MoonOciError
+
 pub let max_imported_layer_tar_bytes : Int32
 
 pub fn rootfs_from_layout(@layout.MemoryLayout) -> Array[@model.RootfsEntry] raise @model.MoonOciError
