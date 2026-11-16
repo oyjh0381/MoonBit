@@ -55,18 +55,35 @@ pub fn transcode_image(
   let result = @layout.MemoryLayout::new()
   ignore(result.put_blob(manifest.config.media_type, config_data))
   let mut converted_layers = 0
+  let transcoded : Map[String, LayerTranscode] = Map([])
+  let target_media = match compression {
+    Uncompressed => @model.media_type_layer_tar
+    Gzip => @model.media_type_layer_gzip
+  }
   for index, layer in manifest.layers {
     let data = source.require_blob(layer)
-    if positions is Some(_) && !selected.contains(index) {
+    if layer.media_type == target_media ||
+      (positions is Some(_) && !selected.contains(index)) {
       ignore(result.put_blob(layer.media_type, data))
       continue
     }
-    let converted = transcode_layer_blob(
-      layer,
-      data,
-      config.diff_ids[index],
-      compression,
-    )
+    let diff_id = config.diff_ids[index]
+    let key = layer.digest.to_string() + "|" + layer.media_type
+    let converted = match transcoded.get(key) {
+      Some(previous) => {
+        if previous.diff_id != diff_id {
+          raise @model.DigestMismatch(
+            "same layer blob declares conflicting DiffIDs",
+          )
+        }
+        previous
+      }
+      None => {
+        let next = transcode_layer_blob(layer, data, diff_id, compression)
+        transcoded[key] = next
+        next
+      }
+    }
     if converted.digest != layer.digest ||
       converted.media_type != layer.media_type {
       guard raw_layers[index] is Object(raw) else {

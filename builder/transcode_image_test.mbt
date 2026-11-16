@@ -101,6 +101,16 @@ test "selective transcode preserves storage of every unselected layer" {
   assert_eq(rows[1].descriptor.digest, image.report.layers[1].digest)
   assert_true(rows[2].descriptor.digest != image.report.layers[2].digest)
   assert_eq(rows[0].diff_id, rows[2].diff_id)
+  let both = @builder.transcode_image(
+    image.layout,
+    image.report.manifest.digest,
+    @model.Gzip,
+    positions=[2, 0],
+  )
+  let rows = @builder.layer_chain_from_manifest(both.layout, both.manifest)
+  assert_eq(both.converted_layers, 2)
+  assert_eq(rows[0].descriptor.digest, rows[2].descriptor.digest)
+  assert_eq(both.layout.blob_count(), 4)
   for positions in [[], [1, 1], [-1], [3]] {
     let rejected = try {
       ignore(
