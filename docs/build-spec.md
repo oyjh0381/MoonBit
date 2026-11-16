@@ -135,3 +135,6 @@ their own derivation.
 The independent filesystem consumer compares the actual decompressed tar
 bytes for each layer, then converts back and checks the original manifest
 digest. A no-op conversion retains the original manifest bytes.
+
+Append --layers with comma-separated zero-based positions to choose which
+layers to transcode. All unselected layer descriptors and blobs are retained.

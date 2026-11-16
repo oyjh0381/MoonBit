@@ -1,8 +1,29 @@
 ///|
 async fn transcode_image_command(args : Array[String]) -> Unit {
-  require_arity(
-    args, 6, "usage: moonoci transcode-image INPUT MANIFEST_PIN none|gzip OUTPUT",
-  )
+  let positions = if args.length() == 8 && args[6] == "--layers" {
+    let selected : Array[Int32] = []
+    for item in args[7].split(",") {
+      let token = item.to_owned()
+      if token.is_empty() || !token.to_array().all(ch => ch >= '0' && ch <= '9') {
+        raise @model.InvalidArgument(
+          "transcode layer positions must be comma-separated decimal integers",
+        )
+      }
+      let position = @string.parse_int(token) catch {
+        _ =>
+          raise @model.InvalidArgument(
+            "transcode layer position exceeds integer range",
+          )
+      }
+      selected.push(position)
+    }
+    Some(selected)
+  } else {
+    require_arity(
+      args, 6, "usage: moonoci transcode-image INPUT MANIFEST_PIN none|gzip OUTPUT [--layers POSITIONS]",
+    )
+    None
+  }
   let expected = @model.Digest::parse(args[3])
   let compression : @model.Compression = match args[4] {
     "none" => Uncompressed
@@ -11,7 +32,12 @@ async fn transcode_image_command(args : Array[String]) -> Unit {
       raise @model.InvalidArgument("transcode compression must be none or gzip")
   }
   let source = @native.load_bounded_layout(args[2])
-  let result = @builder.transcode_image(source, expected, compression)
+  let result = @builder.transcode_image(
+    source,
+    expected,
+    compression,
+    positions?,
+  )
   @native.write_layout(args[5], result.layout)
   let receipt : Json = {
     "schema": "moonoci.image-transcode.v1",

@@ -176,6 +176,19 @@ def transcode_existing_image(run, work):
         stored = (encoded / "blobs/sha256" / after["blob"].split(":")[1]).read_bytes()
         assert gzip.decompress(stored) == raw
 
+    selected = work / "transcoded-selected"
+    result = json.loads(run("transcode-image", source, manifest, "gzip", selected,
+                            "--layers", "1"))
+    assert result["convertedLayers"] == 1
+    output = json.loads(run("layer-chain", selected, "linux", "amd64"))["layers"]
+    assert output == [expected["layers"][0], compact["layers"][1], expected["layers"][2]]
+    try:
+        run("transcode-image", source, manifest, "gzip", wrong, "--layers", "1,1")
+    except subprocess.CalledProcessError as error:
+        assert error.returncode == 2 and not wrong.exists()
+    else:
+        raise AssertionError("ambiguous layer selection was accepted")
+
     decoded = work / "transcoded-back"
     restored = json.loads(run("transcode-image", encoded, compact["manifest"], "none", decoded))
     assert restored["resultManifest"] == manifest
