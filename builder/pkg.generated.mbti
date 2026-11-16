@@ -31,7 +31,7 @@ pub fn rootfs_from_layout(@layout.MemoryLayout) -> Array[@model.RootfsEntry] rai
 
 pub fn rootfs_from_manifest(@layout.MemoryLayout, @model.Descriptor) -> Array[@model.RootfsEntry] raise @model.MoonOciError
 
-pub fn transcode_image(@layout.MemoryLayout, @model.Digest, @model.Compression) -> ImageTranscode raise @model.MoonOciError
+pub fn transcode_image(@layout.MemoryLayout, @model.Digest, @model.Compression, positions? : Array[Int32]) -> ImageTranscode raise @model.MoonOciError
 
 pub fn transcode_layer_blob(@model.Descriptor, Bytes, @model.Digest, @model.Compression) -> LayerTranscode raise @model.MoonOciError
 

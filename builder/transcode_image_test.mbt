@@ -70,3 +70,52 @@ test "transcode retains annotations and exact numeric extension values" {
   )
   assert_eq(unchanged.layout.index(), layout.index())
 }
+
+///|
+test "selective transcode preserves storage of every unselected layer" {
+  let base : @builder.LayerBuildRequest = {
+    entries: [@archive.TarEntry::file("one", b"base")],
+    remove: [],
+    opaque_dirs: [],
+    compression: @model.Uncompressed,
+  }
+  let top = { ..base, entries: [@archive.TarEntry::file("two", b"top")], }
+  let image = @builder.build_image_from_layers(
+    [Generated(base), Generated(top), Generated(base)],
+    @model.default_platform(),
+    @model.default_runtime_config(),
+    "multi",
+  )
+  let changed = @builder.transcode_image(
+    image.layout,
+    image.report.manifest.digest,
+    @model.Gzip,
+    positions=[2],
+  )
+  let rows = @builder.layer_chain_from_manifest(
+    changed.layout,
+    changed.manifest,
+  )
+  assert_eq(changed.converted_layers, 1)
+  assert_eq(rows[0].descriptor.digest, image.report.layers[0].digest)
+  assert_eq(rows[1].descriptor.digest, image.report.layers[1].digest)
+  assert_true(rows[2].descriptor.digest != image.report.layers[2].digest)
+  assert_eq(rows[0].diff_id, rows[2].diff_id)
+  for positions in [[], [1, 1], [-1], [3]] {
+    let rejected = try {
+      ignore(
+        @builder.transcode_image(
+          image.layout,
+          image.report.manifest.digest,
+          @model.Gzip,
+          positions~,
+        ),
+      )
+      false
+    } catch {
+      @model.InvalidArgument(_) => true
+      _ => false
+    }
+    assert_true(rejected)
+  }
+}

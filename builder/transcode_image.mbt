@@ -9,10 +9,12 @@ pub(all) struct ImageTranscode {
 ///|
 /// Derive a standalone selected image whose config and uncompressed layers
 /// are byte-identical to the source. The supplied manifest pin selects the image.
+/// If present, positions selects a nonempty set of zero-based layer positions.
 pub fn transcode_image(
   source : @layout.MemoryLayout,
   expected : @model.Digest,
   compression : @model.Compression,
+  positions? : Array[Int32],
 ) -> ImageTranscode raise @model.MoonOciError {
   let index = @codec.decode_index(source.index())
   let matches = index.manifests.filter(item => item.digest == expected)
@@ -20,6 +22,24 @@ pub fn transcode_image(
     raise @model.InvalidArgument("transcode requires one exact index member")
   }
   let manifest = require_root_manifest(source, descriptor)
+  let selected = Map([])
+  if positions is Some(values) {
+    if values.is_empty() {
+      raise @model.InvalidArgument(
+        "transcode requires at least one selected layer position",
+      )
+    }
+    for position in values {
+      if position < 0 ||
+        position >= manifest.layers.length() ||
+        selected.contains(position) {
+        raise @model.InvalidArgument(
+          "duplicate or out-of-range transcode layer position",
+        )
+      }
+      selected[position] = true
+    }
+  }
   let original = source.require_blob(descriptor)
   guard @codec.parse_json_document(original, preserve_number_repr=true)
     is Object(fields) &&
@@ -37,6 +57,10 @@ pub fn transcode_image(
   let mut converted_layers = 0
   for index, layer in manifest.layers {
     let data = source.require_blob(layer)
+    if positions is Some(_) && !selected.contains(index) {
+      ignore(result.put_blob(layer.media_type, data))
+      continue
+    }
     let converted = transcode_layer_blob(
       layer,
       data,
