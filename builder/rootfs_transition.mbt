@@ -136,7 +136,9 @@ fn RootfsNode::apply(
   }
   opaque_paths.sort_by((a, b) => @pathing.compare_utf8(a, b))
   removed_paths.sort_by((a, b) => @pathing.compare_utf8(a, b))
-  additions.sort_by((a, b) => @pathing.compare_utf8(a.path, b.path))
+  if !additions.any(entry => entry.kind == Hardlink) {
+    additions.sort_by((a, b) => @pathing.compare_utf8(a.path, b.path))
+  }
   for path in opaque_paths {
     if path.is_empty() {
       root.children.clear()
@@ -154,6 +156,10 @@ fn RootfsNode::apply(
     }
   }
   for entry in additions {
+    if entry.kind == Hardlink {
+      root.apply_hardlink(entry, layer_index, evidence_layer?)
+      continue
+    }
     let node = root.ensure_path(entry.path)
     if entry.kind != Directory {
       node.children.clear()
@@ -162,10 +168,7 @@ fn RootfsNode::apply(
       Regular => "file"
       Directory => "directory"
       Symlink => "symlink"
-      Hardlink =>
-        raise @model.Unsupported(
-          "hardlink filesystem reconstruction is not supported",
-        )
+      Hardlink => abort("hardlinks are handled before ordinary entries")
     }
     let observed : @model.RootfsEntry = {
       path: entry.path,
@@ -188,6 +191,42 @@ fn RootfsNode::apply(
       gid: entry.gid,
       mtime: entry.mtime,
     })
+  }
+}
+
+///|
+fn RootfsNode::apply_hardlink(
+  root : RootfsNode,
+  entry : @archive.TarEntry,
+  layer_index : Int32,
+  evidence_layer? : @model.Digest,
+) -> Unit raise @model.MoonOciError {
+  guard entry.link_target is Some(target) &&
+    target != entry.path &&
+    !target.has_prefix(entry.path + "/") &&
+    root.find_path(target) is Some(source) &&
+    source.entry is Some(original) &&
+    original.layer_index == layer_index &&
+    (original.kind == "file" || original.kind == "hardlink") else {
+    raise @model.InvalidOci(
+      "hardlink needs an earlier regular-file target in the same layer: " +
+      entry.path,
+    )
+  }
+  let observed = {
+    ..original,
+    path: entry.path,
+    kind: "hardlink",
+    link_target: Some(target),
+  }
+  let node = root.ensure_path(entry.path)
+  node.children.clear()
+  node.entry = Some(observed)
+  if evidence_layer is Some(layer_digest) {
+    guard source.evidence is Some(payload) else {
+      raise @model.InvalidOci("missing hardlink target provenance: " + target)
+    }
+    node.evidence = Some({ ..payload, entry: observed, layer_digest, })
   }
 }
 
