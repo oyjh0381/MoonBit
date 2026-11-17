@@ -15,6 +15,8 @@ pub fn build_image_from_layers(Array[LayerInput], @model.Platform, @model.Runtim
 
 pub fn build_single_layer(SingleLayerRequest) -> BuildResult raise @model.MoonOciError
 
+pub fn compare_image_storage(@layout.MemoryLayout, @model.Digest, @layout.MemoryLayout, @model.Digest) -> ImageStorageComparison raise @model.MoonOciError
+
 pub fn compare_layer_order(@layout.MemoryLayout, @model.Digest, @layout.MemoryLayout, @model.Digest) -> LayerDifference? raise @model.MoonOciError
 
 pub fn decode_layer_blob(String, Bytes) -> Bytes raise @model.MoonOciError
@@ -83,6 +85,13 @@ pub(all) struct ImageBuildResult {
 pub fn ImageBuildResult::equal(Self, Self) -> Bool
 pub fn ImageBuildResult::not_equal(Self, Self) -> Bool
 pub fn ImageBuildResult::to_repr(Self) -> @debug.Repr
+
+pub(all) struct ImageStorageComparison {
+  before_config : @model.Digest
+  after_config : @model.Digest
+  first_layer_difference : LayerDifference?
+}
+pub fn ImageStorageComparison::is_encoding_only(Self) -> Bool
 
 pub(all) struct ImageTranscode {
   layout : @layout.MemoryLayout

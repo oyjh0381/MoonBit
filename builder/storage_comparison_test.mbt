@@ -41,3 +41,24 @@ test "ordered layer comparison accepts encoding changes and locates changed tar"
     change.before_diff_id is Some(_) && change.after_diff_id is Some(_),
   )
 }
+
+///|
+test "identical layers with distinct runtime configuration are not encoding-only" {
+  let request = @builder.default_single_layer_request([
+    @archive.TarEntry::file("payload", b"same"),
+  ])
+  let before = @builder.build_single_layer(request)
+  let after = @builder.build_single_layer({
+    ..request,
+    author: Some("new author"),
+  })
+  let compared = @builder.compare_image_storage(
+    before.layout,
+    before.report.manifest.digest,
+    after.layout,
+    after.report.manifest.digest,
+  )
+  assert_true(compared.first_layer_difference is None)
+  assert_true(compared.before_config != compared.after_config)
+  assert_false(compared.is_encoding_only())
+}

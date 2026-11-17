@@ -54,3 +54,39 @@ fn first_layer_difference(
   }
   None
 }
+
+///|
+/// Compare config bytes and ordered tar identities of pinned OCI root images.
+pub(all) struct ImageStorageComparison {
+  before_config : @model.Digest
+  after_config : @model.Digest
+  first_layer_difference : LayerDifference?
+}
+
+///|
+/// True when config bytes and the entire ordered DiffID sequence are identical.
+pub fn ImageStorageComparison::is_encoding_only(
+  self : ImageStorageComparison,
+) -> Bool {
+  self.before_config == self.after_config && self.first_layer_difference is None
+}
+
+///|
+/// Compare two verified images by manifest pin. Config metadata changes are
+/// visible even when the two images have exactly the same ordered layers.
+pub fn compare_image_storage(
+  before : @layout.MemoryLayout,
+  before_pin : @model.Digest,
+  after : @layout.MemoryLayout,
+  after_pin : @model.Digest,
+) -> ImageStorageComparison raise @model.MoonOciError {
+  let (_, before_manifest, before_ids) = verified_storage_image(
+    before, before_pin,
+  )
+  let (_, after_manifest, after_ids) = verified_storage_image(after, after_pin)
+  {
+    before_config: before_manifest.config.digest,
+    after_config: after_manifest.config.digest,
+    first_layer_difference: first_layer_difference(before_ids, after_ids),
+  }
+}
