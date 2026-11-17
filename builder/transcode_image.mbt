@@ -13,11 +13,13 @@ pub(all) struct ImageTranscode {
 /// Derive a standalone selected image whose config and uncompressed layers
 /// are byte-identical to the source. The supplied manifest pin selects the image.
 /// If present, positions selects a nonempty set of zero-based layer positions.
+/// only_if_smaller retains a layer when its candidate blob would not shrink.
 pub fn transcode_image(
   source : @layout.MemoryLayout,
   expected : @model.Digest,
   compression : @model.Compression,
   positions? : Array[Int32],
+  only_if_smaller~ : Bool = false,
   max_result_layer_bytes~ : Int64 = 0x7fffffffffffffffL,
 ) -> ImageTranscode raise @model.MoonOciError {
   if max_result_layer_bytes < 0L {
@@ -81,9 +83,15 @@ pub fn transcode_image(
       source_layer_bytes += layer.size
     }
     let diff_id = config.diff_ids[index]
-    let converted : LayerTranscode = if layer.media_type == target_media ||
+    let original_layer : LayerTranscode = {
+      media_type: layer.media_type,
+      data,
+      digest: layer.digest,
+      diff_id,
+    }
+    let candidate = if layer.media_type == target_media ||
       (positions is Some(_) && !selected.contains(index)) {
-      { media_type: layer.media_type, data, digest: layer.digest, diff_id, }
+      original_layer
     } else {
       let key = input_key + "|" + layer.media_type
       match transcoded.get(key) {
@@ -101,6 +109,12 @@ pub fn transcode_image(
           next
         }
       }
+    }
+    let converted = if only_if_smaller &&
+      candidate.data.length() >= data.length() {
+      original_layer
+    } else {
+      candidate
     }
     if converted.digest != layer.digest ||
       converted.media_type != layer.media_type {

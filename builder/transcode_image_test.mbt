@@ -144,3 +144,34 @@ test "selective transcode preserves storage of every unselected layer" {
     assert_true(rejected)
   }
 }
+
+///|
+test "shrink-only conversion retains the cheaper encoding and applies savings" {
+  let image = @builder.build_single_layer(
+    @builder.default_single_layer_request([
+      @archive.TarEntry::file("before", b"contents"),
+    ]),
+  )
+  let gzip = @builder.transcode_image(
+    image.layout,
+    image.report.manifest.digest,
+    @model.Gzip,
+  )
+  assert_true(gzip.result_layer_bytes > gzip.source_layer_bytes)
+  let restored = @builder.transcode_image(
+    gzip.layout,
+    gzip.manifest.digest,
+    @model.Uncompressed,
+    only_if_smaller=true,
+  )
+  assert_eq(restored.converted_layers, 1)
+  assert_eq(restored.layout.index(), image.layout.index())
+  let skipped = @builder.transcode_image(
+    image.layout,
+    image.report.manifest.digest,
+    @model.Gzip,
+    only_if_smaller=true,
+  )
+  assert_eq(skipped.converted_layers, 0)
+  assert_eq(skipped.layout.index(), image.layout.index())
+}

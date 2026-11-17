@@ -2,7 +2,7 @@
 async fn transcode_image_command(args : Array[String]) -> Unit {
   if args.length() < 6 {
     raise @model.InvalidArgument(
-      "usage: moonoci transcode-image INPUT MANIFEST_PIN none|gzip OUTPUT [--layers POSITIONS] [--dry-run|--expect-index DIGEST]",
+      "usage: moonoci transcode-image INPUT MANIFEST_PIN none|gzip OUTPUT [--layers POSITIONS] [--only-if-smaller] [--dry-run|--expect-index DIGEST]",
     )
   }
   let mut positions : Array[Int32]? = None
@@ -10,6 +10,7 @@ async fn transcode_image_command(args : Array[String]) -> Unit {
   let mut max_result_layer_bytes : Int64? = None
   let mut expected_index : @model.Digest? = None
   let mut dry_run = false
+  let mut only_if_smaller = false
   let mut offset = 6
   while offset < args.length() {
     match args[offset] {
@@ -32,6 +33,7 @@ async fn transcode_image_command(args : Array[String]) -> Unit {
         max_result_layer_bytes = Some(registry_byte_argument(args[offset]))
       }
       "--dry-run" if !dry_run => dry_run = true
+      "--only-if-smaller" if !only_if_smaller => only_if_smaller = true
       _ => raise @model.InvalidArgument("invalid or duplicate transcode option")
     }
     offset += 1
@@ -58,6 +60,7 @@ async fn transcode_image_command(args : Array[String]) -> Unit {
     expected,
     compression,
     positions?,
+    only_if_smaller~,
     max_result_layer_bytes?,
   )
   let index_pin = @digest.sha256(result.layout.index())
