@@ -92,13 +92,22 @@ test "storage comparison counts one physical blob for repeated layer positions" 
   assert_true(comparison.preserves_runtime_identity())
   assert_eq(comparison.before_layer_bytes, before.report.layers[0].size)
   assert_eq(comparison.after_layer_bytes, after.result_layer_bytes)
-  guard @builder.compare_layer_order(
-      before.layout,
-      before.report.manifest.digest,
-      storage_fixture(b"different").layout,
-      storage_fixture(b"different").report.manifest.digest,
-    )
-    is Some(_) else {
-    fail("expected unequal layer sequences")
-  }
+  assert_eq(comparison.new_layer_count, 1)
+  assert_eq(
+    comparison.new_layer_bytes,
+    comparison.after_layer_bytes - comparison.before_layer_bytes,
+  )
+  let fully_reencoded = @builder.transcode_image(
+    before.layout,
+    before.report.manifest.digest,
+    @model.Gzip,
+  )
+  let reuse = @builder.compare_image_storage(
+    after.layout,
+    after.manifest.digest,
+    fully_reencoded.layout,
+    fully_reencoded.manifest.digest,
+  )
+  assert_eq(reuse.new_layer_count, 0)
+  assert_eq(reuse.new_layer_bytes, 0L)
 }

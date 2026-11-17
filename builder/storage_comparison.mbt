@@ -63,6 +63,8 @@ pub(all) struct ImageStorageComparison {
   first_layer_difference : LayerDifference?
   before_layer_bytes : Int64
   after_layer_bytes : Int64
+  new_layer_count : Int32
+  new_layer_bytes : Int64
 }
 
 ///|
@@ -86,16 +88,28 @@ pub fn compare_image_storage(
     before, before_pin,
   )
   let (_, after_manifest, after_ids) = verified_storage_image(after, after_pin)
+  let before_sizes = unique_layer_sizes(before_manifest.layers)
+  let after_sizes = unique_layer_sizes(after_manifest.layers)
+  let mut new_layer_count = 0
+  let mut new_layer_bytes = 0L
+  for digest, size in after_sizes {
+    if !before_sizes.contains(digest) {
+      new_layer_count += 1
+      new_layer_bytes += size
+    }
+  }
   {
     before_config: before_manifest.config.digest,
     after_config: after_manifest.config.digest,
     first_layer_difference: first_layer_difference(before_ids, after_ids),
-    before_layer_bytes: unique_layer_sizes(before_manifest.layers)
+    before_layer_bytes: before_sizes
     .values()
     .fold(init=0L, (total, size) => total + size),
-    after_layer_bytes: unique_layer_sizes(after_manifest.layers)
+    after_layer_bytes: after_sizes
     .values()
     .fold(init=0L, (total, size) => total + size),
+    new_layer_count,
+    new_layer_bytes,
   }
 }
 
