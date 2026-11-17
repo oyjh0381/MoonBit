@@ -1,8 +1,13 @@
 ///|
 async fn compare_image_storage_command(args : Array[String]) -> Unit {
-  require_arity(
-    args, 6, "usage: moonoci compare-image-storage BEFORE BEFORE_PIN AFTER AFTER_PIN",
-  )
+  if args.length() < 6 ||
+    args.length() > 7 ||
+    (args.length() == 7 && args[6] != "--require-runtime-identity") {
+    raise @model.InvalidArgument(
+      "usage: moonoci compare-image-storage BEFORE BEFORE_PIN AFTER AFTER_PIN [--require-runtime-identity]",
+    )
+  }
+  let require_identity = args.length() == 7
   let before_pin = @model.Digest::parse(args[3])
   let after_pin = @model.Digest::parse(args[5])
   let before = @native.load_bounded_layout(args[2])
@@ -44,6 +49,9 @@ async fn compare_image_storage_command(args : Array[String]) -> Unit {
     "newImageBlobBytes": Json::string(report.new_image_blob_bytes.to_string()),
   }
   @stdio.stdout.write(result.stringify() + "\n")
+  if require_identity && !report.preserves_runtime_identity() {
+    process_exit(5)
+  }
 }
 
 ///|

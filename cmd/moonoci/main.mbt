@@ -772,7 +772,7 @@ async fn print_usage() -> Unit {
       #|  moonoci flatten INPUT OUTPUT [--images-only]
       #|  moonoci tree-select INPUT OUTPUT OS ARCH
       #|  moonoci transcode-image INPUT MANIFEST_PIN none|gzip OUTPUT [--layers POSITIONS] [--dry-run|--expect-index DIGEST]
-      #|  moonoci compare-image-storage BEFORE BEFORE_PIN AFTER AFTER_PIN
+      #|  moonoci compare-image-storage BEFORE BEFORE_PIN AFTER AFTER_PIN [--require-runtime-identity]
       #|  moonoci layer-chain INPUT OS ARCH
       #|  moonoci files INPUT OS ARCH
       #|  moonoci diff BASE TARGET OS ARCH
