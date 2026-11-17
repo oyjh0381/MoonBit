@@ -8,6 +8,7 @@ async fn transcode_image_command(args : Array[String]) -> Unit {
   let mut positions : Array[Int32]? = None
   let mut expected_source_index : @model.Digest? = None
   let mut max_result_layer_bytes : Int64? = None
+  let mut min_layer_savings_bytes : Int64? = None
   let mut expected_index : @model.Digest? = None
   let mut dry_run = false
   let mut only_if_smaller = false
@@ -32,6 +33,11 @@ async fn transcode_image_command(args : Array[String]) -> Unit {
         max_result_layer_bytes is None => {
         offset += 1
         max_result_layer_bytes = Some(registry_byte_argument(args[offset]))
+      }
+      "--min-layer-savings" if offset + 1 < args.length() &&
+        min_layer_savings_bytes is None => {
+        offset += 1
+        min_layer_savings_bytes = Some(registry_byte_argument(args[offset]))
       }
       "--dry-run" if !dry_run => dry_run = true
       "--only-if-smaller" if !only_if_smaller => only_if_smaller = true
@@ -77,6 +83,7 @@ async fn transcode_image_command(args : Array[String]) -> Unit {
     only_if_smaller~,
     gzip_level?,
     max_result_layer_bytes?,
+    min_layer_savings_bytes?,
   )
   let index_pin = @digest.sha256(result.layout.index())
   if expected_index is Some(pin) && pin != index_pin {
@@ -97,6 +104,9 @@ async fn transcode_image_command(args : Array[String]) -> Unit {
     "convertedLayers": Json::number(result.converted_layers.to_double()),
     "sourceLayerBytes": Json::string(result.source_layer_bytes.to_string()),
     "resultLayerBytes": Json::string(result.result_layer_bytes.to_string()),
+    "layerSavingsBytes": Json::string(
+      (result.source_layer_bytes - result.result_layer_bytes).to_string(),
+    ),
     "storageEncoding": Json::string(args[4]),
   }
   @stdio.stdout.write(receipt.stringify() + "\n")

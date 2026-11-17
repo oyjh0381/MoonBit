@@ -250,3 +250,52 @@ test "optional DEFLATE cannot produce a layout outside the verification ratio li
   }
   assert_true(rejected)
 }
+
+///|
+test "minimum savings applies to unique stored bytes and accepts an exact boundary" {
+  let layer : @builder.LayerBuildRequest = {
+    entries: [@archive.TarEntry::file("repeat", b"content")],
+    remove: [],
+    opaque_dirs: [],
+    compression: @model.Uncompressed,
+  }
+  let before = @builder.build_image_from_layers(
+    [Generated(layer), Generated(layer)],
+    @model.default_platform(),
+    @model.default_runtime_config(),
+    "savings",
+  )
+  let pin = before.report.manifest.digest
+  let preview = @builder.transcode_image(
+    before.layout,
+    pin,
+    @model.Gzip,
+    gzip_level=6,
+  )
+  let savings = preview.source_layer_bytes - preview.result_layer_bytes
+  assert_true(savings > 0L)
+  let result = @builder.transcode_image(
+    before.layout,
+    pin,
+    @model.Gzip,
+    gzip_level=6,
+    min_layer_savings_bytes=savings,
+  )
+  assert_eq(result.manifest.digest, preview.manifest.digest)
+  let rejected = try {
+    ignore(
+      @builder.transcode_image(
+        before.layout,
+        pin,
+        @model.Gzip,
+        gzip_level=6,
+        min_layer_savings_bytes=savings + 1L,
+      ),
+    )
+    false
+  } catch {
+    @model.ResourceLimitExceeded(_) => true
+    _ => false
+  }
+  assert_true(rejected)
+}

@@ -22,12 +22,16 @@ pub fn transcode_image(
   only_if_smaller~ : Bool = false,
   gzip_level~ : Int32 = 0,
   max_result_layer_bytes~ : Int64 = 0x7fffffffffffffffL,
+  min_layer_savings_bytes? : Int64,
 ) -> ImageTranscode raise @model.MoonOciError {
   validate_transcode_encoding(compression, gzip_level)
   if max_result_layer_bytes < 0L {
     raise @model.InvalidArgument(
       "transcode layer byte limit cannot be negative",
     )
+  }
+  if min_layer_savings_bytes is Some(limit) && limit < 0L {
+    raise @model.InvalidArgument("minimum layer savings cannot be negative")
   }
   let index = @codec.decode_index(source.index())
   let matches = index.manifests.filter(item => item.digest == expected)
@@ -149,6 +153,12 @@ pub fn transcode_image(
       result_layer_bytes += size
       ignore(result.put_blob(converted.media_type, converted.data))
     }
+  }
+  if min_layer_savings_bytes is Some(limit) &&
+    source_layer_bytes - result_layer_bytes < limit {
+    raise @model.ResourceLimitExceeded(
+      "transcode did not meet the minimum layer savings",
+    )
   }
   let manifest_data = if converted_layers == 0 {
     original
