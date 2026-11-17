@@ -150,3 +150,48 @@ the source and derived index digests.
 Set `--max-layer-bytes BYTES` to cap the sum of the output's unique stored
 layer blobs. The receipt shows the original and output layer byte totals.
 These totals exclude the config, manifest, index and layout marker.
+
+### Review an image storage migration
+
+For an opt-in DEFLATE conversion, add `--gzip-level 6`. The default level
+`0` keeps the existing deterministic stored-block gzip behavior.
+Levels `1`–`9` apply only when an uncompressed layer is converted to gzip.
+Existing gzip blobs keep their bytes. Newly encoded data must stay within
+MoonOCI's 200:1 expansion limit.
+
+`--only-if-smaller` retains each original layer when the proposed blob
+does not shrink. `--min-layer-savings N` separately requires a net reduction
+of at least `N` bytes across all unique stored layers. That aggregate check
+also accounts for duplicate blobs and partially selected conversions.
+
+Preview the candidate, then repeat with the exact source and output index
+pins from its receipt:
+
+```text
+moonoci transcode-image BEFORE BEFORE_PIN gzip AFTER --gzip-level 6 --only-if-smaller --min-layer-savings 1 --dry-run
+moonoci transcode-image BEFORE BEFORE_PIN gzip AFTER --gzip-level 6 --only-if-smaller --min-layer-savings 1 --expect-source-index BEFORE_INDEX --expect-index AFTER_INDEX
+moonoci compare-image-storage BEFORE BEFORE_PIN AFTER AFTER_PIN --expect-before-index BEFORE_INDEX --expect-after-index AFTER_INDEX --require-runtime-identity --max-new-blob-bytes 4194304
+```
+
+`AFTER_PIN` is the candidate manifest from the transcode receipt. The
+comparison also works on images produced by other OCI tools. It verifies
+both layouts before comparing the exact config bytes and ordered DiffIDs.
+The first differing layer is reported at its zero-based position. A missing
+side means that image's layer sequence ended there.
+
+The transfer budget counts unique candidate manifest, config and layer blobs
+absent from the selected baseline image. The counts exclude index, layout
+marker, protocol overhead and content cached from other images. A failed gate
+returns exit code 5 with a JSON decision. The identity gate covers the image
+config and uncompressed layers. Manifest annotations, tag state and signatures
+require separate checks.
+
+`scripts/rootfs_transition_chain.py` checks gates and exit codes against
+CPython on synthetic layers. `scripts/public_image_chain.py` uses the pinned
+Alpine linux/amd64 image to check the index, exact decompressed tar bytes and
+migration byte counts. Run it with a local ORAS binary or an existing OCI
+layout for that manifest:
+
+```text
+python scripts/public_image_chain.py --binary _build/native/release/build/cmd/moonoci/moonoci.exe --oras PATH_TO_ORAS
+```
