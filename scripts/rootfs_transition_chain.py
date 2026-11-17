@@ -9,7 +9,7 @@ import subprocess
 import tempfile
 import tarfile
 
-from independent_layout import observe
+from independent_layout import assert_storage_comparison, observe
 from registry_publish_chain import ROOT
 
 
@@ -229,6 +229,64 @@ def transcode_existing_image(run, work):
 
 
 
+def storage_migration_gate(run, work):
+    source = work / "mixed-raw"
+    pin = json.loads(run("layer-chain", source, "linux", "amd64"))["manifest"]
+    target = work / "storage-migration"
+    options = ("--gzip-level", "6", "--only-if-smaller")
+    preview = json.loads(run("transcode-image", source, pin, "gzip", target, *options, "--dry-run"))
+    savings = int(preview["layerSavingsBytes"])
+    assert savings > 0 and not target.exists()
+    try:
+        run("transcode-image", source, pin, "gzip", target, *options,
+            "--min-layer-savings", savings + 1)
+    except subprocess.CalledProcessError as error:
+        assert error.returncode == 5 and not target.exists()
+        assert not target.with_name(target.name + ".moonoci-staging").exists()
+    else:
+        raise AssertionError("underperforming transcode created a layout")
+    receipt = json.loads(run("transcode-image", source, pin, "gzip", target, *options,
+                             "--expect-index", preview["resultIndex"], "--min-layer-savings", savings))
+    candidate = receipt["resultManifest"]
+    command = ("compare-image-storage", source, pin, target, candidate)
+    index_options = ("--expect-before-index", receipt["sourceIndex"],
+                     "--expect-after-index", receipt["resultIndex"])
+    report = json.loads(run(*command, *index_options, "--require-runtime-identity"))
+    assert_storage_comparison(report, source, pin, target, candidate)
+    budget = int(report["newImageBlobBytes"])
+    exact = json.loads(run(*command, *index_options, "--max-new-blob-bytes", budget))
+    assert exact["transferBudgetGatePassed"]
+    try:
+        run(*command, "--max-new-blob-bytes", budget - 1)
+    except subprocess.CalledProcessError as error:
+        assert error.returncode == 5
+        assert not json.loads(error.stdout)["transferBudgetGatePassed"]
+    else:
+        raise AssertionError("transfer gate accepted a budget below the measured bytes")
+    try:
+        run(*command, "--expect-after-index", "sha256:" + "0" * 64)
+    except subprocess.CalledProcessError as error:
+        assert error.returncode == 5
+    else:
+        raise AssertionError("comparison accepted a wrong wrapper pin")
+
+    before, after = work / "layout-2", work / "layout-3"
+    before_pin = json.loads(run("layer-chain", before, "linux", "amd64"))["manifest"]
+    after_pin = json.loads(run("layer-chain", after, "linux", "amd64"))["manifest"]
+    try:
+        run("compare-image-storage", before, before_pin, after, after_pin,
+            "--require-runtime-identity")
+    except subprocess.CalledProcessError as error:
+        assert error.returncode == 5
+        changed = json.loads(error.stdout)
+        assert not changed["runtimeIdentityGatePassed"]
+        assert changed["firstLayerDifference"]["position"] == 2
+        assert changed["firstLayerDifference"]["beforeDiffId"] is None
+        assert_storage_comparison(changed, before, before_pin, after, after_pin)
+    else:
+        raise AssertionError("runtime identity gate accepted an appended layer")
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--binary", type=Path, required=True)
@@ -324,13 +382,15 @@ def main():
     assert indexes[0] == indexes[1]
     import_external_layer(run, work, base, reset)
     transcode_existing_image(run, work)
+    storage_migration_gate(run, work)
     print(json.dumps(dict(layer_counts=[2, 3], independently_verified_files=6,
                           deterministic_hardlinks=True,
                           same_path_whiteout=True, whole_root_opacity=True,
                           independent_tar_producer=True, independent_gnu_hardlink=True,
                           deterministic_pax_owners=True, pinned_tar_and_gzip_import=True,
                           compression_independent_chain_ids=True,
-                          image_transcode_roundtrip=True)))
+                          image_transcode_roundtrip=True,
+                          independently_verified_storage_migration_gate=True)))
 
 
 if __name__ == "__main__":
