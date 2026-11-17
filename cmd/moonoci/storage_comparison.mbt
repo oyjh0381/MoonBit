@@ -1,13 +1,28 @@
 ///|
 async fn compare_image_storage_command(args : Array[String]) -> Unit {
-  if args.length() < 6 ||
-    args.length() > 7 ||
-    (args.length() == 7 && args[6] != "--require-runtime-identity") {
+  if args.length() < 6 {
     raise @model.InvalidArgument(
-      "usage: moonoci compare-image-storage BEFORE BEFORE_PIN AFTER AFTER_PIN [--require-runtime-identity]",
+      "usage: moonoci compare-image-storage BEFORE BEFORE_PIN AFTER AFTER_PIN [--require-runtime-identity] [--max-new-blob-bytes N]",
     )
   }
-  let require_identity = args.length() == 7
+  let mut require_identity = false
+  let mut budget : Int64? = None
+  let mut offset = 6
+  while offset < args.length() {
+    match args[offset] {
+      "--require-runtime-identity" if !require_identity =>
+        require_identity = true
+      "--max-new-blob-bytes" if offset + 1 < args.length() && budget is None => {
+        offset += 1
+        budget = Some(registry_byte_argument(args[offset]))
+      }
+      _ =>
+        raise @model.InvalidArgument(
+          "invalid or duplicate storage comparison option",
+        )
+    }
+    offset += 1
+  }
   let before_pin = @model.Digest::parse(args[3])
   let after_pin = @model.Digest::parse(args[5])
   let before = @native.load_bounded_layout(args[2])
@@ -23,6 +38,11 @@ async fn compare_image_storage_command(args : Array[String]) -> Unit {
         "beforeDiffId": optional_diff_id(change.before_diff_id),
         "afterDiffId": optional_diff_id(change.after_diff_id),
       }
+  }
+  let identity_met = !require_identity || report.preserves_runtime_identity()
+  let budget_met = match budget {
+    None => true
+    Some(limit) => report.new_image_blob_bytes <= limit
   }
   let result : Json = {
     "schema": "moonoci.image-storage-comparison.v1",
@@ -47,9 +67,11 @@ async fn compare_image_storage_command(args : Array[String]) -> Unit {
       report.after_image_blob_bytes.to_string(),
     ),
     "newImageBlobBytes": Json::string(report.new_image_blob_bytes.to_string()),
+    "runtimeIdentityGatePassed": Json::boolean(identity_met),
+    "transferBudgetGatePassed": Json::boolean(budget_met),
   }
   @stdio.stdout.write(result.stringify() + "\n")
-  if require_identity && !report.preserves_runtime_identity() {
+  if !identity_met || !budget_met {
     process_exit(5)
   }
 }
