@@ -20,8 +20,10 @@ pub fn transcode_image(
   compression : @model.Compression,
   positions? : Array[Int32],
   only_if_smaller~ : Bool = false,
+  gzip_level~ : Int32 = 0,
   max_result_layer_bytes~ : Int64 = 0x7fffffffffffffffL,
 ) -> ImageTranscode raise @model.MoonOciError {
+  validate_transcode_encoding(compression, gzip_level)
   if max_result_layer_bytes < 0L {
     raise @model.InvalidArgument(
       "transcode layer byte limit cannot be negative",
@@ -104,7 +106,13 @@ pub fn transcode_image(
           previous
         }
         None => {
-          let next = transcode_layer_blob(layer, data, diff_id, compression)
+          let next = transcode_layer_blob(
+            layer,
+            data,
+            diff_id,
+            compression,
+            gzip_level~,
+          )
           transcoded[key] = next
           next
         }

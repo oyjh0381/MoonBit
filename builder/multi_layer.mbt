@@ -149,6 +149,7 @@ pub fn build_image_from_layers(
 fn compress_layer(
   layer_tar : Bytes,
   compression : @model.Compression,
+  gzip_level~ : Int32 = 0,
 ) -> (String, Bytes) raise @model.MoonOciError {
   match compression {
     Uncompressed => (@model.media_type_layer_tar, layer_tar)
@@ -158,8 +159,19 @@ fn compress_layer(
       }
       let compressed = @fzip.gzip_sync(
         FixedArray::makei(layer_tar.length(), i => layer_tar[i]),
-        opts={ level: 0, mem: 0, dictionary: None, mtime: 0, filename: "", },
+        opts={
+          level: gzip_level,
+          mem: 0,
+          dictionary: None,
+          mtime: 0,
+          filename: "",
+        },
       )
+      if exceeds_gzip_layer_ratio(compressed.length(), layer_tar.length()) {
+        raise @model.ResourceLimitExceeded(
+          "gzip encoding exceeds the 200:1 layer verification limit",
+        )
+      }
       (@model.media_type_layer_gzip, Bytes::from_array(compressed))
     }
   }

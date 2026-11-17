@@ -53,11 +53,15 @@ fn decode_gzip_layer(
     _ => raise @model.InvalidTar("cannot decompress gzip layer")
   }
   let uncompressed = Bytes::from_array(uncompressed)
-  if data.length() > 0 &&
-    uncompressed.length().to_int64() > data.length().to_int64() * 200L {
+  if exceeds_gzip_layer_ratio(data.length(), uncompressed.length()) {
     raise @model.ResourceLimitExceeded(
       "gzip layer exceeds 200:1 expansion ratio",
     )
   }
   uncompressed
+}
+
+///|
+fn exceeds_gzip_layer_ratio(compressed : Int32, decoded : Int32) -> Bool {
+  compressed > 0 && decoded.to_int64() > compressed.to_int64() * 200L
 }

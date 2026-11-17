@@ -11,6 +11,7 @@ async fn transcode_image_command(args : Array[String]) -> Unit {
   let mut expected_index : @model.Digest? = None
   let mut dry_run = false
   let mut only_if_smaller = false
+  let mut gzip_level : Int32? = None
   let mut offset = 6
   while offset < args.length() {
     match args[offset] {
@@ -34,6 +35,16 @@ async fn transcode_image_command(args : Array[String]) -> Unit {
       }
       "--dry-run" if !dry_run => dry_run = true
       "--only-if-smaller" if !only_if_smaller => only_if_smaller = true
+      "--gzip-level" if offset + 1 < args.length() && gzip_level is None => {
+        offset += 1
+        let value = args[offset].to_array()
+        guard value is [level] && level >= '0' && level <= '9' else {
+          raise @model.InvalidArgument(
+            "gzip level must be a single digit from 0 to 9",
+          )
+        }
+        gzip_level = Some(level.to_int() - '0'.to_int())
+      }
       _ => raise @model.InvalidArgument("invalid or duplicate transcode option")
     }
     offset += 1
@@ -50,6 +61,9 @@ async fn transcode_image_command(args : Array[String]) -> Unit {
     _ =>
       raise @model.InvalidArgument("transcode compression must be none or gzip")
   }
+  if compression == Uncompressed && gzip_level is Some(_) {
+    raise @model.InvalidArgument("--gzip-level requires gzip output")
+  }
   let source = @native.load_bounded_layout(args[2])
   let source_index = @digest.sha256(source.index())
   if expected_source_index is Some(pin) && pin != source_index {
@@ -61,6 +75,7 @@ async fn transcode_image_command(args : Array[String]) -> Unit {
     compression,
     positions?,
     only_if_smaller~,
+    gzip_level?,
     max_result_layer_bytes?,
   )
   let index_pin = @digest.sha256(result.layout.index())

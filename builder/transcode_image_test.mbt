@@ -175,3 +175,78 @@ test "shrink-only conversion retains the cheaper encoding and applies savings" {
   assert_eq(skipped.converted_layers, 0)
   assert_eq(skipped.layout.index(), image.layout.index())
 }
+
+///|
+test "opt-in DEFLATE yields deterministic smaller storage and preserves DiffIDs" {
+  let before = @builder.build_single_layer(
+    @builder.default_single_layer_request([
+      @archive.TarEntry::file("level", Bytes::make(8192, b'z')),
+    ]),
+  )
+  let pin = before.report.manifest.digest
+  let first = @builder.transcode_image(
+    before.layout,
+    pin,
+    @model.Gzip,
+    gzip_level=6,
+    only_if_smaller=true,
+  )
+  let second = @builder.transcode_image(
+    before.layout,
+    pin,
+    @model.Gzip,
+    gzip_level=6,
+  )
+  assert_eq(first.converted_layers, 1)
+  assert_eq(first.manifest.digest, second.manifest.digest)
+  assert_true(first.result_layer_bytes < first.source_layer_bytes)
+  assert_true(
+    @builder.compare_image_storage(
+      before.layout,
+      pin,
+      first.layout,
+      first.manifest.digest,
+    ).preserves_runtime_identity(),
+  )
+  for level in [-1, 10] {
+    let rejected = try {
+      ignore(
+        @builder.transcode_image(
+          before.layout,
+          pin,
+          @model.Gzip,
+          gzip_level=level,
+        ),
+      )
+      false
+    } catch {
+      @model.InvalidArgument(_) => true
+      _ => false
+    }
+    assert_true(rejected)
+  }
+}
+
+///|
+test "optional DEFLATE cannot produce a layout outside the verification ratio limit" {
+  let before = @builder.build_single_layer(
+    @builder.default_single_layer_request([
+      @archive.TarEntry::file("level", Bytes::make(1024 * 1024, b'z')),
+    ]),
+  )
+  let rejected = try {
+    ignore(
+      @builder.transcode_image(
+        before.layout,
+        before.report.manifest.digest,
+        @model.Gzip,
+        gzip_level=9,
+      ),
+    )
+    false
+  } catch {
+    @model.ResourceLimitExceeded(_) => true
+    _ => false
+  }
+  assert_true(rejected)
+}

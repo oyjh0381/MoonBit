@@ -14,7 +14,9 @@ pub fn transcode_layer_blob(
   data : Bytes,
   diff_id : @model.Digest,
   compression : @model.Compression,
+  gzip_level~ : Int32 = 0,
 ) -> LayerTranscode raise @model.MoonOciError {
+  validate_transcode_encoding(compression, gzip_level)
   if descriptor.size != data.length().to_int64() {
     raise @model.SizeMismatch("layer storage size does not match descriptor")
   }
@@ -37,7 +39,20 @@ pub fn transcode_layer_blob(
   if target_media == descriptor.media_type {
     { media_type: target_media, data, digest: descriptor.digest, diff_id, }
   } else {
-    let (media_type, data) = compress_layer(tar, compression)
+    let (media_type, data) = compress_layer(tar, compression, gzip_level~)
     { media_type, data, digest: @digest.sha256(data), diff_id, }
+  }
+}
+
+///|
+fn validate_transcode_encoding(
+  compression : @model.Compression,
+  gzip_level : Int32,
+) -> Unit raise @model.MoonOciError {
+  if gzip_level < 0 || gzip_level > 9 {
+    raise @model.InvalidArgument("gzip level must be between 0 and 9")
+  }
+  if compression == Uncompressed && gzip_level != 0 {
+    raise @model.InvalidArgument("nonzero gzip level requires gzip output")
   }
 }
