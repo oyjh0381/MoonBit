@@ -111,3 +111,28 @@ test "storage comparison counts one physical blob for repeated layer positions" 
   assert_eq(reuse.new_layer_count, 0)
   assert_eq(reuse.new_layer_bytes, 0L)
 }
+
+///|
+test "manifest and config costs are included even when all layers are cached" {
+  let request = @builder.default_single_layer_request([
+    @archive.TarEntry::file("payload", b"cached"),
+  ])
+  let before = @builder.build_single_layer(request)
+  let after = @builder.build_single_layer({
+    ..request,
+    author: Some("changed metadata"),
+  })
+  let report = @builder.compare_image_storage(
+    before.layout,
+    before.report.manifest.digest,
+    after.layout,
+    after.report.manifest.digest,
+  )
+  assert_eq(report.new_layer_bytes, 0L)
+  assert_eq(
+    report.new_image_blob_bytes,
+    after.report.config.size + after.report.manifest.size,
+  )
+  assert_eq(report.before_image_blob_bytes, before.layout.blob_bytes())
+  assert_eq(report.after_image_blob_bytes, after.layout.blob_bytes())
+}

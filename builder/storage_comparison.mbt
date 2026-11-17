@@ -65,6 +65,9 @@ pub(all) struct ImageStorageComparison {
   after_layer_bytes : Int64
   new_layer_count : Int32
   new_layer_bytes : Int64
+  before_image_blob_bytes : Int64
+  after_image_blob_bytes : Int64
+  new_image_blob_bytes : Int64
 }
 
 ///|
@@ -84,10 +87,12 @@ pub fn compare_image_storage(
   after : @layout.MemoryLayout,
   after_pin : @model.Digest,
 ) -> ImageStorageComparison raise @model.MoonOciError {
-  let (_, before_manifest, before_ids) = verified_storage_image(
+  let (before_descriptor, before_manifest, before_ids) = verified_storage_image(
     before, before_pin,
   )
-  let (_, after_manifest, after_ids) = verified_storage_image(after, after_pin)
+  let (after_descriptor, after_manifest, after_ids) = verified_storage_image(
+    after, after_pin,
+  )
   let before_sizes = unique_layer_sizes(before_manifest.layers)
   let after_sizes = unique_layer_sizes(after_manifest.layers)
   let mut new_layer_count = 0
@@ -98,18 +103,52 @@ pub fn compare_image_storage(
       new_layer_bytes += size
     }
   }
+  let before_layer_bytes = before_sizes
+    .values()
+    .fold(init=0L, (total, size) => total + size)
+  let after_layer_bytes = after_sizes
+    .values()
+    .fold(init=0L, (total, size) => total + size)
+  let mut before_image_blob_bytes = before_layer_bytes
+  for item in [before_descriptor, before_manifest.config] {
+    let key = item.digest.to_string()
+    if !before_sizes.contains(key) {
+      before_image_blob_bytes += item.size
+      before_sizes[key] = item.size
+    }
+  }
+  let mut after_image_blob_bytes = after_layer_bytes
+  let mut new_image_blob_bytes = after_sizes
+    .iter()
+    .fold(init=0L, (bytes, pair) => {
+      let (key, size) = pair
+      if before_sizes.contains(key) {
+        bytes
+      } else {
+        bytes + size
+      }
+    })
+  for item in [after_descriptor, after_manifest.config] {
+    let key = item.digest.to_string()
+    if !after_sizes.contains(key) {
+      after_image_blob_bytes += item.size
+      after_sizes[key] = item.size
+      if !before_sizes.contains(key) {
+        new_image_blob_bytes += item.size
+      }
+    }
+  }
   {
     before_config: before_manifest.config.digest,
     after_config: after_manifest.config.digest,
     first_layer_difference: first_layer_difference(before_ids, after_ids),
-    before_layer_bytes: before_sizes
-    .values()
-    .fold(init=0L, (total, size) => total + size),
-    after_layer_bytes: after_sizes
-    .values()
-    .fold(init=0L, (total, size) => total + size),
+    before_layer_bytes,
+    after_layer_bytes,
     new_layer_count,
     new_layer_bytes,
+    before_image_blob_bytes,
+    after_image_blob_bytes,
+    new_image_blob_bytes,
   }
 }
 

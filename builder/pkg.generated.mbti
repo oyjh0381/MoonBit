@@ -94,6 +94,9 @@ pub(all) struct ImageStorageComparison {
   after_layer_bytes : Int64
   new_layer_count : Int32
   new_layer_bytes : Int64
+  before_image_blob_bytes : Int64
+  after_image_blob_bytes : Int64
+  new_image_blob_bytes : Int64
 }
 pub fn ImageStorageComparison::preserves_runtime_identity(Self) -> Bool
 
