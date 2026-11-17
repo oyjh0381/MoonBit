@@ -90,8 +90,10 @@ pub(all) struct ImageStorageComparison {
   before_config : @model.Digest
   after_config : @model.Digest
   first_layer_difference : LayerDifference?
+  before_layer_bytes : Int64
+  after_layer_bytes : Int64
 }
-pub fn ImageStorageComparison::is_encoding_only(Self) -> Bool
+pub fn ImageStorageComparison::preserves_runtime_identity(Self) -> Bool
 
 pub(all) struct ImageTranscode {
   layout : @layout.MemoryLayout

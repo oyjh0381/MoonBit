@@ -60,5 +60,45 @@ test "identical layers with distinct runtime configuration are not encoding-only
   )
   assert_true(compared.first_layer_difference is None)
   assert_true(compared.before_config != compared.after_config)
-  assert_false(compared.is_encoding_only())
+  assert_false(compared.preserves_runtime_identity())
+}
+
+///|
+test "storage comparison counts one physical blob for repeated layer positions" {
+  let layer : @builder.LayerBuildRequest = {
+    entries: [@archive.TarEntry::file("repeated", b"storage")],
+    remove: [],
+    opaque_dirs: [],
+    compression: @model.Uncompressed,
+  }
+  let before = @builder.build_image_from_layers(
+    [Generated(layer), Generated(layer)],
+    @model.default_platform(),
+    @model.default_runtime_config(),
+    "repeat",
+  )
+  let after = @builder.transcode_image(
+    before.layout,
+    before.report.manifest.digest,
+    @model.Gzip,
+    positions=[1],
+  )
+  let comparison = @builder.compare_image_storage(
+    before.layout,
+    before.report.manifest.digest,
+    after.layout,
+    after.manifest.digest,
+  )
+  assert_true(comparison.preserves_runtime_identity())
+  assert_eq(comparison.before_layer_bytes, before.report.layers[0].size)
+  assert_eq(comparison.after_layer_bytes, after.result_layer_bytes)
+  guard @builder.compare_layer_order(
+      before.layout,
+      before.report.manifest.digest,
+      storage_fixture(b"different").layout,
+      storage_fixture(b"different").report.manifest.digest,
+    )
+    is Some(_) else {
+    fail("expected unequal layer sequences")
+  }
 }

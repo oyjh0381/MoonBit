@@ -61,11 +61,13 @@ pub(all) struct ImageStorageComparison {
   before_config : @model.Digest
   after_config : @model.Digest
   first_layer_difference : LayerDifference?
+  before_layer_bytes : Int64
+  after_layer_bytes : Int64
 }
 
 ///|
 /// True when config bytes and the entire ordered DiffID sequence are identical.
-pub fn ImageStorageComparison::is_encoding_only(
+pub fn ImageStorageComparison::preserves_runtime_identity(
   self : ImageStorageComparison,
 ) -> Bool {
   self.before_config == self.after_config && self.first_layer_difference is None
@@ -88,5 +90,20 @@ pub fn compare_image_storage(
     before_config: before_manifest.config.digest,
     after_config: after_manifest.config.digest,
     first_layer_difference: first_layer_difference(before_ids, after_ids),
+    before_layer_bytes: unique_layer_sizes(before_manifest.layers)
+    .values()
+    .fold(init=0L, (total, size) => total + size),
+    after_layer_bytes: unique_layer_sizes(after_manifest.layers)
+    .values()
+    .fold(init=0L, (total, size) => total + size),
   }
+}
+
+///|
+fn unique_layer_sizes(layers : Array[@model.Descriptor]) -> Map[String, Int64] {
+  let sizes : Map[String, Int64] = Map([])
+  for layer in layers {
+    sizes[layer.digest.to_string()] = layer.size
+  }
+  sizes
 }
