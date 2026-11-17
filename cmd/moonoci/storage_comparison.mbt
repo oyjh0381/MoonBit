@@ -7,6 +7,8 @@ async fn compare_image_storage_command(args : Array[String]) -> Unit {
   }
   let mut require_identity = false
   let mut budget : Int64? = None
+  let mut before_index_pin : @model.Digest? = None
+  let mut after_index_pin : @model.Digest? = None
   let mut offset = 6
   while offset < args.length() {
     match args[offset] {
@@ -15,6 +17,16 @@ async fn compare_image_storage_command(args : Array[String]) -> Unit {
       "--max-new-blob-bytes" if offset + 1 < args.length() && budget is None => {
         offset += 1
         budget = Some(registry_byte_argument(args[offset]))
+      }
+      "--expect-before-index" if offset + 1 < args.length() &&
+        before_index_pin is None => {
+        offset += 1
+        before_index_pin = Some(@model.Digest::parse(args[offset]))
+      }
+      "--expect-after-index" if offset + 1 < args.length() &&
+        after_index_pin is None => {
+        offset += 1
+        after_index_pin = Some(@model.Digest::parse(args[offset]))
       }
       _ =>
         raise @model.InvalidArgument(
@@ -27,6 +39,18 @@ async fn compare_image_storage_command(args : Array[String]) -> Unit {
   let after_pin = @model.Digest::parse(args[5])
   let before = @native.load_bounded_layout(args[2])
   let after = @native.load_bounded_layout(args[4])
+  let before_index = @digest.sha256(before.index())
+  let after_index = @digest.sha256(after.index())
+  if before_index_pin is Some(pin) && pin != before_index {
+    raise @model.DigestMismatch(
+      "storage comparison baseline index differs from its pin",
+    )
+  }
+  if after_index_pin is Some(pin) && pin != after_index {
+    raise @model.DigestMismatch(
+      "storage comparison candidate index differs from its pin",
+    )
+  }
   let report = @builder.compare_image_storage(
     before, before_pin, after, after_pin,
   )
@@ -48,8 +72,8 @@ async fn compare_image_storage_command(args : Array[String]) -> Unit {
     "schema": "moonoci.image-storage-comparison.v1",
     "beforeManifest": Json::string(before_pin.to_string()),
     "afterManifest": Json::string(after_pin.to_string()),
-    "beforeIndex": Json::string(@digest.sha256(before.index()).to_string()),
-    "afterIndex": Json::string(@digest.sha256(after.index()).to_string()),
+    "beforeIndex": Json::string(before_index.to_string()),
+    "afterIndex": Json::string(after_index.to_string()),
     "beforeConfig": Json::string(report.before_config.to_string()),
     "afterConfig": Json::string(report.after_config.to_string()),
     "preservesRuntimeIdentity": Json::boolean(
