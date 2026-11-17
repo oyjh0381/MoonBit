@@ -9,7 +9,7 @@ import shutil
 import subprocess
 import tempfile
 
-from independent_layout import observe
+from independent_layout import assert_storage_comparison, observe, verified_blob
 
 ROOT = Path(__file__).resolve().parents[1]
 REPOSITORY = 'registry-1.docker.io/library/alpine'
@@ -121,6 +121,34 @@ def main():
         assert {k: v for k, v in entry.items() if k != 'layer_digest'} == {
             k: v for k, v in plain_image['files'][name].items() if k != 'layer_digest'}
 
+    # Exercise actual DEFLATE on the uncompressed public layer, using the
+    # preview pin to admit exactly the bytes that were reviewed.
+    compact = work / 'alpine-deflate'
+    plain_pin = report['resultManifest']
+    policy = ('--gzip-level', '6', '--only-if-smaller', '--min-layer-savings', '1')
+    preview = json.loads(run(binary, 'transcode-image', plain, plain_pin, 'gzip', compact,
+                             *policy, '--dry-run'))
+    assert not compact.exists()
+    compact_receipt = json.loads(run(
+        binary, 'transcode-image', plain, plain_pin, 'gzip', compact, *policy,
+        '--expect-source-index', preview['sourceIndex'], '--expect-index', preview['resultIndex']))
+    compact_pin = compact_receipt['resultManifest']
+    migration = json.loads(run(
+        binary, 'compare-image-storage', plain, plain_pin, compact, compact_pin,
+        '--require-runtime-identity', '--expect-before-index', preview['sourceIndex'],
+        '--expect-after-index', preview['resultIndex']))
+    assert_storage_comparison(migration, plain, plain_pin, compact, compact_pin)
+    compact_descriptor, = json.loads((compact / 'index.json').read_bytes())['manifests']
+    compact_manifest = json.loads(verified_blob(compact, compact_descriptor))
+    assert compact_manifest['config']['digest'] == original_manifest['config']['digest']
+    for reference, converted in zip(after_chain, compact_manifest['layers'], strict=True):
+        stored = verified_blob(compact, converted)
+        tar = gzip.decompress(stored) if converted['mediaType'].endswith('+gzip') else stored
+        assert tar == (plain / 'blobs' / 'sha256' / reference['blob'].split(':')[1]).read_bytes()
+    assert compact_receipt['convertedLayers'] > 0
+    assert int(compact_receipt['layerSavingsBytes']) == (
+        int(migration['beforeLayerBytes']) - int(migration['afterLayerBytes']))
+
     bad_pin_output = work / 'wrong-pin'
     run(binary, 'flatten-pinned', layout, 'sha256:' + '0' * 64, bad_pin_output, '--images-only', status=5)
     assert not bad_pin_output.exists()
@@ -144,6 +172,11 @@ def main():
                   acquisition='oras-registry' if args.oras else 'existing-layout',
                   moonoci_semantic_verification=True, recomposed_pinned_base_layers=len(imported),
                   independently_transcoded_public_image=True,
+                  deflate_storage_migration=dict(
+                      source_layer_bytes=int(migration['beforeLayerBytes']),
+                      result_layer_bytes=int(migration['afterLayerBytes']),
+                      saved_layer_bytes=int(compact_receipt['layerSavingsBytes']),
+                      candidate_blob_transfer_bytes=int(migration['newImageBlobBytes'])),
                   wrong_pin_and_corrupt_layer_refused=True, container_runtime_executed=False)
     (work / 'report.json').write_text(json.dumps(report, indent=2), encoding='utf-8')
     print(json.dumps(report, indent=2))
